@@ -1,0 +1,6 @@
+ARC_SV.egg-info/
+build/
+dist/
+
+*.pyc
+*~
