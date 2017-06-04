@@ -5,11 +5,11 @@ import pickle
 import pysam
 from math import floor
 
-from constants import *
-from helper import path_to_rearrangement, rearrangement_to_letters, block_gap
-from sv_classify import classify_paths
-from sv_filter import get_filter_string
-from sv_validate import altered_reference_sequence
+from arcsv.constants import *
+from arcsv.helper import path_to_rearrangement, rearrangement_to_letters, block_gap
+from arcsv.sv_classify import classify_paths
+from arcsv.sv_filter import get_filter_string
+from arcsv.sv_validate import altered_reference_sequence
 
 def sv_extra_lines(sv_ids, info_extra, format_extra):
     info_tags = ('='.join((str(a), str(b))) for (a,b) in info_extra.items())

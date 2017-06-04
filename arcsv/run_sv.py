@@ -1,6 +1,7 @@
 import argparse
-from arcsv_options import DEFAULT_OPTS
-from helper import get_chrom_size
+
+from arcsv.arcsv_options import DEFAULT_OPTS
+from arcsv.helper import get_chrom_size
 
 # parse arguments
 def get_args():

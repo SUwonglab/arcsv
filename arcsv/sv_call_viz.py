@@ -7,7 +7,7 @@ from matplotlib.collections import PatchCollection
 from matplotlib.patches import Polygon
 from matplotlib.backends.backend_pdf import PdfPages
 
-from helper import GenomeInterval
+from arcsv.helper import GenomeInterval
 
 PHI = 1.618
 

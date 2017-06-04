@@ -4,7 +4,7 @@ import numpy as np
 import pysam
 import re
 
-from constants import *
+from arcsv.constants import *
 
 # TODO move to constants
 max_output_alignments = 25

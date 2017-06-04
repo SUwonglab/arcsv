@@ -5,9 +5,9 @@ import numpy as np
 from collections import Counter
 from math import floor
 
-from breakpoint_merge import Breakpoint
-from constants import *
-from helper import not_primary, is_read_through, block_distance, flip_parity, GenomeInterval
+from arcsv.breakpoint_merge import Breakpoint
+from arcsv.constants import *
+from arcsv.helper import not_primary, is_read_through, block_distance, flip_parity, GenomeInterval
 
 class GenomeGraph:
     def __init__(self, size):

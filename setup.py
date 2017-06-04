@@ -15,7 +15,7 @@ setup(
     author_email = 'josephgarthur@gmail.com',
     license = arcsv_license,
     # url = 'http://github.com/jgarthur/arcsv/',
-    packages = find_packages(),
+    packages = find_packages(exclude = ('build','dist')),
     package_data = {'arcsv' : ['resources/*/*']},
     install_requires = [
         'python-igraph',
@@ -24,6 +24,7 @@ setup(
         'patsy',
         'pysam',
         'scikit-learn'
+        # TODO need scipy?
     ],
     scripts = ['bin/arcsv']
     # TODO specific dependency links

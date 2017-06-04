@@ -1,7 +1,7 @@
 import sys
 
-from constants import *
-from helper import fetch_seq
+from arcsv.constants import *
+from arcsv.helper import fetch_seq
 
 # max_homology - farthest we'll search for a breakpoint given an indel.
 #                To be totally safe, set larger than read length

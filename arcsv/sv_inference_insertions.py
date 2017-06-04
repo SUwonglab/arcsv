@@ -4,8 +4,8 @@ import numpy as np
 import pyinter
 from math import floor
 
-from constants import *
-from helper import block_gap, GenomeInterval
+from arcsv.constants import *
+from arcsv.helper import block_gap, GenomeInterval
 
 # returns 0-indexed positions relative to (left end of first block - first block gap)
 # --open intervals--

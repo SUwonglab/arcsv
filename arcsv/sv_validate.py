@@ -3,7 +3,7 @@ from collections import Counter, defaultdict
 from copy import deepcopy
 from math import floor, ceil
 
-from helper import fetch_seq, reverse_complement, block_gap, GenomeInterval
+from arcsv.helper import fetch_seq, reverse_complement, block_gap, GenomeInterval
 
 # merge reference blocks if the breakpoint between them is never used
 def simplify_blocks_diploid(blocks, path1, path2):

@@ -3,6 +3,10 @@
 import argparse
 import sys
 
+
+from arcsv.arcsv_options import DEFAULT_OPTS
+
+
 def main():
     parser = prepare_argparser()
 
@@ -10,7 +14,9 @@ def main():
         args = parser.parse_args(['-h'])
     else:
         args = parser.parse_args()
-        
+
+    print(args)
+
     command_name = args.command
 
     if command_name == 'call':
@@ -19,34 +25,55 @@ def main():
     elif command_name == 'validate':
         pass
 
+
 def prepare_argparser():
     parser = argparse.ArgumentParser()
-    subparsers = parser.add_subparsers(dest = 'command')
-    
+    subparsers = parser.add_subparsers(dest='command')
+
     add_call_parser(subparsers)
     add_validate_parser(subparsers)
-    
+
     return parser
 
+
 def add_call_parser(subparsers):
-    parser_call = subparsers.add_parser("call", help="Call SVs from alignment data",
+    # TODO argument groups
+    parser_call = subparsers.add_parser('call',
+                                        help='Call SVs from alignment data',
                                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    
-    parser_call.add_argument('-i', '--input_list', type = str, default = 'venter_1rg')
-    parser_call.add_argument('-o', '--output_name', type = str, help = 'output folder name (default test)')
-    # parser_call.add_argument('-D', '--reference_dir', type = str, default = '/home/jgarthur/sv/reference')
-    parser_call.add_argument('-R', '--reference_name', type = str, default = 'GRCh37')
-    parser_call.add_argument('-v', '--verbosity', type = int, help = 'how much output? (0-10, default 10)') # BEFORE SUBMIT CHANGE TO LOWER
-    parser_call.add_argument('-r', '--region', type = str, help = 'chromosome[:start-end] (chromosome name must match alignment file header)')
-    parser_call.add_argument('-C', '--insert_cutoff', type = float, help = 'determines likelihood ratio cutoff for discordant reads which is equivalent to phi(0)/phi(C). (default 3)')
-    parser_call.add_argument('-t', '--cutoff_type', type = str, default = 'low')
-    parser_call.add_argument('--do_viz', action = 'store_true')
-    parser_call.add_argument('--use_mate_tags', action = 'store_true')
-    # parser_call.add_argument('--use_indels', action = 'store_true')
-    parser_call.add_argument('--no_pecluster', action = 'store_true')
+    required = parser_call.add_argument_group('required arguments')
+    required.add_argument('-i', '--input_list', required=True, type=str)
+    required.add_argument('-r', '--region', required=True, type=str,
+                          help='chromosome[:start-end]')
+    optional = parser_call.add_argument_group('optional arguments')
+    optional.add_argument('-o', '--output_name', type=str,
+                          help='output folder name')
+    # optional.add_argument('-D', '--reference_dir', type=str,
+    # default='/home/jgarthur/sv/reference')
+    optional.add_argument('-R', '--reference_name', type=str,
+                          help='reference genome name')
+    # BEFORE SUBMIT CHANGE DEFAULT LOWER
+    optional.add_argument('-v', '--verbosity', type=int,
+                          help='how much output? (0-10)')
+    optional.add_argument('-C', '--insert_cutoff', type=float,
+                          help='determines likelihood ratio cutoff for discordant reads '
+                               'which is equivalent to phi(0)/phi(C).')
+    optional.add_argument('-t', '--cutoff_type', type=str,
+                          help='low/high -- affects all breakpoint support thresholds')
+    optional.add_argument('--do_viz', action='store_true')
+    optional.add_argument('--use_mate_tags', action='store_true')
+    # optional.add_argument('--use_indels', action='store_true')
+    optional.add_argument('--no_pecluster', dest='--do_pecluster', action='store_false')
+
+    parser_call.set_defaults(**DEFAULT_OPTS)
+
 
 def add_validate_parser(subparsers):
-    parser_call = subparsers.add_parser("validate", help="Validate SVs using ground truth sequences")
+    parser_call = subparsers.add_parser('validate',
+                                        help='Validate SVs using ground truth sequences')
+    pass
+    return parser_call
+
 
 if __name__ == '__main__':
     main()

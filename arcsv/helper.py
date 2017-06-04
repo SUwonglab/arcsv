@@ -8,7 +8,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 from sklearn.neighbors.kde import KernelDensity
 # from scipy.stats import gaussian_kde #
 
-from constants import *
+from arcsv.constants import *
 
 ## preliminary checks on reads
 def not_primary(aln):

@@ -1,7 +1,7 @@
 import argparse
 import os
 
-from arcsv_options import DEFAULT_OPTS
+from arcsv.arcsv_options import DEFAULT_OPTS
 
 # parse arguments
 def get_args():

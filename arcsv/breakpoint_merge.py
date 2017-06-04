@@ -1,7 +1,7 @@
 import numpy as np
 
-from constants import *
-from helper import merge_nearby
+from arcsv.constants import *
+from arcsv.helper import merge_nearby
 
 # offsets: if set, minimum must be 0
 def compute_consensus_sequence(seqs, quals, offsets = None):

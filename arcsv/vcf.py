@@ -1,8 +1,8 @@
 import os
 from time import strftime
 
-from helper import fetch_seq
-from sv_filter import get_filter_string
+from arcsv.helper import fetch_seq
+from arcsv.sv_filter import get_filter_string
 
 def sv_to_vcf(sv, reference, event_filtered = False, filter_criteria = None,
               event_lh = None, ref_lh = None):

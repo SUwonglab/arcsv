@@ -3,10 +3,10 @@ import os
 import pyinter
 from bisect import bisect_left, bisect_right
 
-from breakpoint_merge import Breakpoint
-from helper import GenomeInterval
-from sv_output import do_sv_processing
-from sv_parse_reads import load_genome_gaps, create_blocks
+from arcsv.breakpoint_merge import Breakpoint
+from arcsv.helper import GenomeInterval
+from arcsv.sv_output import do_sv_processing
+from arcsv.sv_parse_reads import load_genome_gaps, create_blocks
 
 def svelter_convert(svelterfile, outdir, reffile, filter_gaps = False, refgapfile = None,
                     flank_size = 1000, verbosity = 0):

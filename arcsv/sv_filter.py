@@ -1,7 +1,7 @@
 import pybedtools
 from math import floor
 
-from helper import GenomeInterval
+from arcsv.helper import GenomeInterval
 
 # LATER slop != 0 for SVs with uncertainty, or maybe = 50ish by default
 

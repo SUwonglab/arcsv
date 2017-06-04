@@ -2,7 +2,7 @@ import argparse
 import os
 import sys
 
-from sv_output_convert import svelter_convert, generic_vcf_convert
+from arcsv.sv_output_convert import svelter_convert, generic_vcf_convert
 
 # parse arguments
 def get_args():

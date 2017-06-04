@@ -6,40 +6,36 @@ import igraph
 import itertools
 import gc
 import objgraph
-import resource
-import time
+from collections import Counter, defaultdict, OrderedDict
+from matplotlib.backends.backend_pdf import PdfPages
+from sklearn.neighbors.kde import KernelDensity
 import matplotlib.pyplot as plt
 import random as rnd
-from collections import Counter, defaultdict, OrderedDict
-from sklearn.neighbors.kde import KernelDensity
-from matplotlib.backends.backend_pdf import PdfPages
+import resource
 
-from breakpoint_merge import Breakpoint, merge_breakpoints
-from conditional_mappable_model import process_aggregate_mapstats, \
-    model_from_mapstats, load_aggregate_model, load_model
-from helper import *
-from invertedreads import get_inverted_pair, write_inverted_pairs_bigbed
-from junctionalign import build_junction_reference, index_junction_reference, \
-    align_to_junctions, process_junction_alignments
-from parse_indels import parse_indels
-from pecluster import apply_discordant_clustering, process_discordant_pair
-from read_viz import *
-from softclip import process_softclip, merge_softclips, write_softclip_merge_stats, \
-    write_softclips_bigwig
-from splitreads import parse_splits, splits_are_mirrored, write_splits_bigbed
-from sv_inference import do_inference
-from sv_parse_reads import parse_reads_with_blocks
+
+from arcsv.conditional_mappable_model import process_aggregate_mapstats
+from arcsv.helper import *
+from arcsv.invertedreads import get_inverted_pair, write_inverted_pairs_bigbed
+from arcsv.parse_indels import parse_indels
+from arcsv.pecluster import process_discordant_pair
+from arcsv.read_viz import *
+from arcsv.softclip import (process_softclip, merge_softclips,
+                            write_softclip_merge_stats, write_softclips_bigwig)
+from arcsv.splitreads import parse_splits, splits_are_mirrored, write_splits_bigbed
+
 
 filter_criteria = ('INSERTION', 'SIMPLE_REPEAT', 'LOW_COMPLEXITY', 'SATELLITE', 'SEG_DUP')
+model_dir = '/home/jgarthur/sv/parser-out/conditional_model/'  # TODO
 
-model_dir = '/home/jgarthur/sv/parser-out/conditional_model/' # TODO
-    
+
 def extract_approximate_library_stats(opts, bamfiles, meta):
     reads_per_chunk = int(np.floor(opts['approx_stats_nreads'] / opts['approx_stats_nchunks']))
 
     bam = BamGroup(bamfiles)
     lib_patterns, lib_stats = parse_library_stats(meta)
-    lib_dict = {}               # maps read groups matching lib_patterns to indices in lib_stats
+    # maps read groups matching lib_patterns to indices in lib_stats
+    lib_dict = {}
     nlib = len(lib_stats)
     insert_len = [[] for i in range(nlib)]
     read_len_shorter = [[] for i in range(nlib)]

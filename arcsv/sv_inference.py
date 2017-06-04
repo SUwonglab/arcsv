@@ -9,16 +9,16 @@ import time
 from collections import Counter
 from math import log, floor
 
-from convex_diploid import convex_diploid
-from helper import *
-from sv_call_viz import plot_rearrangement
-from sv_classify import classify_paths
-from sv_filter import apply_filters, is_event_filtered
-from sv_inference_insertions import compute_hanging_edge_likelihood, compute_normalizing_constant
-from sv_output import sv_output, svout_header_line
-from sv_parse_reads import get_edge_color, GenomeGraph
-from sv_validate import simplify_blocks_diploid, altered_reference_sequence
-from vcf import get_vcf_header, sv_to_vcf
+from arcsv.convex_diploid import convex_diploid
+from arcsv.helper import *
+from arcsv.sv_call_viz import plot_rearrangement
+from arcsv.sv_classify import classify_paths
+from arcsv.sv_filter import apply_filters, is_event_filtered
+from arcsv.sv_inference_insertions import compute_hanging_edge_likelihood, compute_normalizing_constant
+from arcsv.sv_output import sv_output, svout_header_line
+from arcsv.sv_parse_reads import get_edge_color, GenomeGraph
+from arcsv.sv_validate import simplify_blocks_diploid, altered_reference_sequence
+from arcsv.vcf import get_vcf_header, sv_to_vcf
 
 def do_inference(opts, reference_files, g, blocks,
                  gap_indices, left_bp, right_bp,

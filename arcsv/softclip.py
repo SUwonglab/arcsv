@@ -1,8 +1,8 @@
 import os
 import numpy as np
 
-from constants import *
-from helper import fetch_seq
+from arcsv.constants import *
+from arcsv.helper import fetch_seq
 
 def process_softclip(pair, softclips, bam, do_splits, min_mapq, min_clipped_bases, min_clipped_qual):
     num_softclips = 0

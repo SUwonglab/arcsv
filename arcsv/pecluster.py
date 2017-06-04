@@ -6,11 +6,11 @@ import pyinter
 from operator import attrgetter
 from math import sqrt
 
-from breakpoint_merge import Breakpoint
-from constants import *
-from helper import normcdf, not_primary
-from sv_parse_reads import load_genome_gaps
-from unif_ci import uniform_ci
+from arcsv.breakpoint_merge import Breakpoint
+from arcsv.constants import *
+from arcsv.helper import normcdf, not_primary
+from arcsv.sv_parse_reads import load_genome_gaps
+from arcsv.unif_ci import uniform_ci
 
 class DiscordantPair:
     def __init__(self, chrom, pos1, pos2, insert, qname):

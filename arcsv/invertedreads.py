@@ -1,6 +1,6 @@
 import os
 
-from helper import get_ucsc_name
+from arcsv.helper import get_ucsc_name
 
 def get_inverted_pair(pair, bam):
     chrom = bam.getrname(pair[0].rname) # already checked reads on same chrom

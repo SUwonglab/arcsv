@@ -2,9 +2,9 @@ import pysam
 from collections import Counter
 from math import floor
 
-from helper import GenomeInterval
-from sv_validate import simplify_blocks
-from vcf import sv_to_vcf
+from arcsv.helper import GenomeInterval
+from arcsv.sv_validate import simplify_blocks
+from arcsv.vcf import sv_to_vcf
 
 BND_SPLIT_TYPES = {('-', '+') : 'Del',
                    ('+', '-') : 'Dup',
