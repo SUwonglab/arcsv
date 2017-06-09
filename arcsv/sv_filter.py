@@ -1,7 +1,5 @@
 import pybedtools
-from math import floor
 
-from arcsv.helper import GenomeInterval
 
 # LATER slop != 0 for SVs with uncertainty, or maybe = 50ish by default
 
@@ -16,7 +14,6 @@ from arcsv.helper import GenomeInterval
 #         idx_before, idx_after = block_sequence[bp], block_sequence[bp+1]
 #         inv_before, inv_after = inverted[bp], inverted[bp+1]
 #         ins_before, ins_after = blocks[idx_before].is_insertion(), blocks[idx_after].is_insertion()
-
 #         if not ins_before:
 #             if inv_before:
 #                 bp_indices.add(idx_before - 1)
@@ -34,7 +31,8 @@ from arcsv.helper import GenomeInterval
 #                                         blocks[idx+1].start + 1 + slop))
 #     return intervals
 
-def get_bp_intervals_bedtool(sv, slop = 0):
+
+def get_bp_intervals_bedtool(sv, slop=0):
     intervals = list(set((sv.bp1, sv.bp2)))
     bedstring = ''
     for interval in intervals:
@@ -45,19 +43,20 @@ def get_bp_intervals_bedtool(sv, slop = 0):
         return None
     else:
         print(bedstring)
-        bt = pybedtools.BedTool(bedstring, from_string = True)
+        bt = pybedtools.BedTool(bedstring, from_string=True)
         bt_sorted = bt.sort()
         return bt_sorted
 
-def compute_repeat_overlaps(rmsk_track, segdup_track, sv, slop = 0):
+
+def compute_repeat_overlaps(rmsk_track, segdup_track, sv, slop=0):
     bp_intervals = get_bp_intervals_bedtool(sv, slop)
     if bp_intervals is None:
         return []
-    
+
     overlaps = set()
-    rmsk_intersect = rmsk_track.intersect(bp_intervals, u = True, sorted = True)
+    rmsk_intersect = rmsk_track.intersect(bp_intervals, u=True, sorted=True)
     print(rmsk_intersect)
-    segdup_intersect = segdup_track.intersect(bp_intervals, u = True, sorted = True)
+    segdup_intersect = segdup_track.intersect(bp_intervals, u=True, sorted=True)
     print(segdup_intersect)
 
     for bed in rmsk_intersect:
@@ -67,8 +66,9 @@ def compute_repeat_overlaps(rmsk_track, segdup_track, sv, slop = 0):
 
     return sorted(list(overlaps))
 
-def apply_filters(sv_list, rmsk_track, segdup_track):
-    sv_call_gap_ratio_cutoff = .25 # TODO
+
+def apply_filters(sv_list, rmsk_track=None, segdup_track=None):
+    sv_call_gap_ratio_cutoff = .25  # TODO
     for sv in sv_list:
         if sv.type == 'INS':
             print('adding INS filter to {0}'.format(sv))
@@ -76,8 +76,10 @@ def apply_filters(sv_list, rmsk_track, segdup_track):
         elif sv.type == 'BND' and sv.bnd_ins > 0:
             print('adding BND_INS filter to {0}'.format(sv))
             sv.filters.add('INSERTION')
-        for ov in compute_repeat_overlaps(rmsk_track, segdup_track, sv):
-            sv.filters.add(ov)
+        do_overlap = rmsk_track is not None and segdup_track is not None
+        if do_overlap:
+            for ov in compute_repeat_overlaps(rmsk_track, segdup_track, sv):
+                sv.filters.add(ov)
         if sv.type == 'DUP:TANDEM':
             # check gap
             print('[sv_filter] checking tandem dup')
@@ -90,8 +92,8 @@ def apply_filters(sv_list, rmsk_track, segdup_track):
                 sv.filters.add('BP_UNCERTAINTY')
 
 # def pass_filter(path, blocks, start, end,
-#                 insertion_filter = True,
-#                 gap_ratio_filter = True, simple_rpt_filter = True):
+#                 insertion_filter=True,
+#                 gap_ratio_filter=True, simple_rpt_filter=True):
 #     pass_insertion = has_insertion(path, blocks) if insertion_filter else True
 #     pass_gap = (compute_max_gap_ratio(blocks) <= sv_call_gap_ratio_cutoff) \
 #         if gap_ratio_filter else True
@@ -121,8 +123,8 @@ def is_event_filtered(sv_list, has_complex, filter_criteria):
     if not has_complex:
         return False
     for sv in sv_list:
-        fs = get_filter_string(sv, event_filtered = False,
-                               filter_criteria = filter_criteria)
+        fs = get_filter_string(sv, event_filtered=False,
+                               filter_criteria=filter_criteria)
         if fs != 'PASS':
             return True
     return False

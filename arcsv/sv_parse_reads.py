@@ -743,10 +743,10 @@ def get_blocks_gaps(aln):
 def load_genome_gaps(gapsfile, chrom_name):
     gaps = pyinter.IntervalSet()
     with open(gapsfile, 'r') as file:
-        lines = [l for l in file.readlines() if l.split('\t')[1] == chrom_name]
+        lines = [l for l in file.readlines() if l.split('\t')[0] == chrom_name]
         for line in lines:
             toks = line.split('\t')
-            a, b = int(toks[2]), int(toks[3])
+            a, b = int(toks[1]), int(toks[2])
             gaps.add(pyinter.closedopen(a, b))
     return gaps
             

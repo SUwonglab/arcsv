@@ -1,6 +1,7 @@
 import numpy as np
 import os
 import random as rnd
+import sys
 import time
 
 
@@ -14,6 +15,8 @@ from arcsv.pecluster import apply_discordant_clustering
 from arcsv.sv_inference import do_inference
 from arcsv.sv_parse_reads import parse_reads_with_blocks
 
+this_dir = os.path.dirname(os.path.realpath(__file__))
+
 
 def run(args):
     # region, input_list, cutoff_type, output_name, verbosity, reference_name,
@@ -21,27 +24,19 @@ def run(args):
     opts = vars(args)
 
     # TEMPORARY reference name
-    if opts['reference_name'] == 'GRCh37':
-        reference_files = {
-            'rmsk': '/home/jgarthur/sv/reference/GRCh37_rmsk.bed',
-            'segdup': '/home/jgarthur/sv/reference/GRCh37_segdup.bed',
-            'reference': '/home/jgarthur/sv/reference/GRCh37.fa',
-            'gap': '/home/jgarthur/sv/reference/GRCh37.gap.txt'
-        }
-    elif opts['reference_name'] == 'hg19':
-        reference_files = {
-            'rmsk': '/home/jgarthur/sv/reference/hg19_rmsk.bed',
-            'segdup': '/home/jgarthur/sv/reference/hg19_segdup.bed',
-            'reference': '/home/jgarthur/sv/reference/hg19-alt/hg19.fa',
-            'gap': '/home/jgarthur/sv/reference/hg19.gap.alt.txt'
-        }
-    elif opts['reference_name'] == 'hg38':
-        reference_files = {
-            'rmsk': '/home/jgarthur/sv/reference/hg38_rmsk.bed',
-            'segdup': '/home/jgarthur/sv/reference/hg38_segdup.bed',
-            'reference': '/home/jgarthur/sv/reference/hg38.fa',
-            'gap': '/home/jgarthur/sv/reference/hg38.gap.txt'
-        }
+    if opts.get('reference_name') is not None:
+        reference_file = os.path.join(this_dir, 'resources', opts['reference_name']+'.fa')
+        gap_file = os.path.join(this_dir, 'resources', opts['reference_name']+'_gap.bed')
+    elif opts.get('reference_file') is not None and opts.get('gap_file') is not None:
+        reference_file = opts['reference_file']
+        gap_file = opts['gap_file']
+    else:
+        # quit
+        sys.stderr.write('\nPlease specify reference_file and gap_file, OR specify '
+                         'reference_name\n')
+        sys.exit(1)
+    reference_files = {'reference': reference_file, 'gap': gap_file}
+    print('ref files {0}'.format(reference_files))
 
     # TODO put all this argument parsing in arcsv script
     region_split = opts['region'].split(':')

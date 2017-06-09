@@ -25,7 +25,7 @@ from arcsv.softclip import (process_softclip, merge_softclips,
 from arcsv.splitreads import parse_splits, splits_are_mirrored, write_splits_bigbed
 
 
-filter_criteria = ('INSERTION', 'SIMPLE_REPEAT', 'LOW_COMPLEXITY', 'SATELLITE', 'SEG_DUP')
+filter_criteria = ('INSERTION',)  # ,'SIMPLE_REPEAT','LOW_COMPLEXITY', 'SATELLITE', 'SEG_DUP')
 model_dir = '/home/jgarthur/sv/parser-out/conditional_model/'  # TODO
 
 
@@ -110,7 +110,7 @@ def parse_bam(opts, reference_files, bamfiles, meta, do_bp, do_junction_align):
     print(mean_approx)
     print(sd_approx)
 
-    def get_lr_cutoff(pmf, cutoff_normal_equivalent, do_min = False):
+    def get_lr_cutoff(pmf, cutoff_normal_equivalent, do_min=False):
         lr_cutoff = normpdf(0) - normpdf(cutoff_normal_equivalent)
         print('[insert_cutoff] lr_cutoff is {0}'.format(lr_cutoff))
         mode = max(pmf)
@@ -132,7 +132,7 @@ def parse_bam(opts, reference_files, bamfiles, meta, do_bp, do_junction_align):
         
         return cutoff
 
-    min_concordant_insert = [get_lr_cutoff(pmf, opts['insert_cutoff'], do_min = True) for pmf in pmf_approx]
+    min_concordant_insert = [get_lr_cutoff(pmf, opts['insert_cutoff'], do_min=True) for pmf in pmf_approx]
     max_concordant_insert = [get_lr_cutoff(pmf, opts['insert_cutoff']) for pmf in pmf_approx]
         
     # min_concordant_insert = [mu - 3*sigma for (mu, sigma) in zip(mean_approx, sd_approx)]

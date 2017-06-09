@@ -1,31 +1,30 @@
 import copy
 import numpy as np
-import copy
 import pickle
-import pybedtools
 import pyinter
 import pysam
 import time
 from collections import Counter
 from math import log, floor
 
-from arcsv.convex_diploid import convex_diploid
 from arcsv.helper import *
 from arcsv.sv_call_viz import plot_rearrangement
 from arcsv.sv_classify import classify_paths
 from arcsv.sv_filter import apply_filters, is_event_filtered
-from arcsv.sv_inference_insertions import compute_hanging_edge_likelihood, compute_normalizing_constant
+from arcsv.sv_inference_insertions import compute_hanging_edge_likelihood, \
+    compute_normalizing_constant
 from arcsv.sv_output import sv_output, svout_header_line
 from arcsv.sv_parse_reads import get_edge_color, GenomeGraph
 from arcsv.sv_validate import simplify_blocks_diploid, altered_reference_sequence
 from arcsv.vcf import get_vcf_header, sv_to_vcf
 
+
 def do_inference(opts, reference_files, g, blocks,
                  gap_indices, left_bp, right_bp,
                  insert_dists, insert_cdfs, insert_cdf_sums,
                  class_probs, rlen_stats,
-                 insertion_search_width, pi_robust = .000001, # TODO
-                 insert_lower = None, insert_upper = None, mode = 'both'):
+                 insertion_search_width, pi_robust=.000001, # TODO
+                 insert_lower=None, insert_upper=None, mode='both'):
     outdir = opts['outdir']
     
     g.add_ref_path_support(9999) # ensure reference path is always available
@@ -45,8 +44,8 @@ def do_inference(opts, reference_files, g, blocks,
     sv_outfile2.write(svout_header_line())
 
     ref = pysam.FastaFile(reference_files['reference'])
-    rmsk_track = pybedtools.BedTool(reference_files['rmsk'])
-    segdup_track = pybedtools.BedTool(reference_files['segdup'])
+    # rmsk_track = pybedtools.BedTool(reference_files['rmsk'])
+    # segdup_track = pybedtools.BedTool(reference_files['segdup'])
 
     supp_edges = len([e for e in g.graph.es if e['support'] >= opts['min_edge_support']])
     unsupp_edges = len([e for e in g.graph.es if e['support'] < opts['min_edge_support'] and e['support'] > 0])
@@ -358,7 +357,7 @@ def do_inference(opts, reference_files, g, blocks,
             print('simplifying blocks...')
 
             print('simplify_blocks_diploid')
-            nb,np1,np2 = simplify_blocks_diploid(blocks, path1, path2)
+            nb, np1, np2 = simplify_blocks_diploid(blocks, path1, path2)
 
             s1 = rearrangement_to_letters(path_to_rearrangement(np1), blocks = nb)
             s2 = rearrangement_to_letters(path_to_rearrangement(np2), blocks = nb)
@@ -370,9 +369,10 @@ def do_inference(opts, reference_files, g, blocks,
             print(svs)
             # apply filters and write to vcf
             has_complex = 'complex' in (event1 + event2)
-            apply_filters(svs, rmsk_track, segdup_track)
+            apply_filters(svs)
             # TODO
-            filter_criteria = ('INSERTION', 'SIMPLE_REPEAT', 'LOW_COMPLEXITY', 'SATELLITE', 'SEG_DUP')
+            filter_criteria = ('INSERTION',)
+            # 'SIMPLE_REPEAT', 'LOW_COMPLEXITY', 'SATELLITE', 'SEG_DUP')
             ev_filtered = is_event_filtered(svs, has_complex, filter_criteria)
             for sv in svs:
                 # possibly multiple lines for BND events

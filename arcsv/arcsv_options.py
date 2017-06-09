@@ -14,7 +14,7 @@ DEFAULT_OPTS = {
     'chromosome': None,
     'region_start': None,
     'region_end': None,
-    'reference_name': 'GRCh37',
+    'reference_name': None,
 
     # LIBRARY QUANTIFICATION
     'approx_stats_nreads': 1000000,
