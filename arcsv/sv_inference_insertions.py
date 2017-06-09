@@ -8,20 +8,9 @@ from arcsv.constants import *
 from arcsv.helper import block_gap, GenomeInterval
 
 # returns 0-indexed positions relative to (left end of first block - first block gap)
-# --open intervals--
-def get_gap_overlap_positions(path, blocks, read_len):
-    blocks_gaps = genome_blocks_gaps(blocks, path)
-    invalid_read_start = pyinter.IntervalSet()
-    pos = 0
-    for b in blocks_gaps:
-        if b.is_gap and len(b) >= read_len:
-            iv = pyinter.open(pos - 1, pos + len(b) - read_len + 1)
-            invalid_read_start.add(iv)
-        pos += len(b)
-    return invalid_read_start
-
-# TODO defined above already
+# open intervals ??
 def get_gap_overlap_positions(path, blocks, read_len, min_mappable = 20):
+    print('[get_gap_overlap] second')
     blocks_gaps = genome_blocks_gaps(blocks, path)
     m = min_mappable
 
