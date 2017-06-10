@@ -66,6 +66,7 @@ DEFAULT_OPTS = {
     'viz_window_skip': 10,
     # (main output)
     'min_simplesv_size': 50,
+    'filter_criteria': ('INSERTION',),
     # (filtering)
     # (altered reference)
     'altered_flank_size': 1000,

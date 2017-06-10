@@ -370,9 +370,7 @@ def do_inference(opts, reference_files, g, blocks,
             # apply filters and write to vcf
             has_complex = 'complex' in (event1 + event2)
             apply_filters(svs)
-            # TODO
-            filter_criteria = ('INSERTION',)
-            # 'SIMPLE_REPEAT', 'LOW_COMPLEXITY', 'SATELLITE', 'SEG_DUP')
+            filter_criteria = opts['filter_criteria']
             ev_filtered = is_event_filtered(svs, has_complex, filter_criteria)
             for sv in svs:
                 # possibly multiple lines for BND events
