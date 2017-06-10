@@ -17,13 +17,13 @@ setup(
     # url='http://github.com/jgarthur/arcsv/',
     packages=find_packages(exclude=('build', 'dist')),
     install_requires=[
-        'python-igraph',
-        'matplotlib',
-        'numpy',
-        'patsy',
         'pysam',
+        'numpy',
+        'scipy',
         'scikit-learn'
-        # TODO need scipy?
+        'matplotlib',
+        'patsy',
+        'python-igraph',
     ],
     scripts=['bin/arcsv']
     # TODO specific dependency links
