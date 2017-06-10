@@ -20,7 +20,7 @@ setup(
         'pysam',
         'numpy',
         'scipy',
-        'scikit-learn'
+        'scikit-learn',
         'matplotlib',
         'patsy',
         'python-igraph',
