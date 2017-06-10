@@ -1,8 +1,5 @@
 import pysam
-import argparse
 import numpy as np
-import os
-import igraph
 import itertools
 import gc
 import objgraph
@@ -23,10 +20,6 @@ from arcsv.read_viz import *
 from arcsv.softclip import (process_softclip, merge_softclips,
                             write_softclip_merge_stats, write_softclips_bigwig)
 from arcsv.splitreads import parse_splits, splits_are_mirrored, write_splits_bigbed
-
-
-filter_criteria = ('INSERTION',)  # ,'SIMPLE_REPEAT','LOW_COMPLEXITY', 'SATELLITE', 'SEG_DUP')
-
 
 
 def extract_approximate_library_stats(opts, bamfiles, meta):
@@ -70,24 +63,29 @@ def extract_approximate_library_stats(opts, bamfiles, meta):
             mate = seen_aln[aln.qname]
             pair = (aln, mate)
             del seen_aln[aln.qname]
-            if not mate.is_duplicate: # not sure if this is needed?
+            if not mate.is_duplicate:  # not sure if this is needed?
                 lib_idx = get_lib_idx(aln.get_tag('RG'), lib_dict, lib_patterns)
-                process_insert_len(pair, insert_len[lib_idx], lib_stats[lib_idx], opts['min_mapq_reads'])
+                process_insert_len(pair, insert_len[lib_idx], lib_stats[lib_idx],
+                                   opts['min_mapq_reads'])
                 process_read_len(pair, read_len_shorter[lib_idx], read_len_longer[lib_idx])
                 reads_processed[lib_idx] += 1
                 if min(reads_processed) % 100000 == 0:
-                    print('processed >= {0} reads ({2} chunks) for each lib: {1}'.format(min(reads_processed), reads_processed, chunks_processed))
+                    print('processed >= {0} reads ({2} chunks) for each lib: {1}'.
+                          format(min(reads_processed), reads_processed, chunks_processed))
         chunks_processed += 1
 
     insert_mean = [np.median(il) for il in insert_len]
     insert_sd = [robust_sd(il) for il in insert_len]
     insert_lower = [np.percentile(il, 0.15) for il in insert_len]
     insert_upper = [np.percentile(il, 99.85) for il in insert_len]
-    insert_pmf = [pmf_kernel_smooth(il, 0, opts['insert_max_mu_multiple'] * mu, opts['max_kde_samples'])  for (il, mu) in zip(insert_len, insert_mean)]
+    insert_pmf = [pmf_kernel_smooth(il, 0, opts['insert_max_mu_multiple'] * mu,
+                                    opts['max_kde_samples'])
+                  for (il, mu) in zip(insert_len, insert_mean)]
     rlen_short = [round(np.median(rl)) for rl in read_len_shorter]
     rlen_long = [round(np.median(rl)) for rl in read_len_longer]
     rlen_medians = list(zip(rlen_short, rlen_long))
     return insert_mean, insert_sd, insert_pmf, insert_lower, insert_upper, rlen_medians
+
 
 # parse a single bam file, extracting breakpoints,
 # insert size distribution, and/or visualization tracks in bed/bigwig format
@@ -105,7 +103,7 @@ def parse_bam(opts, reference_files, bamfiles, meta, do_bp, do_junction_align):
         with open('{0}lib{1}_insert_pmf.txt'.format(outdir, i), 'w') as f:
             for j in range(len(pmf_approx[i])):
                 f.write('{0}\t{1}\n'.format(j, pmf_approx[i][j]))
-                
+
     print('approximate stats:')
     print(mean_approx)
     print(sd_approx)
@@ -128,19 +126,22 @@ def parse_bam(opts, reference_files, bamfiles, meta, do_bp, do_junction_align):
                     cutoff = i + 1
                     break
         print('[insert_cutoff] mode (log) {0} at {1}'.format(logmode, which_mode))
-        print('[insert_cutoff] cutoff ratio (log) {0} at {1}'.format(logmode - np.log(pmf[i]), cutoff))
-        
+        print('[insert_cutoff] cutoff ratio (log) {0} at {1}'
+              .format(logmode - np.log(pmf[i]), cutoff))
+
         return cutoff
 
-    min_concordant_insert = [get_lr_cutoff(pmf, opts['insert_cutoff'], do_min=True) for pmf in pmf_approx]
+    min_concordant_insert = [get_lr_cutoff(pmf, opts['insert_cutoff'], do_min=True)
+                             for pmf in pmf_approx]
     max_concordant_insert = [get_lr_cutoff(pmf, opts['insert_cutoff']) for pmf in pmf_approx]
-        
+
     # min_concordant_insert = [mu - 3*sigma for (mu, sigma) in zip(mean_approx, sd_approx)]
     # max_concordant_insert = [mu + 3*sigma for (mu, sigma) in zip(mean_approx, sd_approx)]
     # min_concordant_insert = qlower
     # max_concordant_insert = qupper
     print('insert size ranges (+/- 3 sd):')
-    print('\n'.join(['{0}-{1}'.format(min_concordant_insert[i], max_concordant_insert[i]) for i in range(len(mean_approx))]))
+    print('\n'.join(['{0}-{1}'.format(min_concordant_insert[i], max_concordant_insert[i])
+                     for i in range(len(mean_approx))]))
     print('equivalent quantiles to normal:')
     print(qlower)
     print(qupper)
@@ -210,7 +211,7 @@ def parse_bam(opts, reference_files, bamfiles, meta, do_bp, do_junction_align):
             print('Memory usage: %s (kb)' % resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
             gc.collect()
             objgraph.show_most_common_types()
-            
+
         if aln.qname not in seen_aln:
             # if unpaired reads non-existent, handle them no so they don't pile up in memory
             if (not bam_has_unmapped and aln.mate_is_unmapped and not aln.is_unmapped) \
@@ -483,10 +484,12 @@ def parse_bam(opts, reference_files, bamfiles, meta, do_bp, do_junction_align):
                 None, None, None,
                 None, None)
 
+
 def process_coverage(aln, coverage):
     for base in aln.get_reference_positions():
         coverage[base] += 1
-        
+
+
 def process_inverted(pair, inverted_pairs, bam):
     # see invertedreads.py
     if pair[0].is_reverse != pair[1].is_reverse:
@@ -494,6 +497,7 @@ def process_inverted(pair, inverted_pairs, bam):
     else:
         inverted_pairs.append(get_inverted_pair(pair, bam))
         return 1
+
 
 def process_hanging(anchor_aln, hanging_plus, hanging_minus):
     if anchor_aln.is_reverse:
@@ -503,6 +507,7 @@ def process_hanging(anchor_aln, hanging_plus, hanging_minus):
         anchor_pos = anchor_aln.reference_start
         hanging_plus.add(anchor_pos)
 
+
 def process_splits(aln, splits, bam, min_mapq):
     spl = parse_splits(aln, bam, min_mapq)
     if spl is not None:
@@ -510,6 +515,7 @@ def process_splits(aln, splits, bam, min_mapq):
         return 1
     else:
         return 0
+
 
 # Input: pair of reads on the same chromosome
 # Output: none if read pair invalid (mapq or orientation), else insert length
@@ -537,6 +543,7 @@ def process_insert_len(pair, len_array, library_info, min_mapq, truncate = True)
         len_array.append(ilen)
     return ilen
 
+
 def process_insert_viz(pair, insert_plus, insert_minus, library_info):
     if pair[0].is_reverse == pair[1].is_reverse:
         return 0
@@ -553,10 +560,11 @@ def process_insert_viz(pair, insert_plus, insert_minus, library_info):
         ilen += pair[which_first].query_alignment_start
     if library_info['readlen'] != 0:
         ilen += 2 * library_info['readlen'] - pair[0].query_length - pair[1].query_length
-        
+
     insert_plus.add(pair[which_first].reference_start, ilen)
     insert_minus.add(pair[which_last].reference_end, ilen)
     return 1
+
 
 def handle_unpaired_read(opts, aln, lib_dict, coverage,
                          hanging_unmapped_plus, hanging_unmapped_minus,
@@ -591,11 +599,13 @@ def handle_unpaired_read(opts, aln, lib_dict, coverage,
         if not opts['use_mate_tags']:
             process_aggregate_mapstats(pair, mapstats[lib_idx], opts['min_mapq_reads'], opts['max_pair_distance'])
 
+
 # assume no hard-clipping so sequence length is calculated correctly by pysam
 def process_read_len(pair, len_short_array, len_long_array):
     lens = [aln.query_length for aln in pair]
     len_short_array.append(min(lens))
     len_long_array.append(max(lens))
+
 
 # abstraction for a group of bam files
 class BamGroup:
@@ -628,6 +638,7 @@ class BamGroup:
     def lengths(self):
         return self.bamlist[0].lengths
 
+
 def pmf_kernel_smooth(a, xmin, xmax, max_kde_samples):
     if len(a) == 0:
         raise Warning('[pmf_kernel_smooth] array is empty -- there are no insert lengths!')
@@ -644,6 +655,7 @@ def pmf_kernel_smooth(a, xmin, xmax, max_kde_samples):
     pmf = np.exp(kde.score_samples(np.matrix(np.linspace(xmin, xmax, xmax-xmin+1)).T))
     S = sum(pmf)
     return [p/S for p in pmf]
+
 
 def has_unmapped_records(bam, pairs_to_check = 10):
     alignments = bam.fetch_unsorted()
@@ -663,6 +675,7 @@ def has_unmapped_records(bam, pairs_to_check = 10):
             return False
     return True
 
+
 def plot_insert_dist(insert_len_dists, outdir, lib_stats):
     outfile = outdir + 'insert_' + lib_stats[0]['name'] + '.pdf'
     pp = PdfPages(outfile)
@@ -673,10 +686,11 @@ def plot_insert_dist(insert_len_dists, outdir, lib_stats):
         pp.savefig()
         plt.close()
     pp.close()
-    
-def test_bamgroup():
-    bamfiles = ['/home/jgarthur/sv/analysis/alignments/bwa_mem/short-reads/jun_jul.mdup.merge.mdup.1rg.qnamesorted.matedata.sorted.bam', '/home/jgarthur/sv/simdata/varsim-40x-HiSeq2k/alignments/bwa_mem/merged.matedata.bam']
-    bg = BamGroup(bamfiles)
-    print(len([aln for aln in bg.fetch_unsorted('1', 0, 1000000)]))
 
-    print(bg.references)
+
+# def test_bamgroup():
+#     bamfiles = ['/home/jgarthur/sv/analysis/alignments/bwa_mem/short-reads/jun_jul.mdup.merge.mdup.1rg.qnamesorted.matedata.sorted.bam', '/home/jgarthur/sv/simdata/varsim-40x-HiSeq2k/alignments/bwa_mem/merged.matedata.bam']
+#     bg = BamGroup(bamfiles)
+#     print(len([aln for aln in bg.fetch_unsorted('1', 0, 1000000)]))
+
+#     print(bg.references)
