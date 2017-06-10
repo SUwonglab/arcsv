@@ -48,3 +48,5 @@ outdirs = {'venter_short': '/home/jgarthur/sv/parser-out/{name}/',
            'hepg2_short': '/home/jgarthur/sv/encode-cancer-analysis/{name}/',
            'k562_short': '/home/jgarthur/sv/encode-cancer-analysis/{name}/',
            'na12878': '/home/jgarthur/sv/parser-out/{name}/'}
+
+default_outdir = '/home/jgarthur/sv/parser-out/{name}/'

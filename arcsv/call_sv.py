@@ -10,7 +10,7 @@ from arcsv.breakpoint_merge import merge_breakpoints
 from arcsv.conditional_mappable_model import (model_from_mapstats, load_aggregate_model,
                                               load_model)
 from arcsv.helper import get_chrom_size, combine_lib_dict, time_to_str, parse_library_stats
-from arcsv.localfiles import bam_files, meta_files, outdirs
+from arcsv.localfiles import bam_files, meta_files, outdirs, default_outdir
 from arcsv.pecluster import apply_discordant_clustering
 from arcsv.sv_inference import do_inference
 from arcsv.sv_parse_reads import parse_reads_with_blocks
@@ -60,7 +60,6 @@ def run(args):
         opts['min_bp_support'] = 4
         opts['min_edge_support'] = 4
 
-    default_outdir = '/home/jgarthur/sv/parser-out/{name}/'
     input_names = opts['input_list'].split(',')
     inputs = [(bam_files[ip], meta_files[ip]) for ip in input_names]
     outdir = outdirs.get(input_names[0], default_outdir).format(name=opts['output_name'])
