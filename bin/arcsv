@@ -67,7 +67,7 @@ def add_call_parser(subparsers):
     optional.add_argument('-t', '--cutoff_type', type=str,
                           help='low/high -- affects all breakpoint support thresholds')
     optional.add_argument('--do_viz', action='store_true')
-    optional.add_argument('--use_mate_tags', action='store_true')
+    # optional.add_argument('--use_mate_tags', action='store_true')
     # optional.add_argument('--use_indels', action='store_true')
     optional.add_argument('--no_pecluster', dest='--do_pecluster', action='store_false')
 

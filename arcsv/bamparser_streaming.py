@@ -26,7 +26,7 @@ from arcsv.splitreads import parse_splits, splits_are_mirrored, write_splits_big
 
 
 filter_criteria = ('INSERTION',)  # ,'SIMPLE_REPEAT','LOW_COMPLEXITY', 'SATELLITE', 'SEG_DUP')
-model_dir = '/home/jgarthur/sv/parser-out/conditional_model/'  # TODO
+
 
 
 def extract_approximate_library_stats(opts, bamfiles, meta):

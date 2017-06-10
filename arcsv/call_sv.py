@@ -5,7 +5,7 @@ import sys
 import time
 
 
-from arcsv.bamparser_streaming import parse_bam, model_dir, BamGroup
+from arcsv.bamparser_streaming import parse_bam, BamGroup
 from arcsv.breakpoint_merge import merge_breakpoints
 from arcsv.conditional_mappable_model import (model_from_mapstats, load_aggregate_model,
                                               load_model)
@@ -195,9 +195,10 @@ def call_sv(opts, inputs, reference_files, do_bp, do_junction_align):
     mappable_models = []
     class_probs = []
     rlen_stats = []
-    if opts['use_mate_tags']:
+    if opts['use_mate_tags']:   # NOT USED until implement INS calling
         # load mappability model from disk for each input bam file
         # MULTILIB TODO
+        model_dir = '.'
         for inp in inputs:
             tmp, tmp_lib_stats = parse_library_stats(inp[1])
             if opts['use_mate_tags']:
