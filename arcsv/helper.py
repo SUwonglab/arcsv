@@ -1,21 +1,19 @@
-import matplotlib.pyplot as plt
 import numpy as np
-import random as rnd
 import re
 import pysam
 from math import sqrt, floor, log, erf
-from matplotlib.backends.backend_pdf import PdfPages
-from sklearn.neighbors.kde import KernelDensity
-# from scipy.stats import gaussian_kde #
 
 from arcsv.constants import *
 
-## preliminary checks on reads
+
+# preliminary checks on reads
 def not_primary(aln):
     return aln.is_supplementary or aln.is_secondary
 
+
 def fully_aligned(aln):
     return aln.query_length == aln.query_alignment_length
+
 
 def valid_hanging_pair(pair, max_dist):
     a1, a2 = pair
@@ -28,6 +26,7 @@ def valid_hanging_pair(pair, max_dist):
     else:
         return None
 
+
 def valid_hanging_anchor(aln, max_dist):
     if aln.rname != aln.mrnm:
         return 'dist_other_chrom'
@@ -37,6 +36,7 @@ def valid_hanging_anchor(aln, max_dist):
         return 'unmapped'
     else:
         return None
+
 
 def is_read_through(pair, read_through_slop):
     if pair[0].is_reverse == pair[1].is_reverse:
@@ -49,12 +49,13 @@ def is_read_through(pair, read_through_slop):
     elif pair[1].is_reverse:
         plus, minus = pair[0], pair[1]
     else:
-        plus,minus = pair[1], pair[0]
+        plus, minus = pair[1], pair[0]
     start_close = abs(pair[0].reference_start - pair[1].reference_start) <= read_through_slop
     end_close = abs(pair[0].reference_end - pair[1].reference_end) <= read_through_slop
     plus_clipped = (len(plus.seq) - plus.query_alignment_end) > 0
     minus_clipped = minus.query_alignment_start > 0
     return start_close and end_close and plus_clipped and minus_clipped
+
 
 def get_ucsc_name(chrom):
     if chrom[0:3] == 'chr':
@@ -62,16 +63,19 @@ def get_ucsc_name(chrom):
     else:
         return 'chr' + chrom
 
+
 def get_chrom_size(chrom_name, refname):
     ref = pysam.FastaFile(refname)
-    i = min(i for i in range(ref.nreferences) if \
+    i = min(i for i in range(ref.nreferences) if
             ref.references[i] == chrom_name)
     return ref.lengths[i]
 
+
 def get_chrom_size_from_bam(chrom_name, bam):
-    i = min(i for i in range(bam.nreferences) if \
+    i = min(i for i in range(bam.nreferences) if
             bam.references[i] == chrom_name)
     return bam.lengths[i]
+
 
 class SoftClip:
     qname = ''
@@ -99,15 +103,18 @@ class SoftClip:
                                                                self.med_mapped_qual,
                                                                self.is_double_clip)
 
+
 # sc_array - list of SoftClip objects
 def print_softclips(sc_list, filename):
     with open(filename, 'w') as file:
-        file.write('qname\trg\tloc\tstrand\tmapq\tnclip\tisright\tmedq\tminq\tambig\tmedmappedq\tdouble\n')
+        file.write('qname\trg\tloc\tstrand\tmapq\tnclip\tisright\tmedq\t'
+                   'minq\tambig\tmedmappedq\tdouble\n')
         for sc in sc_list:
             file.write(str(sc) + '\n')
 
+
 class Junction:
-    def __init__(self, seq, qual, orientation, bploc, nclip, nunique, ndup, mapq, nsupp = 0):
+    def __init__(self, seq, qual, orientation, bploc, nclip, nunique, ndup, mapq, nsupp=0):
         self.seq = seq
         self.qual = qual
         self.orientation = orientation
@@ -130,9 +137,10 @@ class Junction:
         else:
             return self.bploc + (len(self.seq) - self.nclip)
 
+
 class GenomeInterval:
-    def __init__(self, chrom, start, end, is_de_novo = False, is_translocation = False,
-                 is_gap = False):
+    def __init__(self, chrom, start, end, is_de_novo=False, is_translocation=False,
+                 is_gap=False):
         self.chrom = chrom
         self.start = start
         self.end = end
@@ -142,7 +150,7 @@ class GenomeInterval:
 
     def __len__(self):
         return self.end - self.start
-    
+
     # interval - just a tuple containing coordinates (chrom assumed same)
     def intersects(self, interval):
         return not (self.end <= interval[0] or interval[1] <= self.start)
@@ -153,6 +161,7 @@ class GenomeInterval:
     def __repr__(self):
         return str((self.start, self.end))
 
+
 def parse_library_stats(filename):
     lib_patterns = []
     lib_stats = []
@@ -162,13 +171,18 @@ def parse_library_stats(filename):
             if line[0] == '#' or line == '\n':
                 continue
             print(line)
-            group,name,pattern,is_rf,do_splits,inner_insert,insert_max,do_jalign,readlen = line.strip().split('\t')
+            toks = line.strip().split('\t')
+            group, name, pattern, is_rf, do_splits, \
+                inner_insert, insert_max, do_jalign, readlen = toks
             lib_patterns.append(re.compile(pattern))
-            lib_stats.append({'group':group, 'name':name,
-                              'is_rf':is_rf == 'yes', 'do_splits':do_splits == 'yes',
-                              'inner_insert':inner_insert == 'yes', 'insert_max':int(insert_max),
-                              'do_junction_align':do_jalign == 'yes','readlen':int(readlen)})
+            lib_stats.append({'group': group, 'name': name, 'is_rf': is_rf == 'yes',
+                              'do_splits': do_splits == 'yes',
+                              'inner_insert': inner_insert == 'yes',
+                              'insert_max': int(insert_max),
+                              'do_junction_align': do_jalign == 'yes',
+                              'readlen': int(readlen)})
     return lib_patterns, lib_stats
+
 
 def combine_lib_dict(lib_dict_all):
     lib_dict_combined = {}
@@ -180,20 +194,22 @@ def combine_lib_dict(lib_dict_all):
         cur_offset = max(lib_dict_combined.values()) + 1
     return lib_dict_combined
 
+
 # Merges a generic list of objects according to their locations (which may be interval-valued).
 # Equivalent to making a graph with edges between objects that are "close," then merging the
 # maximal connected components.
 # objects: dictionary with locations as keys and lists of objects as values
-# mergefun: takes a list of locations and list of objects as input and returns a tuple of merged locations and merged objects. e.g. lambda locs, objs : ((min(locs), max(locs)), objs)
+# mergefun: takes a list of locations and list of objects as input and returns a tuple of
+# merged locations and merged objects. e.g. lambda locs, objs : ((min(locs), max(locs)), objs)
 # type:
-# max_distance: objects closer than this distance will be merged (for us, in bp) 
-def merge_nearby(objects, mergefun, type = 'integer', max_distance = 5):
+# max_distance: objects closer than this distance will be merged (for us, in bp)
+def merge_nearby(objects, mergefun, type='integer', max_distance=5):
     if len(objects) == 0:
         return {}
     if type == 'integer':
-        dist = lambda x, y : abs(x - y)
+        dist = lambda x, y: abs(x - y)
     elif type == 'interval':    # closed intervals
-        dist = lambda x, y : max(x[0] - y[1], y[0] - x[1], 0)
+        dist = lambda x, y: max(x[0] - y[1], y[0] - x[1], 0)
 
     locations = list(objects.keys())
     locations.sort()
@@ -216,6 +232,7 @@ def merge_nearby(objects, mergefun, type = 'integer', max_distance = 5):
     merged.update(mrg_out)
     return merged
 
+
 # if rg matches an existing read group in lib_dict, return the index
 # otherwise check against lib_patterns and add this read group to lib_dict
 def get_lib_idx(rg, lib_dict, lib_patterns):
@@ -233,20 +250,22 @@ def get_lib_idx(rg, lib_dict, lib_patterns):
             raise Warning('RG ' + rg + ' not found')
     return lib_idx
 
+
 def reverse_complement(seq):
-    COMP_DICT = {'A':'T', 'T':'A', 'C':'G', 'G':'C', 'N':'N',
-                 'R':'Y', 'Y':'R', 'W':'W', 'S':'S', 'M':'K',
-                 'K':'M', 'B':'V', 'V':'B', 'D':'H', 'H':'D',
-                 'a':'t', 't':'a', 'c':'g', 'g':'c', 'n':'n',
-                 'r':'y', 'y':'r', 'w':'w', 's':'s', 'm':'k',
-                 'k':'m', 'b':'v', 'v':'b', 'd':'h', 'h':'d'}
+    COMP_DICT = {'A': 'T', 'T': 'A', 'C': 'G', 'G': 'C', 'N': 'N',
+                 'R': 'Y', 'Y': 'R', 'W': 'W', 'S': 'S', 'M': 'K',
+                 'K': 'M', 'B': 'V', 'V': 'B', 'D': 'H', 'H': 'D',
+                 'a': 't', 't': 'a', 'c': 'g', 'g': 'c', 'n': 'n',
+                 'r': 'y', 'y': 'r', 'w': 'w', 's': 's', 'm': 'k',
+                 'k': 'm', 'b': 'v', 'v': 'b', 'd': 'h', 'h': 'd'}
     return ''.join(COMP_DICT[seq[i]] for i in range(len(seq) - 1, -1, -1))
-    
+
+
 def robust_sd(x):
     return (np.percentile(x, 75) - np.percentile(x, 25))/1.35
 
-def fetch_seq(ref, ctg, start, end, truncate = False, pad_N = False, is_reverse = False):
-    orig_start, orig_end = start, end
+
+def fetch_seq(ref, ctg, start, end, truncate=False, pad_N=False, is_reverse=False):
     if truncate:
         start, end = max(0, start), max(0, end)
         length = [pair[1] for pair in zip(ref.references, ref.lengths) if pair[0] == ctg][0]
@@ -270,6 +289,7 @@ def fetch_seq(ref, ctg, start, end, truncate = False, pad_N = False, is_reverse 
         seq = reverse_complement(seq)
     return seq
 
+
 def time_to_str(seconds):
     elapsed_hrs = floor(seconds / 3600)
     elapsed_mins = floor((seconds % 3600) / 60)
@@ -278,17 +298,20 @@ def time_to_str(seconds):
                                                       elapsed_mins,
                                                       elapsed_sec)
 
-def normcdf(x, mu = 0, sigma = 1):
+
+def normcdf(x, mu=0, sigma=1):
     z = (x - mu)/sigma
     return .5 + .5*erf(z/sqrt(2))
 
-def normpdf(x, mu = 0, sigma = 1):
+
+def normpdf(x, mu=0, sigma=1):
     return -1/(2*sigma**2)*(x - mu)**2 - log(sigma) - 1/2 * log(2*np.pi)
 
-### blocks/paths
+
+# blocks/paths
 # i < j, (i - j) % 2 == 1
 # distance from node i to j
-def block_distance(path, blocks, i, j, use_gaps = True):
+def block_distance(path, blocks, i, j, use_gaps=True):
     if floor(i / 2) == floor(j / 2):
         return 0
     dist = 0
@@ -297,7 +320,7 @@ def block_distance(path, blocks, i, j, use_gaps = True):
         dist += len(blocks[floor(path[i] / 2)])
     if path[j] % 2 != j % 2:    # block is in negative orientation
         dist += len(blocks[floor(path[j] / 2)])
-    
+
     start = i + 2 if i % 2 == 0 else i + 1
     end = j - 1 if j % 2 == 1 else j
     for k in range(start, end, 2):
@@ -306,10 +329,11 @@ def block_distance(path, blocks, i, j, use_gaps = True):
     if use_gaps:
         gap_dist = sum(block_gap(blocks, path[k]) for k in range(start - 1, end + 1))
         dist += int(floor(gap_dist / 2))
-        
+
     if i % 2 == 0:
         dist = -dist
     return dist
+
 
 # return gap between block with node i and the adjacent block
 def block_gap(blocks, i):
@@ -331,25 +355,27 @@ def block_gap(blocks, i):
 # NOTE: adj1 must correspond to v1, and adj2 must correspond to v2 (we require v1 < v2)
 def get_block_distances_between_nodes(path, blocks, v1, v2, adj1, adj2):
     distances = []
-    adj1_satisfied = {i : [] for i in adj1}
-    adj2_satisfied = {i : [] for i in adj2}
+    adj1_satisfied = {i: [] for i in adj1}
+    adj2_satisfied = {i: [] for i in adj2}
     # adj_satisfied = tuple([[] for i in adj])
     which_v1 = [i for i in range(len(path)) if path[i] == v1]
     which_v2 = [i for i in range(len(path)) if path[i] == v2]
     for i in which_v1:
-        blocknum_i = floor(i / 2)
+        # blocknum_i = floor(i / 2)
         for j in which_v2:
-            blocknum_j = floor(j / 2)
+            # blocknum_j = floor(j / 2)
             if (i - j) % 2 == 1:
                 distance = block_distance(path, blocks, min(i, j), max(i, j))
                 distances.append(distance)
-                for adj_set, adj_dict, start in zip((adj1, adj2), (adj1_satisfied, adj2_satisfied), (i,j)):
+                for adj_set, adj_dict, start in \
+                        zip((adj1, adj2), (adj1_satisfied, adj2_satisfied), (i, j)):
                     for a in adj_set:
                         if a is None or is_adj_satisfied(a, path, start):
                             adj_dict[a].append(True)
                         else:
                             adj_dict[a].append(False)
     return distances, adj1_satisfied, adj2_satisfied
+
 
 # check if a is a sublist of path beginning at i (in either direction)
 def is_adj_satisfied(a, path, i):
@@ -362,6 +388,7 @@ def is_adj_satisfied(a, path, i):
     # not found
     return False
 
+
 def path_to_block_path(path):
     block_path = [path[0]]
     for i in range(2, len(path), 2):
@@ -371,6 +398,7 @@ def path_to_block_path(path):
         block_path.append(last)
     return tuple(block_path)
 
+
 def path_to_rearrangement(path):
     rearrangement = []
     for i in range(1, len(path), 2):
@@ -379,34 +407,46 @@ def path_to_rearrangement(path):
             rearrangement.append("'")
     return rearrangement
 
-def rearrangement_to_letters(rearrangement, start = 0, blocks = None):
-    convert = lambda x : chr(65 + x - start) if x != "'" and (x-start) < 26 else chr(97 + x - start - 26) if x != "'" else "'"
+
+def rearrangement_to_letters(rearrangement, start=0, blocks=None):
+    convert = lambda x: chr(65 + x - start) if x != "'" and (x-start) < 26 \
+                        else chr(97 + x - start - 26) if x != "'" \
+                        else "'"
     if blocks is None:
-        s =  ''.join([convert(x) for x in rearrangement])
+        s = ''.join([convert(x) for x in rearrangement])
     else:
-        convert_with_insertion = lambda x, blocks : convert(x) if x=="'" else '_' if blocks[x].is_de_novo else '=' if blocks[x].is_translocation else convert(x)
-        s =  ''.join([convert_with_insertion(x, blocks) for x in rearrangement])
+        convert_with_insertion = lambda x, blocks: convert(x) if x == "'" \
+                                                   else '_' if blocks[x].is_de_novo \
+                                                   else '=' if blocks[x].is_translocation \
+                                                   else convert(x)
+        s = ''.join([convert_with_insertion(x, blocks) for x in rearrangement])
     return s
+
 
 def is_path_ref(path, blocks):
     return (path == tuple(range(path[0], path[0] + len(path)))) and \
         not any(blocks[floor(path[i]/2)].is_insertion() for i in range(0, len(path), 2))
 
+
 def flip_parity(i):
     return 2 * floor(i / 2) + (1 - i % 2)
 
+
 def test_merge_nearby():
-    a = {0:[0], 1:[1,1], 6:[6], -1:[-1], 20:[20]}
+    a = {0: [0],  1: [1, 1], 6: [6], -1: [-1], 20: [20]}
+
     def mergefun(locs, objs):
         return ((min(locs), max(locs)), objs)
     print(merge_nearby(a, mergefun))
 
-    a = {(0,0):[0], (5,6):[5,6], (-10, -9):[-10,-9]}
+    a = {(0, 0): [0], (5, 6): [5, 6], (-10, -9): [-10, -9]}
+
     def mergefun(locs, objs):
         m = min([loc[0] for loc in locs])
         M = max([loc[1] for loc in locs])
         return ((m, M), objs)
-    print(merge_nearby(a, mergefun, type = 'interval'))
+    print(merge_nearby(a, mergefun, type='interval'))
+
 
 #  test cases: no insertion blocks, some insertion blocks, edge cases within those
 def test_block_gap():
@@ -419,65 +459,66 @@ def test_block_gap():
         print('{0}: {1}'.format(i, block_gap(blocks, i)))
         assert(block_gap(blocks, i) == truth[i])
 
+
 def test_block_distance():
     blocks = [GenomeInterval(1, 0, 100),
               GenomeInterval(1, 100, 200),
               GenomeInterval(1, 250, 300),
               GenomeInterval(1, 400, 500)]
-    path = [0,1,2,3,4,5,6,7]        # ref
-    ij = [(1,2), (1,4), (1,6), (6,7)]
+    path = [0, 1, 2, 3, 4, 5, 6, 7]        # ref
+    ij = [(1, 2), (1, 4), (1, 6), (6, 7)]
     truth = [100, 250, 400, 0]
     for k in range(len(ij)):
-        i,j = ij[k]
+        i, j = ij[k]
         print(ij[k])
         print(block_distance(path, blocks, i, j))
         assert(block_distance(path, blocks, i, j) == truth[k])
 
-    ij = [(0,1), (0,3), (0,5), (0,7)]
+    ij = [(0, 1), (0, 3), (0, 5), (0, 7)]
     truth = [0, -100, -250, -400]
     for k in range(len(ij)):
-        i,j = ij[k]
+        i, j = ij[k]
         print(ij[k])
         print(block_distance(path, blocks, i, j))
         assert(block_distance(path, blocks, i, j) == truth[k])
 
     # deletion
-    path = [0,1,2,3,6,7]
-    ij = [(0,1), (1,2), (1,4), (4,5)]
-    truth = [0,100,275,0]
+    path = [0, 1, 2, 3, 6, 7]
+    ij = [(0, 1), (1, 2), (1, 4), (4, 5)]
+    truth = [0, 100, 275, 0]
     for k in range(len(ij)):
-        i,j = ij[k]
+        i, j = ij[k]
         print(ij[k])
         print(block_distance(path, blocks, i, j))
         assert(block_distance(path, blocks, i, j) == truth[k])
 
     # inversion
-    path = [0,1,2,3,5,4,6,7]
-    ij = [(0,1), (1,2), (1,4), (1,6), (6,7)]
+    path = [0, 1, 2, 3, 5, 4, 6, 7]
+    ij = [(0, 1), (1, 2), (1, 4), (1, 6), (6, 7)]
     truth = [0, 100, 325, 400, 0]
     for k in range(len(ij)):
-        i,j = ij[k]
+        i, j = ij[k]
         print(ij[k])
         print(block_distance(path, blocks, i, j))
         assert(block_distance(path, blocks, i, j) == truth[k])
 
     # insertion
-    path = [0,1,2,3,8,9,4,5,6,7]
-    blocks.append(GenomeInterval(1, 0, 1000, is_de_novo = True))
-    ij = [(0,1), (1,2), (1,4), (1,6), (1,8), (8,9)]
+    path = [0, 1, 2, 3, 8, 9, 4, 5, 6, 7]
+    blocks.append(GenomeInterval(1, 0, 1000, is_de_novo=True))
+    ij = [(0, 1), (1, 2), (1, 4), (1, 6), (1, 8), (8, 9)]
     truth = [0, 100, 225, 1250, 1400, 0]
     for k in range(len(ij)):
-        i,j = ij[k]
+        i, j = ij[k]
         print(ij[k])
         print(block_distance(path, blocks, i, j))
         assert(block_distance(path, blocks, i, j) == truth[k])
 
     # duplication
-    path = [0,1,2,3,2,3,4,5,4,5,6,7]
-    ij = [(0,1), (1,2), (1,4), (1,6), (1,8), (1,10), (10,11)]
+    path = [0, 1, 2, 3, 2, 3, 4, 5, 4, 5, 6, 7]
+    ij = [(0, 1), (1, 2), (1, 4), (1, 6), (1, 8), (1, 10), (10, 11)]
     truth = [0, 100, 225, 375, 500, 650, 0]
     for k in range(len(ij)):
-        i,j = ij[k]
+        i, j = ij[k]
         print(ij[k])
         print(block_distance(path, blocks, i, j))
         assert(block_distance(path, blocks, i, j) == truth[k])

@@ -161,24 +161,6 @@ def call_sv(opts, inputs, reference_files, do_bp, do_junction_align):
 
     lib_dict_combined = combine_lib_dict(lib_dict_all)
 
-    # junction alignment DEPRECATED
-    # if do_junction_align:
-    #     index_junction_reference(opts['outdir'], 'mpjunction')
-    #     rawdir = '/home/jgarthur/sv/mate-pair-data/short-read-imperfect/test/'
-    #     align_to_junctions(opts['outdir'], 'mpjunction', rawdir, threads = 8,
-    #                        mem_per_thread = 3000, partition='whwong')
-    #     input("Press Enter when alignment finishes...")
-    #     print('processing junction alignments')
-    #     lib_offset = 0
-    #     for i in range(len(junctions)):
-    #         if lib_stats_all[i]['do_junction_align']:
-    #             libname = lib_stats_all[i]['name']
-    #             print('processing alignments for library {name}'.format(name = libname))
-    #             process_junction_alignments(junctions[i], opts['outdir'], name = libname,
-    #                                         min_overlap = opts['min_junction_overlap'],
-    #                                         lib_offset = lib_offset)
-    #             lib_offset += 1
-
     # cluster discordant pairs
     if opts['do_pecluster']:
         bp_disc = apply_discordant_clustering(opts, disc, insert_mu, insert_sigma,

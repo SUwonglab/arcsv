@@ -361,12 +361,6 @@ def parse_bam(opts, reference_files, bamfiles, meta, do_bp, do_junction_align):
 
     # find breakpoints via soft-clipped reads
     if do_bp:
-        # if opts['use_indels']:
-        # indel_file = '/home/jgarthur/sv/analysis/indels/'
-        #              'jun_jul.mdup.merge.mdup.realn.recal.indels.bed'
-        #     indel_bp = parse_indels(opts, indel_file, ref)
-        # else:
-        #     indel_bp = None
         indel_bp = None
         softclips_merged = []
         junction_ref_out = []
@@ -724,11 +718,11 @@ def plot_insert_dist(insert_len_dists, outdir, lib_stats):
     pp.close()
 
 
-# def test_bamgroup():
-#     bamfiles = ['/home/jgarthur/sv/analysis/alignments/bwa_mem/'
-#                 'short-reads/jun_jul.mdup.merge.mdup.1rg.qnamesorted.matedata.sorted.bam',
-#                 '/home/jgarthur/sv/simdata/varsim-40x-HiSeq2k/alignments/bwa_mem/'
-#                 'merged.matedata.bam']
-#     bg = BamGroup(bamfiles)
-#     print(len([aln for aln in bg.fetch_unsorted('1', 0, 1000000)]))
-#     print(bg.references)
+def test_bamgroup():
+    bamfiles = ['/home/jgarthur/sv/analysis/alignments/bwa_mem/'
+                'short-reads/jun_jul.mdup.merge.mdup.1rg.qnamesorted.matedata.sorted.bam',
+                '/home/jgarthur/sv/simdata/varsim-40x-HiSeq2k/alignments/bwa_mem/'
+                'merged.matedata.bam']
+    bg = BamGroup(bamfiles)
+    print(len([aln for aln in bg.fetch_unsorted('1', 0, 1000000)]))
+    print(bg.references)
