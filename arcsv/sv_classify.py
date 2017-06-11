@@ -6,10 +6,10 @@ from arcsv.helper import GenomeInterval
 from arcsv.sv_validate import simplify_blocks
 from arcsv.vcf import sv_to_vcf
 
-BND_SPLIT_TYPES = {('-', '+') : 'Del',
-                   ('+', '-') : 'Dup',
-                   ('-', '-') : 'InvL',
-                   ('+', '+') : 'InvR'}
+BND_SPLIT_TYPES = {('-', '+'): 'Del',
+                   ('+', '-'): 'Dup',
+                   ('-', '-'): 'InvL',
+                   ('+', '+'): 'InvR'}
 
 class SV:
     type = None
@@ -241,7 +241,7 @@ def classify_svs(path, blocks, num_genome_blocks, left_bp, right_bp, verbosity):
                 print(right_bp[block_before])
                 print(left_bp[block_after])
                 print('')
-            
+
             i += 1
             continue
 
@@ -290,7 +290,7 @@ def classify_svs(path, blocks, num_genome_blocks, left_bp, right_bp, verbosity):
             block_before, inverted_before, count_before
             block_afterinv = block_sequence[j]
             count_afterinv = block_counts[block_afterinv]
-            if is_decreasing(block_sequence[bp + 1 : j]) and \
+            if is_decreasing(block_sequence[bp + 1: j]) and \
                     block_before + L + 1 == block_afterinv and \
                     block_before + 1 == block_sequence[j - 1] and \
                     block_afterinv - 1 == block_after and \
@@ -418,7 +418,7 @@ def classify_svs(path, blocks, num_genome_blocks, left_bp, right_bp, verbosity):
 
                     i += dup_count - 1
                     continue
-    
+
         events.append('complex')
         sv_type = 'BND'
         sv_chrom = blocks[block_before].chrom
@@ -485,19 +485,19 @@ def classify_svs(path, blocks, num_genome_blocks, left_bp, right_bp, verbosity):
     return events, svs
 
 def classify_complex(path, blocks):
-    complex_types = {(0,1,3,2,6,7) : 'inv.del',
-                     (0,1,5,4,8,9) : 'inv.2del',
-                     (0,1,4,5,2,3,6,7) : 'trans',
-                     (0,1,5,4,2,3,6,7) : 'trans.inv',
-                     (0,1,2,3,4,5,2,3,6,7) : 'ddup',
-                     (0,1,2,3,4,5,3,2,6,7) : 'invddup',
-                     (0,1,2,3,4,5,2,3,8,9) : 'ddup.del',
-                     (0,1,2,3,4,5,3,2,8,9) : 'invddup.del',
-                     (0,1,2,3,5,4,3,2,6,7) : 'invddup.inv',
-                     (0,1,2,3,5,4,3,2,8,9) : 'invddup.del.inv',
-                     (0,1,2,3,2,3,6,7) : 'dup.del',
-                     (0,1,2,3,3,2,4,5) : 'invdup',
-                     (0,1,2,3,2,3,4,5,4,5,6,7) : 'dup.dup'}
+    complex_types = {(0,1,3,2,6,7): 'inv.del',
+                     (0,1,5,4,8,9): 'inv.2del',
+                     (0,1,4,5,2,3,6,7): 'trans',
+                     (0,1,5,4,2,3,6,7): 'trans.inv',
+                     (0,1,2,3,4,5,2,3,6,7): 'ddup',
+                     (0,1,2,3,4,5,3,2,6,7): 'invddup',
+                     (0,1,2,3,4,5,2,3,8,9): 'ddup.del',
+                     (0,1,2,3,4,5,3,2,8,9): 'invddup.del',
+                     (0,1,2,3,5,4,3,2,6,7): 'invddup.inv',
+                     (0,1,2,3,5,4,3,2,8,9): 'invddup.del.inv',
+                     (0,1,2,3,2,3,6,7): 'dup.del',
+                     (0,1,2,3,3,2,4,5): 'invdup',
+                     (0,1,2,3,2,3,4,5,4,5,6,7): 'dup.dup'}
     sblocks, spath, _, _ = simplify_blocks(blocks, path, flank_size = 100)
     if any(b.is_insertion() for b in sblocks):
         return 'other'
@@ -557,7 +557,7 @@ def sv_classify_test():
     path = [0,1,0,1,2,3,4,5]
     print(path)
     print(classify_svs(path, blocks, num_genome_blocks))
-    
+
     path = [0,1,2,3,2,3,2,3,4,5]
     print(path)
     print(classify_svs(path, blocks, num_genome_blocks))
@@ -581,7 +581,7 @@ def path_classify_test():
     print('\n'.join([repr(s) for s in sv]))
     ref = pysam.FastaFile('/home/jgarthur/sv/reference/GRCh37.fa')
     print('\n'.join([sv_to_vcf(s, ref) for s in sv]))
-    
+
     # ABC/AC
     p1 = [0,1,2,3,4,5]
     p2 = [0,1,4,5]

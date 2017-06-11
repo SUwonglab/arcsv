@@ -11,7 +11,7 @@ def uniform_ci(x, confidence, slop = 5):
     return lower_ci, upper_ci
 
 def get_q(n, confidence):
-    d = {.95 : 0, .9 : 1, .85 : 2, .8 : 3}
+    d = {.95: 0, .9: 1, .85: 2, .8: 3}
     idx = min(n, 100) - 1       # only support up to size 100
     return pearson_quantiles[idx][d[confidence]]
 

@@ -100,7 +100,7 @@ def merge_softclips(softclips, reference, chrom, outdir = None, name = '', min_o
                 merged.append([consensus_seq, consensus_qual, ref_seq, orientation, consensus_bp, nclip, supporting_unique, supporting_duplicate, med_mapq, 0, []])
             # else:
             #     logfile.write('SKIP because of indel\n')
-                    
+
     print('total softclips before merging: {before}'.format(before = num_softclips))
     print('after merging: {after}'.format(after = len(merged)))
     # if outdir is not None:
@@ -240,7 +240,7 @@ def write_softclip_merge_stats(merged, filename):
                                                                               mapq = junction[MAPQ])
         file.write(line)
     file.close()
-    
+
 class SoftclippedAlignment:
     qname = ''
     rg = ''
@@ -253,7 +253,7 @@ class SoftclippedAlignment:
     nclip_right = 0             # and right end
     strand = '+'
     is_duplicate = 0
-        
+
     def __repr__(self):
         return '%s %s %s %s %s' % (self.qname, self.seq, self.qual, str([self.pos_left, self.pos_right]), str([self.nclip_left, self.nclip_right]))
 

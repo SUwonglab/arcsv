@@ -200,7 +200,7 @@ class GenomeInterval:
 # maximal connected components.
 # objects: dictionary with locations as keys and lists of objects as values
 # mergefun: takes a list of locations and list of objects as input and returns a tuple of
-# merged locations and merged objects. e.g. lambda locs, objs : ((min(locs), max(locs)), objs)
+# merged locations and merged objects. e.g. lambda locs, objs: ((min(locs), max(locs)), objs)
 # type:
 # max_distance: objects closer than this distance will be merged (for us, in bp)
 def merge_nearby(objects, mergefun, type='integer', max_distance=5):

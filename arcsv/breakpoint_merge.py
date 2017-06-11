@@ -82,7 +82,7 @@ def junction_mergefun(locs, junctions):
     nsupp = max([j[NSUPP] for j in junctions])
     mapq = np.median([j[MAPQ] for j in junctions])
     libs = sum([j[LIBS] for j in junctions], [])
-    
+
     merged_junction = [consensus_seq, consensus_qual, '', orientation, consensus_bp,
                        consensus_nclip, nuniq, ndup, mapq, nsupp, libs]
     return ((consensus_bp, merged_junction), )
@@ -107,7 +107,7 @@ def bp_mergefun(locs, bps):
     return ((combined.interval, combined), )
 
 def bp_mergefun_precedence(locs, bps, max_distance = 0):
-    dist = lambda x, y : max(x[0] - y[1], y[0] - x[1], 0)
+    dist = lambda x, y: max(x[0] - y[1], y[0] - x[1], 0)
     merged_above = []
     merged = {}
     prec_list = list(set(bp.precedence for bp in bps))
@@ -270,7 +270,7 @@ def merge_breakpoints(opts, junctions_out, splits, disc_bp):
     junction_maps = [j[0] for j in junctions_out] # SPEED tuples in these cases are faster
     junctions_merged = [None, None]
     all_bp = {}            # breakpoint-evidence mapping before merging junction-derived BP and split-derived BP
-    
+
     # merge junction sequences (filtering those with less than min_junction_support supporting alignments)
     for orientation in range(2):
         # SPEED this should be a true hash table where we hash a junction to its BPLOC
@@ -292,7 +292,7 @@ def merge_breakpoints(opts, junctions_out, splits, disc_bp):
             junction = item[1]
             if junction[NUNIQ] + junction[NSUPP] < opts['min_junction_support']: # note junction[NSUPP] == 0 if not doing jct. align
                 del junctions_merged[orientation][loc]
-                
+
     # find in(v/s)ersion microhomologies
     bploc_left = sorted(junctions_merged[LEFT].keys())
     bploc_right = sorted(junctions_merged[RIGHT].keys())
@@ -432,7 +432,7 @@ class Breakpoint:
             raise TypeError('addition of Breakpoint and {0} not supported'.format(type(other)))
 
     def __str__(self):
-        return '({0}, L={1}, R={2}, PE={3} : {4}, Spl={5} : {6}, {7})'.format(self.interval,
+        return '({0}, L={1}, R={2}, PE={3}: {4}, Spl={5}: {6}, {7})'.format(self.interval,
                                                                               self.supp_clip_left,
                                                                               self.supp_clip_right,
                                                                               self.supp_pe,
@@ -456,7 +456,7 @@ class Breakpoint:
         else:
             raise Warning('Breakpoint object {0} has no support whatsoever!'.format(str(self)))
             return 0
-            
+
 
 # check whether a left junction and right junction overlap in such a way that suggests
 # an in(v/s)ersion microhomology

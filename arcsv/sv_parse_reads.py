@@ -37,14 +37,14 @@ class GenomeGraph:
         if v1 > v2:
             adj1, adj2 = adj2, adj1
         offset = offset1 + offset2
-        
+
         edge = self.get_edge(v1, v2)
         edge['lib'].append(lib_idx)
         edge['offset'].append(offset)
         edge['adj1'].append(adj1)
         edge['adj2'].append(adj2)
         edge['pmapped'].append(pmapped)
-        
+
         # add adjacency support
         badj1 = block_seq_to_path(r1)
         badj2 = block_seq_to_path(r2)
@@ -215,14 +215,14 @@ def is_insertion_edge(e, blocks):
         return False
 
 def get_edge_color(e, blocks, min_edge_support):
-    edge_color_dict = {(True, False, False) : 'black',
-                       (True, True, False) : 'green',
-                       (False, True, False) : 'red',
-                       (False, False, False) : 'white',
-                       (True, False, True) : 'blue',
-                       (True, True, True) : 'blue',
-                       (False, False, True) : 'blue',
-                       (False, True, True) : 'blue'}
+    edge_color_dict = {(True, False, False): 'black',
+                       (True, True, False): 'green',
+                       (False, True, False): 'red',
+                       (False, False, False): 'white',
+                       (True, False, True): 'blue',
+                       (True, True, True): 'blue',
+                       (False, False, True): 'blue',
+                       (False, True, True): 'blue'}
     tup = (is_block_edge(e), e['support'] >= min_edge_support, is_insertion_edge(e, blocks))
     return edge_color_dict[tup]
 
@@ -243,7 +243,7 @@ def parse_reads_with_blocks(opts, reference_files, bamgroups,
     start, end = opts['region_start'], opts['region_end']
     gaps = load_genome_gaps(reference_files['gap'], chrom_name)
     blocks, gap_indices, left_breakpoints, right_breakpoints = create_blocks(breakpoints, gaps, chrom_name, start, end, opts['verbosity'])
-    
+
     #     if diff.lower_value == diff.upper_value:
     #         gap_locations.append(len(blocks))
     #     else:
@@ -251,7 +251,7 @@ def parse_reads_with_blocks(opts, reference_files, bamgroups,
     #             gap_locations.append(len(blocks))
     #         if diff.upper_value != blockinter.
     #         blocks.append(GenomeInterval(chrom_name, diff.lower_value, diff.upper_value))
-            
+
     #     blocks.append(GenomeInterval(chrom_name, last_end, bp[0]))
     #     last_end = bp[1]
     # blocks.append(GenomeInterval(chrom_name, last_end, end))
@@ -337,13 +337,13 @@ def create_blocks(breakpoints, gaps, chrom_name, start, end, verbosity):
     right_breakpoints = []
 
     breakpoints[(end, end)] = Breakpoint((end, end))
-    
+
     bploc = list(breakpoints.keys())
     bploc.sort()
-    
+
     last_end = start
     last_breakpoint = Breakpoint((start, start))
-    
+
     for bpl in bploc:
         breakpoint = breakpoints[bpl]
 
@@ -749,7 +749,7 @@ def load_genome_gaps(gapsfile, chrom_name):
             a, b = int(toks[1]), int(toks[2])
             gaps.add(pyinter.closedopen(a, b))
     return gaps
-            
+
 def test_intersects():
     i = GenomeInterval('20', 10, 20)
     assert(not i.intersects((20, 30)))
@@ -800,7 +800,7 @@ def test_get_overlapping_blocks():
     assert(ov == [1])
     assert(offset == -10)
     aln_gaps = [10,10]
-    
+
 
     aln_blocks = [(10, 20), (110, 120), (200, 250)]
     aln_gaps = [0,0,0,0]

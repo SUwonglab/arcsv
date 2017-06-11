@@ -23,7 +23,7 @@ def svelter_convert(svelterfile, outdir, reffile, filter_gaps = False, refgapfil
 
     log = open(os.path.join(outdir, 'convert_{0}.log'.format(svelterfile)), 'w')
     data = []
-    
+
     # it seems some sv can be repeated in svelter output with different scores
     # 
     seen_svstring = set()
@@ -36,10 +36,10 @@ def svelter_convert(svelterfile, outdir, reffile, filter_gaps = False, refgapfil
 
     if filter_gaps:
         chroms = set(toks[0] for toks in toks_list)
-        chrom_gaps = {chrom : load_genome_gaps(refgapfile, chrom) for chrom in chroms}
+        chrom_gaps = {chrom: load_genome_gaps(refgapfile, chrom) for chrom in chroms}
     else:
         chrom_gaps = None
-    
+
     for toks in toks_list:
         # check if header
         if toks[0] == 'chr' and toks[1] == 'start':
@@ -73,8 +73,8 @@ def svelter_convert(svelterfile, outdir, reffile, filter_gaps = False, refgapfil
             if len(sv_gap_intersection) > 0:
                 skipped_refgap += 1
                 continue
-        
-        breakpoints = {(x,x) : Breakpoint((x,x)) for x in bp}
+
+        breakpoints = {(x,x): Breakpoint((x,x)) for x in bp}
         # il = bisect_left(all_bp, bp[0])
         # if il > 0:
         #     slop_left = min(all_bp[il] - all_bp[il-1], flank_size)
@@ -121,10 +121,10 @@ def generic_vcf_convert(vcffile, outdir, reffile, filter_gaps = False, refgapfil
 
     if filter_gaps:
         chroms = set(toks[0] for toks in toks_list)
-        chrom_gaps = {chrom : load_genome_gaps(refgapfile, chrom) for chrom in chroms}
+        chrom_gaps = {chrom: load_genome_gaps(refgapfile, chrom) for chrom in chroms}
     else:
         chrom_gaps = None
-    
+
     for toks in toks_list:
         # NOTE not parsing qual; do filtering beforehand for DELLY
         chrom, pos, id, ref, alt, qual, filterstring, info, format, sample1 = toks
@@ -132,7 +132,7 @@ def generic_vcf_convert(vcffile, outdir, reffile, filter_gaps = False, refgapfil
         # VCF is 1-indexed, but specifies pos/end positions
         # which are to the left of breakpoints, so no adjustment
         pos = int(pos)          
-        
+
         tags = info.split(';')
         if 'PRECISE' in tags:
             idx = tags.index('PRECISE')
@@ -143,7 +143,7 @@ def generic_vcf_convert(vcffile, outdir, reffile, filter_gaps = False, refgapfil
         elif caller == 'lumpy': # only includes tags for imprecise events
             filterstring += ':PRECISE'
         tags = [t for t in tags if '=' in t]
-        tagd = {t.split('=')[0] : t.split('=')[1] for t in tags}
+        tagd = {t.split('=')[0]: t.split('=')[1] for t in tags}
         end = int(tagd.get('END', -99999))
         svtype = tagd['SVTYPE']
         if caller == 'pindel' and svtype == 'INS':
@@ -194,7 +194,7 @@ def generic_vcf_convert(vcffile, outdir, reffile, filter_gaps = False, refgapfil
             split_support = int(tags2['AD'].split(',')[1])
 
         gt = tags2['GT']
-        
+
         if gt == './.' or gt == '.|.':
             is_het = False
             filterstring += ':NOGT'
@@ -265,7 +265,7 @@ def generic_vcf_convert(vcffile, outdir, reffile, filter_gaps = False, refgapfil
                 bp = [(pos, pos)]
         pe = [(x, supptype) for x in range(pe_support)]
         splits = [(x, supptype) for x in range(split_support)]
-        breakpoints = {x : Breakpoint(x, pe = pe, splits = splits) for x in bp}
+        breakpoints = {x: Breakpoint(x, pe = pe, splits = splits) for x in bp}
         slop_left, slop_right = flank_size, flank_size
         start = bp[0][0] - slop_left
         end = bp[-1][1] + slop_right
@@ -293,10 +293,10 @@ def generic_vcf_convert(vcffile, outdir, reffile, filter_gaps = False, refgapfil
         log.write('skipped_svtype\t{0}\t{1}\n'.format(svtype, count))
     log.write('skipped_refgap\t{0}\n'.format(skipped_refgap))
     do_sv_processing(data, outdir, reffile, log, verbosity, write_extra)
-    
+
     vcf.close()
     log.close()
-        
+
 def svelter_string_to_path(string, nblocks):
     path = [0,1]
     i = 0

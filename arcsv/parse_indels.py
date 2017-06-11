@@ -66,6 +66,6 @@ def max_common_prefix(s1, s2):
         else:
             break
     return m
-    
+
 def max_common_suffix(s1, s2):
     return max_common_prefix(s1[::-1], s2[::-2])

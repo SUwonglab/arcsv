@@ -5,7 +5,7 @@ from math import ceil, floor
 # uses dictionary instead of array
 class SparseSignalTrack(object):
     valid_types = ['int', 'array']
-    
+
     def __init__(self, chrom_name, signal_type='int'):
         self.chrom_name = chrom_name
         if signal_type not in self.valid_types:
@@ -21,7 +21,7 @@ class SparseSignalTrack(object):
         all_keys = set(self.signal.keys()).union(set(other.signal.keys()))
         new_signal = {}
         d = 0 if new_track.signal_type == 'int' else []
-        new_signal = {k : self.signal.get(k, d) + other.signal.get(k, d) for k in all_keys}
+        new_signal = {k: self.signal.get(k, d) + other.signal.get(k, d) for k in all_keys}
         new_track.signal = new_signal
         return new_track
 
@@ -97,7 +97,7 @@ class SparseSignalTrack(object):
                      mu = None, sigma = None):
         self.write_bed(fileprefix, type, every, window, mu, sigma)
         os.system('bedGraphToBigWig {file}.bed /scratch/PI/whwong/svproject/reference/hg19.chrom.sizes {file}.bigwig'.format(file=fileprefix))
-        
+
 # not used
 class SignalTrack(object):
     def __init__(self, chrom_name, start, end):
@@ -123,7 +123,7 @@ class SignalTrack(object):
             self.signal[idx] = [value]
         else:
             self.signal[idx].append(value)
-            
+
     # convert from real location to array index
     def get_index(self, location):
         idx = location - self.start
@@ -150,10 +150,10 @@ class SignalTrack(object):
             if self.signal[i] is not None:
                 sig.extend(self.signal[i])
         return sig
-    
-    # type 0 : raw values
-    # type 1 : mean
-    # type 2 : z scores
+
+    # type 0:raw values
+    # type 1:mean
+    # type 2:z scores
     # currently every = 1 is required
     def write_file(self, filename, type = 'count',
                    every = 1, window = 1, mu = None, sigma = None):

@@ -46,7 +46,7 @@ def build_junction_reference(softclips_merged, outdir, reference_name, junction_
         ref.write('N' * 150)
     ref.write('\n')
     ref.close()
-    
+
     return junction_map, sorted(pseudoref_bploc)
 
 def index_junction_reference(outdir, reference_name):
@@ -81,14 +81,14 @@ EOF
                      outname = out_name)
     print(cmd)
     os.system(cmd)
-    
+
 # outdir - contains reference_name.fa and bwa index
 # rawdir - contains .fq/.fastq files with raw reads to align to reference_name.fa
 def align_to_junctions(outdir, reference_name, rawdir, partition = 'whwong', threads = 1, mem_per_thread = 4000, id = '', maxfiles = None):
     if id == '':                # LATER V MINOR try to avoid overlap here
         id = str(np.random.randint(9999999))
     bwa_opt = '-a -T 15'
-    
+
     listing = [fn for fn in os.listdir(rawdir) if is_fastq(fn)]
     if listing == []:
         raise Warning('rawdir contains no fastq files')
@@ -97,11 +97,11 @@ def align_to_junctions(outdir, reference_name, rawdir, partition = 'whwong', thr
     for fn in listing[0:maxfiles]:
         fn_base = fn.rstrip('.gz').rstrip('.fq').rstrip('.fastq')
         submit_bwa_job(partition, bwa_opt, threads, mem_per_thread, reference_name, rawdir + fn, id + '_' + fn_base, outdir)
-                  
+
 def process_junction_alignments(junction_ref_out, outdir, name = '', min_overlap = 10, max_error_rate = .05, max_indel = 1, output_base_qualities = True, lib_offset = 0):
     junction_chrom = str(2 * lib_offset + 1)
     ref_chrom = str(2 * lib_offset + 2)
-    
+
     junction_map = junction_ref_out[0]
     junction_bploc = junction_ref_out[1]
     prefix = (name + '-') if (name != '') else ''
@@ -172,7 +172,7 @@ def process_junction_alignments(junction_ref_out, outdir, name = '', min_overlap
                 sc[NSUPP] += 1
             nreads += 1
     of.close()
-    
+
     # print out results to log
     lf = open(outdir + prefix + 'log_junctionalign.txt', 'w')
     for loc in junction_locs:
@@ -230,7 +230,7 @@ def is_old_aln_hardclipped(aln):
 def is_read_supporting(aln, junction_start, junction_end, min_overlap, max_error_rate, max_indel):
     nindel = count_cigar_indel(aln.cigarstring)
     error_rate = get_error_rate(aln, junction_start, junction_end)
-    
+
     is_supporting = error_rate <= max_error_rate and nindel <= max_indel and not is_dominated(aln, junction_start, junction_end)
     return is_supporting, error_rate, nindel
 
@@ -300,7 +300,7 @@ def get_cigar_coords(cigarstring):
     ops = re.findall('[MIDSH]', cigarstring)
     oplens = re.findall('[0-9]+', cigarstring)
     length = sum([int(oplens[i]) for i in range(len(oplens)) if ops[i] != 'D']) # including hard clips
-    
+
     which_M = [i for i in range(len(ops)) if ops[i] == 'M']
     idx_first = min(which_M)
     idx_last = max(which_M)
@@ -335,7 +335,7 @@ def test_binary_search():
     assert(binary_search(locs, 199) == 1)
     assert(binary_search(locs, 200) == 2)
     assert(binary_search(locs, 400) == 4)
-    
+
 def test_count_cigar_indel():
     assert(count_cigar_indel('100M') == 0)
     assert(count_cigar_indel('50M10I50M') == 10)

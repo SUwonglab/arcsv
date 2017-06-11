@@ -16,7 +16,7 @@ from arcsv.constants import *
 #-1 = distant
 PAIR_CLASSES = [(1,1), (1,0), (0,1),
                 (1,-1), (-1,1)]
-PAIR_CLASS_DICT = {PAIR_CLASSES[i] : i for i in range(len(PAIR_CLASSES))}
+PAIR_CLASS_DICT = {PAIR_CLASSES[i]: i for i in range(len(PAIR_CLASSES))}
 
 # TODO max distance undefined
 
@@ -54,7 +54,7 @@ def process_aggregate_mapstats(pair, mapstats, min_mapq, max_distance):
             label = PAIR_CLASS_DICT[(1,-1)]
     if label is None:
         return
-    
+
     mapstats[label] += 1
     if add_mirror:
         mirrored = PAIR_CLASS_DICT[(tuple(reversed(PAIR_CLASSES[label])))]
@@ -73,7 +73,7 @@ def add_dummy_obs_mapstats(mapstats):
     for label, amt in to_add.items():
         mapstats[label] += amt
     print('[add dummy obs] after: {0}'.format(mapstats))
-    
+
 # input: list of mappability stats objects [defaultdict(int)]
 # output: mappable_model, class_probs, rlen_stats
 def model_from_mapstats(mapstats):
@@ -95,7 +95,7 @@ def process_mappable_stats(aln1, aln2, mappable_stats, min_mapq, use_rlen = True
     aln2_pass = (aln2.mapq >= min_mapq)
     aln1_un = aln1.is_unmapped
     aln2_un = aln2.is_unmapped
-    
+
     # read pairs mapping farther than max_dist are considered the same as interchromosomal
     is_distant = (aln1.rname != aln2.rname) or abs(aln1.pos - aln2.pos) > max_distance
 
@@ -140,11 +140,11 @@ def create_aggregate_mappable_model(bam_name, meta, outdir, min_mapq,
 
     seen = {}
     rejected = set()
-    mappable_stats = [{'label' : [],
-                       'rlen1' : [],
-                       'rlen2' : [],
-                       'qmean1' : [],
-                       'qmean2' : []} for i in range(nlib)]
+    mappable_stats = [{'label': [],
+                       'rlen1': [],
+                       'rlen2': [],
+                       'qmean1': [],
+                       'qmean2': []} for i in range(nlib)]
     nreads = 0
     reads = bam.fetch()
     for aln in reads:
@@ -198,7 +198,7 @@ def create_aggregate_mappable_model(bam_name, meta, outdir, min_mapq,
         outfile = open(outname, 'wb')
         pickle.dump(freq, outfile)
         outfile.close()
-            
+
 def create_mappable_model(bam_name, meta, outdir, min_mapq,
                           sampling_rate = 1):
     bam = pysam.AlignmentFile(bam_name, 'rb')
@@ -208,11 +208,11 @@ def create_mappable_model(bam_name, meta, outdir, min_mapq,
 
     seen = {}
     rejected = set()
-    mappable_stats = [{'label' : [],
-                       'rlen1' : [],
-                       'rlen2' : [],
-                       'qmean1' : [],
-                       'qmean2' : []} for i in range(nlib)]
+    mappable_stats = [{'label': [],
+                       'rlen1': [],
+                       'rlen2': [],
+                       'qmean1': [],
+                       'qmean2': []} for i in range(nlib)]
     nreads = 0
     reads = bam.fetch(until_eof = True) # fetch unmapped pairs as well
     for aln in reads:
@@ -248,7 +248,7 @@ def create_mappable_model(bam_name, meta, outdir, min_mapq,
                 seen[aln.qname] = aln
             else:
                 rejected.add(aln.qname)
-    
+
     for l in range(nlib):
         use_rlen = lib_stats[l]['readlen'] > 0
         add_dummy_obs(mappable_stats[l], use_rlen)
@@ -279,7 +279,7 @@ def create_mappable_model(bam_name, meta, outdir, min_mapq,
         outfile = open(outname, 'wb')
         pickle.dump(rlen_stats, outfile)
         outfile.close()
-        
+
     # fit model to each library and save results
     for l in range(nlib):
         use_rlen = lib_stats[l]['readlen'] > 0
@@ -351,7 +351,7 @@ def fit_mappable_model(mappable_stats, use_rlen, max_obs = 5000000):
     model = linear_model.LogisticRegression(multi_class = 'multinomial', solver = 'newton-cg', fit_intercept = False, C = 1e6, max_iter = 50000)
     model.fit(X, y)
     print('loss on training data: {0}'.format(log_loss(y, predict_prob(model, X))))
-    
+
     qmin, qmax = min(mappable_stats['qmean1']), max(mappable_stats['qmean2'])
 
     return model, builder, (qmin, qmax)
@@ -380,24 +380,24 @@ def predict_grid(model, builder, mappable_stats, use_rlen, qmean_res = 1, rlen_r
         r1ravel, r2ravel = np.ravel(r1g), np.ravel(r2g)
         m = len(q1ravel)
         x_new = build_design_matrices([builder],
-                                      {'qmean1' : np.ravel(q1g),
-                                       'qmean2' : np.ravel(q2g),
-                                       'rlen1' : np.ravel(r1g),
-                                       'rlen2' : np.ravel(r2g)})[0]
+                                      {'qmean1': np.ravel(q1g),
+                                       'qmean2': np.ravel(q2g),
+                                       'rlen1': np.ravel(r1g),
+                                       'rlen2': np.ravel(r2g)})[0]
         x_new = np.asarray(x_new)
         pr = predict_prob(model, x_new)
-        grid_dict = {(q1ravel[i], r1ravel[i], q2ravel[i], r2ravel[i]) : tuple(pr[i]) for i in range(m)}
+        grid_dict = {(q1ravel[i], r1ravel[i], q2ravel[i], r2ravel[i]): tuple(pr[i]) for i in range(m)}
         return (qmin_rounded, qmax_rounded, qmean_res), (rmin_rounded, rmax_rounded, rlen_res), grid_dict
     else:
         q1g, q2g = np.meshgrid(qrange, qrange)
         q1ravel, q2ravel = np.ravel(q1g), np.ravel(q2g)
         m = len(q1ravel)
         x_new = build_design_matrices([builder],
-                                      {'qmean1' : np.ravel(q1g),
-                                       'qmean2' : np.ravel(q2g)})[0]
+                                      {'qmean1': np.ravel(q1g),
+                                       'qmean2': np.ravel(q2g)})[0]
         x_new = np.asarray(x_new)
         pr = predict_prob(model, x_new)
-        grid_dict = {(q1ravel[i], q2ravel[i]) : tuple(pr[i]) for i in range(m)}
+        grid_dict = {(q1ravel[i], q2ravel[i]): tuple(pr[i]) for i in range(m)}
         return (qmin_rounded, qmax_rounded, qmean_res), grid_dict
 
 def save_model(filename, fitted_prob, qgrid, rgrid = None):
@@ -421,7 +421,7 @@ def load_aggregate_model(model_dir, bam_name, lib_stats):
         # create constant functions for mappability model
         predicted_prob[l] = lambda qmean1, rlen1, qmean2, rlen2, cp = tuple(class_prob[l]): cp
     return predicted_prob, class_prob, rlen_stats
-    
+
 def load_model(model_dir, bam_name, lib_stats):
     nlib = len(lib_stats)
     predicted_prob = [None] * nlib
@@ -465,14 +465,14 @@ def plot_fit(model, filename, qrange, builder, rlen1 = None, rlen2 = None, mappa
     if use_rlen:
         n = np.prod(q1g.shape)
         x_new = build_design_matrices([builder],
-                                      {'qmean1' : np.ravel(q1g),
-                                       'qmean2' : np.ravel(q2g),
-                                       'rlen1' : np.repeat(rlen1, n),
-                                       'rlen2' : np.repeat(rlen2, n)})[0]
+                                      {'qmean1': np.ravel(q1g),
+                                       'qmean2': np.ravel(q2g),
+                                       'rlen1': np.repeat(rlen1, n),
+                                       'rlen2': np.repeat(rlen2, n)})[0]
     else:
         x_new = build_design_matrices([builder],
-                                      {'qmean1' : np.ravel(q1g),
-                                       'qmean2' : np.ravel(q2g)})[0]
+                                      {'qmean1': np.ravel(q1g),
+                                       'qmean2': np.ravel(q2g)})[0]
     proba = predict_prob(model, np.asarray(x_new))
     pr = [np.reshape(col, q1g.shape) for col in proba.T]
 
@@ -512,13 +512,13 @@ def plot_fit(model, filename, qrange, builder, rlen1 = None, rlen2 = None, mappa
             which_class = [j for j in which_scatter if mappable_stats['label'][j] == i]
             for j in which_class:
                 ax.scatter(mappable_stats['qmean1'][j], mappable_stats['qmean2'][j], color = 'k', alpha = .3)
-        
+
         ax.set_title(titles[i])
         ax.set_xlabel('read 1 quality')
         ax.set_ylabel('read 2 quality')
         i += 1
     plt.savefig(filename)
-    
+
 def do_plot_fits(prefix, model, qr, builder, use_rlen, mappable_stats):
     if use_rlen:
         r1q = np.percentile(mappable_stats['rlen1'], (90, 50, 10))

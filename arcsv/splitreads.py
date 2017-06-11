@@ -9,14 +9,14 @@ from arcsv.helper import get_ucsc_name
 # LEFT_PLUS = 0x1
 # RIGHT_PLUS = 0x2
 # LEFT_FIRST = 0x4
-# SPLIT_TYPES = {(LEFT_PLUS | RIGHT_PLUS | LEFT_FIRST) : 'C1p',
-#                (LEFT_PLUS | RIGHT_PLUS) : 'C2p',
-#                (LEFT_PLUS | LEFT_FIRST) : 'D1p',
-#                (RIGHT_PLUS | LEFT_FIRST) : 'D2p',
-#                0x0 : 'C1m',
-#                LEFT_FIRST : 'C2m',
-#                LEFT_PLUS : 'D1m',
-#                RIGHT_PLUS :  'D2m'}
+# SPLIT_TYPES = {(LEFT_PLUS | RIGHT_PLUS | LEFT_FIRST): 'C1p',
+#                (LEFT_PLUS | RIGHT_PLUS): 'C2p',
+#                (LEFT_PLUS | LEFT_FIRST): 'D1p',
+#                (RIGHT_PLUS | LEFT_FIRST): 'D2p',
+#                0x0: 'C1m',
+#                LEFT_FIRST: 'C2m',
+#                LEFT_PLUS: 'D1m',
+#                RIGHT_PLUS:  'D2m'}
 
 def valid_split(aln, bam, min_mapq, max_splits = 1):
     if max_splits != 1:
@@ -35,7 +35,7 @@ def valid_split(aln, bam, min_mapq, max_splits = 1):
     if supp_rname != aln.rname:
         return False
     return True
-        
+
 # Currently we only support one split and classify the split based on the "left" and "right"
 #       segments. For more splits (if needed) we'd probably want to process adjacent segments
 #       in the same manner.
@@ -44,7 +44,7 @@ def parse_splits(aln, bam, min_mapq, max_splits = 1):
     if not valid_split(aln, bam, min_mapq, max_splits):
         return None
     SA = aln.get_tag('SA')
-    
+
     # parse SA tag information
     supp = pysam.AlignedSegment()
     SA_split = SA.strip(';').split(',')
@@ -96,7 +96,7 @@ def parse_splits(aln, bam, min_mapq, max_splits = 1):
     else:
         split_flag = (is_firstplus*SPLIT_FIRST_PLUS) + (is_secondplus*SPLIT_SECOND_PLUS) + (is_leftfirst*SPLIT_LEFT_FIRST)
     split_type = SPLIT_TYPES[split_flag]
-    
+
     ## get breakpoint coordinates
     first_ref = first.get_reference_positions(full_length = True)
     if first.is_reverse:
@@ -236,10 +236,10 @@ def max_not_none(a):
 
 def splits_are_mirrored(s1, s2):
     # equivalence classes where split types are equivalent if the same up to reversal/mirroring
-    mirrored_split = {'Del+' : 0, 'Del-' : 0,
-                      'Dup+' : 1, 'Dup-' : 1,
-                      'InvL+' : 2, 'InvL-' : 2,
-                      'InvR+' : 3, 'InvR-' : 3}
+    mirrored_split = {'Del+': 0, 'Del-': 0,
+                      'Dup+': 1, 'Dup-': 1,
+                      'InvL+': 2, 'InvL-': 2,
+                      'InvR+': 3, 'InvR-': 3}
     tmp, tmp, tmp, s1_bp1_rname, s1_bp1, s1_bp2_rname, s1_bp2, s1_type = s1
     tmp, tmp, tmp, s2_bp1_rname, s2_bp1, s2_bp2_rname, s2_bp2, s2_type = s2
     return s1_bp1_rname == s2_bp1_rname and s1_bp1 == s2_bp1 and s1_bp2_rname == s2_bp2_rname and s1_bp2 == s2_bp2 and mirrored_split[s1_type] == mirrored_split[s2_type]

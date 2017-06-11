@@ -12,8 +12,8 @@ from collections import defaultdict
 from math import floor
 
 # Huref contig-chromosome mapping
-huref_chrom = {'1' : 'CM000462.1', '2' : 'CM000463.1', '3' : 'CM000464.1', '4' : 'CM000465.1', '5' : 'CM000466.1', '6' : 'CM000467.1', '7' : 'CM000468.1', '8' : 'CM000469.1', '9' : 'CM000470.1', '10' : 'CM000471.1', '11' : 'CM000472.1', '12' : 'CM000473.1', '13' : 'CM000474.1', '14' : 'CM000475.1', '15' : 'CM000476.1', '16' : 'CM000477.1', '17' : 'CM000478.1', '18' : 'CM000479.1', '19' : 'CM000480.1', '20' : 'CM000481.1', '21' : 'CM000482.1', '22' : 'CM000483.1', 'X' : 'CM000484.1', 'Y' : 'CM000485.1'}
-huref_prime_chrom = {'1' : 'CM000491.1', '2' : 'CM000492.1', '3' : 'CM000493.1', '4' : 'CM000494.1', '5' : 'CM000495.1', '6' : 'CM000496.1', '7' : 'CM000497.1', '8' : 'CM000498.1', '9' : 'CM000499.1', '10' : 'CM000500.1', '11' : 'CM000501.1', '12' : 'CM000502.1', '13' : 'CM000503.1', '14' : 'CM000504.1', '15' : 'CM000505.1', '16' : 'CM000506.1', '17' : 'CM000507.1', '18' : 'CM000508.1', '19' : 'CM000509.1', '20' : 'CM000510.1', '21' : 'CM000511.1', '22' : 'CM000512.1', 'X' : 'CM000513.1', 'Y' : 'CM000514.1'}
+huref_chrom = {'1': 'CM000462.1', '2': 'CM000463.1', '3': 'CM000464.1', '4': 'CM000465.1', '5': 'CM000466.1', '6': 'CM000467.1', '7': 'CM000468.1', '8': 'CM000469.1', '9': 'CM000470.1', '10': 'CM000471.1', '11': 'CM000472.1', '12': 'CM000473.1', '13': 'CM000474.1', '14': 'CM000475.1', '15': 'CM000476.1', '16': 'CM000477.1', '17': 'CM000478.1', '18': 'CM000479.1', '19': 'CM000480.1', '20': 'CM000481.1', '21': 'CM000482.1', '22': 'CM000483.1', 'X': 'CM000484.1', 'Y': 'CM000485.1'}
+huref_prime_chrom = {'1': 'CM000491.1', '2': 'CM000492.1', '3': 'CM000493.1', '4': 'CM000494.1', '5': 'CM000495.1', '6': 'CM000496.1', '7': 'CM000497.1', '8': 'CM000498.1', '9': 'CM000499.1', '10': 'CM000500.1', '11': 'CM000501.1', '12': 'CM000502.1', '13': 'CM000503.1', '14': 'CM000504.1', '15': 'CM000505.1', '16': 'CM000506.1', '17': 'CM000507.1', '18': 'CM000508.1', '19': 'CM000509.1', '20': 'CM000510.1', '21': 'CM000511.1', '22': 'CM000512.1', 'X': 'CM000513.1', 'Y': 'CM000514.1'}
 huref_alternate = ('^ABSL', '^DS', '^ABBA')
 GRCh37_chrom = {'1': '1', '2': '2', '3': '3', '4': '4', '5': '5', '6': '6', '7': '7', '8': '8', '9': '9', '10': '10', '11': '11', '12': '12', '13': '13', '14': '14', '15': '15', '16': '16', '17': '17', '18': '18', '19': '19', '20': '20', '21': '21', '22': '22', 'X': 'X', 'Y': 'Y'}
 GRCh37_alternate = tuple()
@@ -50,7 +50,7 @@ def load_pkl_data(pkl):
         data[qname_list[i]] = (block_position_list[i], insertion_size_list[i], del_size_list[i],
                                blocks_list[i], paths_list[i],hlf_list[i],hrf_list[i])
     return data, qname_list
-    
+
 # bamfile - filename of bamfile sorted by query name
 # pkl - pickle file, e.g. from sv_inference.py, containing additional information
 def score_alignments(bamfile, pkl, chrom, ref, outdir = 'validate',
@@ -127,7 +127,7 @@ def score_alignments(bamfile, pkl, chrom, ref, outdir = 'validate',
             datum = pkl_data[cur_qname]
             block_positions, insertion_sizes, del_sizes, blocks, path, \
                 has_left_flank, has_right_flank = datum
-                
+
             if len(block_positions) > 1: # insertion
                 if verbosity > 0:
                     print('\nskipping insertion\n')
@@ -289,7 +289,7 @@ def handle_records(qname, samrecords, ref, bam, query_blocks,
             print('\n')
             print('checking reference contig {0} and query'.format(bam.getrname(rname)), samrecords[0].qname)
         segs = list(itertools.chain(*(sam_to_segments(aln, query_blocks, query_blocks_rev, del_positions, del_positions_rev) for aln in records)))
-        segs.sort(key = lambda s : s.ref_coords)
+        segs.sort(key = lambda s: s.ref_coords)
         if verbosity > 1:
             print('segments:')
             print('\n'.join([str(seg) for seg in segs]))
@@ -304,7 +304,7 @@ def handle_records(qname, samrecords, ref, bam, query_blocks,
         # segs = [s for s in segs if (s.query_coords[1] - s.query_coords[0] >= min_seg_len)]
         # nsegs = len(segs_all)
         # nsegs_filter = len(segs)
-        
+
         # split segments at segment boundaries
         # segs_split = []
         # for (do_reverse, qb, dp) in [(False, query_blocks, del_positions),
@@ -339,7 +339,7 @@ def handle_records(qname, samrecords, ref, bam, query_blocks,
         if verbosity > 1:
             print('max_cluster_gap: {0}'.format(max_cluster_gap))
         segs_final = []
-        
+
         for (do_reverse, qb, dp) in [(False, query_blocks, del_positions),
                                      (True, query_blocks_rev, del_positions_rev)]:
             for seg_cluster in segment_clusters(segs, do_reverse, max_cluster_gap):
@@ -393,10 +393,10 @@ def handle_records(qname, samrecords, ref, bam, query_blocks,
                 if score > best_score:
                     best_chain, best_score = chain, score
                     best_is_reverse = do_reverse
-        
+
         segs = segs_final
-        segs.sort(key = lambda s : s.ref_coords)
-        
+        segs.sort(key = lambda s: s.ref_coords)
+
         # evaluate based on blockwise score
         if verbosity > 1:
             print('best chain\n\t{0}'.format(str(best_chain)))
@@ -414,7 +414,7 @@ def handle_records(qname, samrecords, ref, bam, query_blocks,
             outfile2.write(output_line(qname, segs, best_chain, best_score, blockwise_scores,
                                        query_blocks, del_positions, rname, contig_len, num_clusters_skipped))
         # SAVE AND PLOT HERE
-        
+
         # compare best alignment chain to best over all contigs
         if best_score > final_best_score:
             final_best_score = best_score
@@ -448,7 +448,7 @@ def handle_records(qname, samrecords, ref, bam, query_blocks,
     # plot_chain(p2, rname, ref, final_best_segs, final_best_chain,
     #            final_best_score, final_best_scores,
     #            outdir2, query_blocks, del_positions, path, verbosity = verbosity)
-    
+
     return final_best_chain, final_best_scores, final_best_segs
 
 # cluster sorted segments of the given orientation based on a maximum
@@ -478,7 +478,7 @@ def output_header():
 def null_output_line(qname):
     name = qname.split(':')[0]
     return '\t'.join([name, 'NA', '-1', '-1', '-1','+', '-1', '-1', '-1', '-1']) + '\n'
-        
+
 # write output to a line: qname 
 def output_line(qname, best_chain_segs, best_chain, aln_score, best_scores,
                 query_blocks, del_positions, rname, contig_len,
@@ -513,7 +513,7 @@ def output_line(qname, best_chain_segs, best_chain, aln_score, best_scores,
         gapstring = gapstring + ss
     ncs = str(num_clusters_skipped)
     return '\t'.join([name, rname, contig_len, minr, maxr, strand, alnsc, asc, ibs, ds, fba, qg, rg, gapstring, ncs]) + '\n'
-    
+
 # find the best chain of monotonic alignments given a
 # set of local alignments to the same contig
 def best_alignment_chain(segs, query_blocks, del_positions, reverse_only,
@@ -522,7 +522,7 @@ def best_alignment_chain(segs, query_blocks, del_positions, reverse_only,
     if verbosity > 1:
         print('bac: qb {0} dp {1} reverse_only {2}'.format(query_blocks, del_positions, reverse_only))
 
-    segs = sorted(segs, key = lambda s : s.query_coords)
+    segs = sorted(segs, key = lambda s: s.query_coords)
     n = len(segs)
     data = {}
     data['best_parent'] = [None] * n
@@ -603,7 +603,7 @@ def best_alignment_chain(segs, query_blocks, del_positions, reverse_only,
 
     if verbosity > 1:
         print('top score (adjusted) {0}'.format(best_score))
-            
+
     return seg_chain, best_score
 
 def segment_global_aln_score(segment):
@@ -626,14 +626,14 @@ def chain_to_blockwise_scores(chain, is_reverse, query_blocks, del_positions, ve
     return blockwise_score(chain_split, query_blocks, del_positions, is_reverse, verbosity)
 
 def blockwise_score(chain, query_blocks, del_positions, is_reverse, verbosity):
-    gaps = {'block_query_gaps' : [0] * len(query_blocks),
-            'block_ref_gaps' : [0] * len(query_blocks),
-            'del_query_gaps' : [0] * len(del_positions),
-            'del_ref_gaps' : [0] * len(del_positions)}
+    gaps = {'block_query_gaps': [0] * len(query_blocks),
+            'block_ref_gaps': [0] * len(query_blocks),
+            'del_query_gaps': [0] * len(del_positions),
+            'del_ref_gaps': [0] * len(del_positions)}
     if chain == []:
         return (0, 0, [0] * len([x for x in query_blocks if not x.is_flank]),
                 [0] * len(del_positions), [0,0], 0, 0, gaps)
-    
+
     block_scores = [0] * len(query_blocks)
     del_scores = [1] * len(del_positions)
     flank_bases_aligned = [0, 0]
@@ -647,7 +647,7 @@ def blockwise_score(chain, query_blocks, del_positions, is_reverse, verbosity):
         query_gap_len += seg.query_gap_len
         ref_gap_len += seg.ref_gap_len
         num_mismatch += seg.num_mismatch
-        
+
         # print('bw seg {0} num match {1}'.format(seg, seg.num_match))
         block_idx = query_blocks.index(seg.block)
         # add matches to flank aligned or inner block score
@@ -776,7 +776,7 @@ def add_err(query_blocks, del_positions, idx, err,
 
 #     average_score = np.mean(inner_block_scores + del_scores)
 #     return average_score, inner_block_scores, del_scores, flank_bases_aligned
-    
+
 # can rs2/qs2 follow rs1/qs1?
 def is_compatible(seg1, seg2):
     if seg1.is_reverse != seg2.is_reverse:
@@ -809,11 +809,11 @@ class QueryBlock:
     @property
     def start(self):
         return self.position[0]
-    
+
     @property
     def end(self):
         return self.position[1]
- 
+
 class Segment:
     def __init__(self, ref_coords,
                  query_coords,
@@ -976,7 +976,7 @@ def split_segment(segment, ref_pos, query_pos, query_blocks, del_positions, verb
                                         del_positions = del_positions,
                                         is_reverse = segment.is_reverse, aln = segment.aln,
                                         verbosity = verbosity)
-                                        
+
                 segment = right_segment
                 segments.append(left_segment)
                 prev_iqpos, prev_ilen = [], []
@@ -1088,7 +1088,7 @@ def sam_to_segments(aln, query_blocks, query_blocks_rev, del_positions, del_posi
     # min_ov_block_size = min(len(b) for b in ov_blocks)
     # maximum_indel_size = np.ceil(.05 * min_ov_block_size)
     maximum_indel_size = 1e7    # obsolete, no longer splitting on indels
-    
+
     ref_pos, query_pos = aln.reference_start, 0
     ref_end, query_end = aln.reference_start, 0
     indel_query_pos, indel_len = [], []
@@ -1143,15 +1143,15 @@ MD_M = 0; MD_X = 1; MD_D = 2    # match, mismatch, deletion
 def tokenize_md_tag(md):
     ### [0-9]+(([A-Z]|\^[A-Z]+)[0-9]+)*
     # FSM states: 0: [0-9] (matching), 1: [A-Z] (mismatch), 2: ^[A-Z]+ (del), 3: e (end)
-    state_trans = {0 : dict([(str(x), 0) for x in range(10)] +
+    state_trans = {0: dict([(str(x), 0) for x in range(10)] +
                             [(chr(ord('A')+i), 1) for i in range(26)] +
                             [('^', 2), ('e', 3)]),
-                   1 : dict([(str(x), 0) for x in range(0,10)] +
+                   1: dict([(str(x), 0) for x in range(0,10)] +
                             # [(chr(ord('A')+i), 1) for i in range(26)] +
                             [('e', 3)]),
-                   2 : dict([(str(x), 0) for x in range(10)] +
+                   2: dict([(str(x), 0) for x in range(10)] +
                             [(chr(ord('A')+i), 2) for i in range(26)]),
-                   3 : dict()}
+                   3: dict()}
     cur_state = 0
     cur_string = []
     tokens = []
@@ -1322,7 +1322,7 @@ def interval_error(location, error, query_blocks, del_positions, error_type = No
     # find max of inner block errors and errors, and outer block errors, favoring first two
     # return tuple because (RARELY) we'll recurse and return two outputs (see above)
     return (max([(0, None)] + block_errors + del_errors,
-                key = lambda p : p[0]),)
+                key = lambda p: p[0]),)
 
 def full_query_length(aln):
     # print(aln.query_length)
@@ -1373,7 +1373,7 @@ def test_interval_point_overlap():
     assert(interval_point_overlap(interval, positions) == [1,2,98,99])
     positions = (-1,101)
     assert(interval_point_overlap(interval, positions) == [])
-    
+
 def test_interval_error():
     block_positions = [(0,10), (10,30), (30, 60)]
     del_positions = [(30, 35)]
@@ -1483,7 +1483,7 @@ def test_split_segment():
         print(ssegs)
         assert([s.ref_coords for s in ssegs] == expected_ref[i])
         assert([s.query_coords for s in ssegs] == expected_query[i])
-    
+
     # ssegs = split_segments(segments=segs, ref_pos=[50], query_pos=[55], block_positions=block_positions, del_positions = del_positions)
     # print(ssegs)
     # r = [(0,45), (45, 50), (50,75), (95,100)]
@@ -1586,13 +1586,13 @@ def test_split_segment():
     # print(ssegs)
     # assert([s.ref_coords for s in ssegs] == r)
     # assert([s.query_coords for s in ssegs] == q)
-    
+
 def test_best_alignment_chain():
     # simplest case
     block_positions = [(0, 40000)]
     del_positions = []
     insertion_sizes = []
-    
+
     seg1 = Segment([0,1000], [20000, 21000], [], [], block_positions, del_positions)
     seg2 = Segment([1000,2000], [21000, 22000], [], [], block_positions, del_positions)
 

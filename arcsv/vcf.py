@@ -74,7 +74,7 @@ def bnd_to_vcf(sv, reference, event_filtered, filter_criteria,
     template = '{chr}\t{pos}\t{id}\t{ref}\t{alt}\t{qual}\t{filter}\t{info}\t{format}\t{gt}\n'
     chrom = sv.ref_chrom
     line = ''
-    
+
     for i in range(2):
         info_list = []
 

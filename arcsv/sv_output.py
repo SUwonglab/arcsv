@@ -25,7 +25,7 @@ def do_sv_processing(opts, data, outdir, reffile,
 
     skipped_altered_size = 0
     skipped_too_small = 0
-    
+
     altered_reference_file = open(os.path.join(outdir, 'altered.fasta'), 'w')
     altered_reference_data = open(os.path.join(outdir, 'altered.pkl'), 'wb')
     qnames, block_positions, insertion_sizes, del_sizes = [], [], [], []
@@ -140,7 +140,7 @@ def sv_output(path1, path2, blocks, event1, event2,
             continue
 
         chrom = blocks[int(floor(path1[0]/2))].chrom
-        
+
         bps = []
         bps_uncertainty = []
         for sv in svs:
@@ -177,14 +177,14 @@ def sv_output(path1, path2, blocks, event1, event2,
                                [block_gap(blocks, 2*i) for i in range(1, nni)] + \
                                [0]
         block_bp_uncertainty = ','.join(str(x) for x in block_bp_uncertainty)
-        
+
         s = rearrangement_to_letters(path_to_rearrangement(path), blocks = blocks)
         nblocks = len([b for b in blocks if not b.is_insertion()])
         refpath = list(range(2 * nblocks))
         ref_string = rearrangement_to_letters(path_to_rearrangement(refpath), blocks = blocks)
         gt = 'HET' if is_het else 'HOM'
 
-        sv_ins = lambda sv : (sv.length if sv.type == 'INS' else sv.bnd_ins)
+        sv_ins = lambda sv: (sv.length if sv.type == 'INS' else sv.bnd_ins)
         inslen = ','.join(str(sv_ins(sv)) for sv in svs)
         sr = ','.join(str(sv.split_support) for sv in svs)
         pe = ','.join(str(sv.pe_support) for sv in svs)

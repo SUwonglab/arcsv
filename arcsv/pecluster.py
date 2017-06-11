@@ -28,7 +28,7 @@ class DiscordantPair:
 
     def __lt__(self, other):
         return (self.pos1, self.pos2) < (other.pos1, other.pos2)
-    
+
     def __gt__(self, other):
         return (self.pos1, self.pos2) > (other.pos1, other.pos2)
 
@@ -94,11 +94,11 @@ def apply_discordant_clustering(opts, discordant_pairs_list,
             #     write_del_reads(fname, pairs)
 
             # DEBUG
-            
+
     # print('cutoffs:')
     # print(cutoffs)
     # print('')
-        
+
     # cluster
     breakpoints = []
     for i in range(nlib):
@@ -107,9 +107,9 @@ def apply_discordant_clustering(opts, discordant_pairs_list,
             print('[pecluster] clustering {0}'.format(dtype))
             clusters, excluded = cluster_pairs(opts, pairs, dtype, insert_mu[i], insert_sigma[i])
             insert_cutoff = insert_max[i] if dtype == 'Del' else insert_min[i]
-            
+
             print('insert cutoff %d' % insert_cutoff)
-            
+
             null_dist = null_dists[i][dtype]
             fdc_out = fdr_discordant_clusters(clusters, null_dist, dtype,
                                               insert_mu[i], insert_sigma[i],
@@ -126,7 +126,7 @@ def apply_discordant_clustering(opts, discordant_pairs_list,
             print('lib {0}: {1} clusters pass {2} fail {3} '.format(i, dtype, len(clusters_pass), len(clusters_fail)))
             fname = '{0}lib{1}_{2}_cluster.txt'.format(opts['outdir'], i, dtype)
             write_clustering_results(fname, lr_pairs, first_reject)
-            
+
     return breakpoints
 
 def is_del_compatible(opts, pair1, pair2, max_distance, insert_mu = None, insert_sigma = None, adjust = None):
@@ -162,11 +162,11 @@ def is_ins_cluster_compatible(opts, cluster):
     overlap = max(0, max([p.pos1 for p in cluster]) - min([p.pos2 for p in cluster]))
     return overlap <= opts['max_ins_cluster_slop'] # LATER do we need this or is it guaranteed?
 
-compatibility_fun = {'Del' : is_del_compatible,
-                     'Ins' : is_ins_compatible,
-                     'Dup' : is_dup_compatible,
-                     'InvR' : is_inv_compatible,
-                     'InvL' : is_inv_compatible}
+compatibility_fun = {'Del': is_del_compatible,
+                     'Ins': is_ins_compatible,
+                     'Dup': is_dup_compatible,
+                     'InvR': is_inv_compatible,
+                     'InvL': is_inv_compatible}
 
 def cluster_pairs(opts, pairs, dtype, insert_mu, insert_sigma):
     print('clustering {0} pairs'.format(dtype))
@@ -332,12 +332,12 @@ def lr_del(cluster, insert_mu, insert_sigma, cutoff, conditioning = False):
         print('[lr_del] DEL likelihood ratio = -inf')
         print(cluster)
     # DEBUG
-    
+
     if conditioning:
         n = len(cluster)
         lr += n * (np.log(1 - normcdf(cutoff, insert_mu, insert_sigma)) - \
                    np.log(1 - normcdf(cutoff - del_size_mle, insert_mu, insert_sigma)))
-    
+
     return lr
 
 def lr_ins(cluster, insert_mu, insert_sigma, cutoff, conditioning = False):
@@ -357,7 +357,7 @@ def lr_ins(cluster, insert_mu, insert_sigma, cutoff, conditioning = False):
         n = len(cluster)
         lr += n * (np.log(normcdf(cutoff, insert_mu, insert_sigma)) - \
                    np.log(normcdf(cutoff + ins_size_mle, insert_mu, insert_sigma)))
-    
+
     return lr
 
 # no cutoff or conditioning
@@ -400,7 +400,7 @@ def compute_null_dist(opts, discordant_pairs, dtype,
 
     # print('there were {0} {1} clusters after shuffling'.format(len(clusters),
     #                                                            dtype))
-    
+
     return sorted(lr_clusters)
 
 def filter_discordant_clusters(clusters, cutoff, dtype, insert_mu, insert_sigma,
@@ -440,7 +440,7 @@ def fdr_discordant_clusters(clusters, null_dist, dtype, insert_mu, insert_sigma,
     clusters_fail = [lr_pairs[j][1] for j in range(0, i)]
 
     return clusters_pass, clusters_fail, lr_pairs, i
-    
+
 def write_clustering_results(filename, lr_pairs, first_reject):
     fout = open(filename, 'w')
     if len(lr_pairs) > 0:

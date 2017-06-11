@@ -10,7 +10,6 @@ from arcsv.helper import block_gap, GenomeInterval
 # returns 0-indexed positions relative to (left end of first block - first block gap)
 # open intervals ??
 def get_gap_overlap_positions(path, blocks, read_len, min_mappable = 20):
-    print('[get_gap_overlap] second')
     blocks_gaps = genome_blocks_gaps(blocks, path)
     m = min_mappable
 
@@ -27,8 +26,8 @@ def get_gap_overlap_positions(path, blocks, read_len, min_mappable = 20):
         pos += len(b)
     # print('gap_ref: {0}\nref: {1}\n'.format(gap_ref, ref))
 
-    A1 = pyinter.IntervalSet()  # i : [i,i+m) contained in gap_ref
-    A2 = pyinter.IntervalSet()  # i : [i,i+m) overlaps ref
+    A1 = pyinter.IntervalSet()  # i: [i,i+m) contained in gap_ref
+    A2 = pyinter.IntervalSet()  # i: [i,i+m) overlaps ref
     for iv in gap_ref:
         if iv.lower_value <= iv.upper_value - m:
             A1.add(pyinter.closed(iv.lower_value, iv.upper_value - m))
@@ -114,7 +113,7 @@ def get_insertion_overlap_positions(path, blocks, read_len, min_mappable = 20):
         else:
             overlapping_t.append(False)
     return invalid_read_start, overlapping_d, overlapping_t
-    
+
     # ins1, ins2 = pyinter.IntervalSet(), pyinter.IntervalSet()
     # L = int(len(path) / 2)
     # m = min_mappable
@@ -195,7 +194,7 @@ def get_overlap_insertion_probabilities(path, blocks,
 
 def compute_hanging_edge_likelihood(edge, path, blocks, insert_cdfs, adj_satisfied):
     prob_hanging_type = (.5, .5) # probability of unmapped vs distant/translocation
-    
+
     offsets = edge['offset']
     adj = edge['adj1']
     lib = edge['lib']
@@ -262,7 +261,7 @@ def compute_hanging_edge_likelihood(edge, path, blocks, insert_cdfs, adj_satisfi
                 pr_in[i] = 0
 
         likelihood.extend(pr_out + pr_in)
-        
+
     return likelihood
 
 def compute_normalizing_constant(path, blocks,
@@ -388,7 +387,7 @@ def test_compute_normalizing_constant():
     def create_insert_cs(ins):
         cdf = np.cumsum(ins)
         cs = np.cumsum(cdf)
-        return lambda x, cs=cs : 0 if x < 0 else (cs[-1] + (x-len(ins))+1) if x >= len(ins) else cs[x]
+        return lambda x, cs=cs: 0 if x < 0 else (cs[-1] + (x-len(ins))+1) if x >= len(ins) else cs[x]
     ins = np.array([0] + ([1/200] * 200))
     cdf_sum = create_insert_cs(ins)
 
@@ -445,7 +444,7 @@ def test_compute_normalizing_constant():
     # try large gaps
     ins = np.array([0] + ([1/10000] * 10000))
     cdf_sum = create_insert_cs(ins)
-    
+
     blocks = [GenomeInterval(1, 45024, 64579),
 	      GenomeInterval(1, 65306, 65307),
               GenomeInterval(1, 66018, 79509),
@@ -498,7 +497,7 @@ def test_get_gap_overlap_positions():
         inter.add(pyinter.open(interval[0], interval[1]))
     print('truth: {0}\nresult: {1}\n'.format(inter, out))
     assert(out == inter)
-              
+
 def test_get_insertion_overlap_positions():
     blocks = [GenomeInterval(1, 0, 100), # 01
               GenomeInterval(1, 100, 200), # 23
@@ -543,7 +542,7 @@ def test_get_insertion_overlap_positions():
         inter.add(pyinter.open(interval[0], interval[1]))
     print('truth: {0}\nresult: {1}\n'.format(inter, out))
     assert(out == inter)
-        
+
 def test_genome_blocks_gaps():
     blocks = [GenomeInterval(1, 0, 100),
               GenomeInterval(1, 105, 200),

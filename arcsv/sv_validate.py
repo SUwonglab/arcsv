@@ -19,7 +19,7 @@ def simplify_blocks_diploid(blocks, path1, path2):
                 neighbors[path[i]].add(path[i-1])
             else:
                 neighbors[path[i]].add(path[i+1])
-                
+
     # print(neighbors)
     min_block = min([b for b in block_nums if not blocks[b].is_insertion()])
     max_block = max([b for b in block_nums if not blocks[b].is_insertion()])
@@ -226,7 +226,7 @@ def test_simplify_blocks():
     assert(simplify_blocks(blocks, [2,3,0,1,2,3], flank_size = 100)[1:] == ([2,3,0,1,2,3], False, False))
     assert(simplify_blocks(blocks, [0,1,2,3,0,1], flank_size = 100)[1:] == ([0,1,2,3,0,1], False, False))
     assert(simplify_blocks(blocks, [0,1,2,3,4,5,6,7,2,3,4,5,8,9,2,3,10,11], flank_size = 100)[1:] == ([0,1,2,3,4,5,6,7,2,3,4,5,8,9,2,3,10,11], True, True))
-    
+
 def test_altered_reference_sequence():
     ref = pysam.FastaFile('/home/jgarthur/sv/reference/GRCh37.fa')
     blocks = [GenomeInterval('20', 100000 + 100*i, 100000 + 100*(i+1)) for i in range(10)] + [GenomeInterval('20', 0, 1000, True)]

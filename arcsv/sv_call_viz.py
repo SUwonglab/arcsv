@@ -28,7 +28,7 @@ def arrow_polygon(is_inverted, width, left_pos, bottom_pos):
         text_pos = [left_pos + width/2, bottom_pos + PHI/2 - 1/8]
     else:
         text_pos = [left_pos + width/2 - 1/4, bottom_pos + PHI/2 - 1/8]
-    
+
     return template, text_pos
 
 def get_arrow_patches(blocks, path, bottom_pos,
@@ -66,7 +66,7 @@ def get_arrow_patches(blocks, path, bottom_pos,
                             hatch = '/')
 
     right_pos = left_pos
-    
+
     return p, p_ins, text_coords, right_pos
 
 def write_block_labels(text_coords, path, blocks, start):
@@ -158,7 +158,7 @@ def test_plot_rearrangement():
     fn = 'ABB-DE_ACBCDE.png'
     print(fn)
     plot_rearrangement(outdir + fn, blocks, 0, 4, p1, p2, True)
-    
+
     p1 = [0,1,2,3,3,2,2,3,3,2,2,3,2,3,6,7,7,6,8,9]
     p2 = p2
     fn = 'ABB--.png'

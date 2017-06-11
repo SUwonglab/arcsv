@@ -26,11 +26,11 @@ def do_inference(opts, reference_files, g, blocks,
                  insertion_search_width, pi_robust=.000001, # TODO
                  insert_lower=None, insert_upper=None, mode='both'):
     outdir = opts['outdir']
-    
+
     g.add_ref_path_support(9999) # ensure reference path is always available
     print('graph:')
     g.print_summary()
-    
+
 
     altered_reference_file = open(outdir + 'altered.fasta', 'w')
     altered_reference_data = open(outdir + 'altered.pkl', 'wb')
@@ -52,7 +52,7 @@ def do_inference(opts, reference_files, g, blocks,
     sv_logfile.write('graph(nodes/supp edges/unsupp edges)\t{0}\t{1}\t{2}\n'.format(g.size,
                                                                                     supp_edges,
                                                                                     unsupp_edges))
-    
+
     subgraphs = []
     for i in range(len(gap_indices) - 1):
         start_block = gap_indices[i]
@@ -105,12 +105,12 @@ def do_inference(opts, reference_files, g, blocks,
             any(pe[1] == 'Ins' for pe in ins_bp.pe)):
             print('going on to next insertion test')
             continue
-        
+
         ref_path = reference_path(lower, upper)
         test_path = insertion_path(lower, upper, b + 1, len(blocks))
 
         edges, total_reads = get_edges_in_range(g, list(range(0, 2*len(blocks))), start_block = lower, end_block = upper - 1)
-        
+
         ref_lhr, ref_nc, ref_lnc, ref_lc = compute_likelihood(edges, ref_path, blocks,
                                                       insert_dists, insert_cdfs, insert_cdf_sums,
                                                       class_probs, rlen_stats,
@@ -146,7 +146,7 @@ def do_inference(opts, reference_files, g, blocks,
             blocks = blocks + [GenomeInterval('', 0, insertion_len[b], is_de_novo = True)]
 
             subgraphs.append((b, b+1))
-            
+
             g.graph.add_vertex()
             g.graph.add_vertex()
             new_vertex_in = len(g.graph.vs) - 2
@@ -173,7 +173,7 @@ def do_inference(opts, reference_files, g, blocks,
     print('\nMERGED:')
     print(subgraphs)
     print('')
-    
+
     # plot graph
     if g.size <= 1000:
         edge_colors = [get_edge_color(e, blocks, opts['min_edge_support']) for e in g.graph.es]
@@ -220,22 +220,22 @@ def do_inference(opts, reference_files, g, blocks,
                     skip_this_region = True
                     get_paths_finished = True
         increased_edge_support = (mes_extra > 0)
-        
+
         edges, total_reads = get_edges_in_range(g, list(range(start, end + 1)), start_block = start, end_block = end)
         # if (not skip_this_region) and len(paths)*total_reads > max_paths_times_reads:
         #     s0 = 'subgraph-skip-paths-times-reads'
         #     skip_this_region = True
-        
+
         logstring = '{0}\t{1}\t{2}\t{3}\t{4}\t{5}\n'
         sv_logfile.write(logstring.format(s0, blocks[start].start, blocks[end].end,
                                           end - start + 1, len(paths), mes_extra))
 
         if skip_this_region:
             continue
-        
+
         print('{0} edges in subgraph'.format(len(edges)))
         print('{0} reads within subgraph'.format(total_reads))
-        
+
         likelihood_reads = []
         norm_consts, lib_norm_consts = [], []
         lib_counts = []
@@ -300,7 +300,7 @@ def do_inference(opts, reference_files, g, blocks,
         # TESTING convex solver
         # wts, obj = convex_diploid(likelihood_reads, norm_consts, pi_robust)
         # TESTING
-        
+
         if mode == 'homozygous' or mode == 'both':
             best = np.argmax(homozygous_likelihood)
             max_pathstring_len = max([floor(len(p) / 2) for p in paths])
@@ -466,7 +466,7 @@ def do_inference(opts, reference_files, g, blocks,
                         if blocks[blockid].is_insertion():
                             sv_complex_outfile.write('insertion: length {0}\n'.format(len(blocks[blockid])))
                 sv_complex_outfile.write('\n{0}\n{1}\n\n{2}\n'.format(s1,s2,'-'*40))
-        
+
             print('')
             print('-' * 60)
             print('')
@@ -545,7 +545,7 @@ def decompose_graph(g, min_edge_support, start_block = None, end_block = None):
     print('\ndecompose_graph minimal cp')
     print(minimal_cp)
     print('')
-    
+
     return sub
 
 # get indices such that blocks[first:last] are all within [width] of the breakpoint
@@ -573,7 +573,7 @@ def get_blocks_within_distance(blocks, idx, width, gap_indices, get_after = True
     # while last < len(blocks) and length_after <= width:
     #     length_after += len(blocks[last])
     #     last += 1
-        
+
     # length_before = 0
     # first = idx
     # for i in range(idx, -1, -1):
@@ -584,13 +584,13 @@ def get_blocks_within_distance(blocks, idx, width, gap_indices, get_after = True
     #     first = i
     # else:
     #     first = 0
-        
+
     # adjust for gap_indices
     gap_before = [gap_indices[i] for i in range(len(gap_indices)) if gap_indices[i] <= idx]
     gap_after = [gap_indices[i] for i in range(len(gap_indices)) if gap_indices[i] > idx]
     first = max(gap_before + [first])
     last = min(gap_after + [last])
-        
+
     return first, last
 
 # expand the subgraph so there are at least least "width" base pairs
@@ -646,7 +646,7 @@ def haploid_likelihood2(likelihood, lib_norm_consts, lib_counts, pi_robust, whic
         lh_rest = sum([log(pi_robust + (1-pi_robust)*likelihood[i]) \
                        for i in which_reads])
     return lh_nc + lh_rest
-            
+
 # likelihood[12] inputs are not scaled by length
 def diploid_likelihood(likelihood1, likelihood2, norm_consts1, norm_consts2, total_reads, pi_robust, epsilon = 2e-10):
     return sum([-log(n1+n2+epsilon) + \
@@ -694,7 +694,7 @@ def get_paths_recursive(graph, max_cycle_visits, min_edge_support, visited = Non
         original_start = start
         path.append(start - 1)
         visited.add(start - 1)
-    
+
     elif original_start is None:
         if start == end:
             yield tuple([start])
@@ -772,7 +772,7 @@ def get_paths_iterative(graph, max_back_count,
         # print('path {0}'.format(path))
         # print('stacks {0}'.format(stacks))
         # print('counts {0}'.format(back_count))
-        
+
         if next == end:
             npaths += 1
             # print('yielding {0}'.format(path))
@@ -798,9 +798,9 @@ def get_paths_iterative(graph, max_back_count,
                 last_stack = stacks.pop()
                 nbacktrack += 1
                 # if just went past a backwards edge, decrement back_count
-                backtracked_edge = path[(-2*nbacktrack - 1) : (-2*nbacktrack+ 1)]
+                backtracked_edge = path[(-2*nbacktrack - 1): (-2*nbacktrack+ 1)]
                 back_count.subtract(is_back_edge(backtracked_edge, graph.size))
-                
+
                 # filter using back_count
                 last_node = path[(-2 * nbacktrack - 1)]
                 is_out = (last_node % 2 == 1)
@@ -830,7 +830,7 @@ def is_back_edge(edge, graph_size):
         if (is_out and m <= n) or (not is_out and n <= m):
             result.append(n)
     return tuple(result)
-        
+
 def get_edges_in_range(g, which_dup, start_block, end_block):
     edges = set()
     total_reads = 0
@@ -1004,7 +1004,7 @@ def compute_edge_likelihood(edge, path, blocks, insert_dists, insert_cdfs, inser
 
     if len(edge['which_hanging']) > 0 and len(dists) > 0: # has hanging reads
         which_dist_zero = [i for i in range(len(dists)) if i == 0][0]
-        self_adj_satisfied = {adj : adj1_satisfied[adj][which_dist_zero] for adj in adj1_satisfied}
+        self_adj_satisfied = {adj: adj1_satisfied[adj][which_dist_zero] for adj in adj1_satisfied}
         likelihood.extend(compute_hanging_edge_likelihood(edge, path, blocks,
                                                           insert_cdfs, self_adj_satisfied))
     elif len(edge['which_hanging']) > 0:
@@ -1044,7 +1044,7 @@ def test_decompose_graph():
     g.add_support(7,6)          # duplication of block 4, deletion of block 2
     g.add_support(1,4)
     print(decompose_graph(g,1))
-        
+
 def cycly_graph(n = 5):
     g = GenomeGraph(n)
     for _ in range(10):
