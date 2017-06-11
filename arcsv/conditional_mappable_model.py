@@ -10,7 +10,6 @@ from sklearn.metrics import log_loss
 from patsy import dmatrix, dmatrices, build_design_matrices
 
 from arcsv.constants import *
-from arcsv.helper import get_lib_idx, parse_library_stats
 
 # 1 = mapped
 # 0 = unmapped

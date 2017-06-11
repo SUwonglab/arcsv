@@ -74,11 +74,10 @@ def process_discordant_pair(aln1, aln2, chrom, discordant_pairs, min_mapq, ilen,
 # LATER allow to combine libraries of the same "type"
 def apply_discordant_clustering(opts, discordant_pairs_list,
                                 insert_mu, insert_sigma,
-                                insert_min, insert_max,
-                                lib_stats, gap_file,
+                                insert_min, insert_max, gap_file,
                                 lr_cond = False, bp_confidence_level = 0.95):
     # compute null distributions of cluster scores using permutation
-    nlib = len(discordant_pairs_list)
+    nlib = opts['nlib']
     null_dists = [{} for i in range(nlib)]
     for i in range(nlib):
         for (dtype, pairs) in discordant_pairs_list[i].items():
@@ -103,7 +102,7 @@ def apply_discordant_clustering(opts, discordant_pairs_list,
     # cluster
     breakpoints = []
     for i in range(nlib):
-        lib_name = lib_stats[i]['name']
+        lib_name = opts['library_names'][i]
         for (dtype, pairs) in discordant_pairs_list[i].items():
             print('[pecluster] clustering {0}'.format(dtype))
             clusters, excluded = cluster_pairs(opts, pairs, dtype, insert_mu[i], insert_sigma[i])

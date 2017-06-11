@@ -13,9 +13,8 @@ import resource
 
 from arcsv.conditional_mappable_model import process_aggregate_mapstats
 from arcsv.helper import valid_hanging_anchor, valid_hanging_pair, \
-    parse_library_stats, get_chrom_size_from_bam, not_primary, \
-    get_lib_idx, robust_sd, normpdf, get_ucsc_name, get_chrom_size, \
-    is_read_through
+    get_chrom_size_from_bam, not_primary, robust_sd, normpdf, \
+    get_ucsc_name, get_chrom_size, is_read_through
 from arcsv.invertedreads import get_inverted_pair, write_inverted_pairs_bigbed
 from arcsv.pecluster import process_discordant_pair
 from arcsv.read_viz import write_trackdb, write_array_bigwig, SparseSignalTrack
@@ -24,24 +23,25 @@ from arcsv.softclip import (process_softclip, merge_softclips,
 from arcsv.splitreads import parse_splits, splits_are_mirrored, write_splits_bigbed
 
 
-def extract_approximate_library_stats(opts, bamfiles, meta):
+def extract_approximate_library_stats(opts, bam, rough_insert_median):
     reads_per_chunk = int(np.floor(opts['approx_stats_nreads'] / opts['approx_stats_nchunks']))
 
-    bam = BamGroup(bamfiles)
-    lib_patterns, lib_stats = parse_library_stats(meta)
+    # lib_patterns, lib_stats = parse_library_stats(meta)
     # maps read groups matching lib_patterns to indices in lib_stats
-    lib_dict = {}
-    nlib = len(lib_stats)
+    # lib_dict = {}
+    nlib = opts['nlib']
     insert_len = [[] for i in range(nlib)]
     read_len_shorter = [[] for i in range(nlib)]
     read_len_longer = [[] for i in range(nlib)]
 
     chrom_name = opts['chromosome']
     chrom_size = get_chrom_size_from_bam(chrom_name, bam)
-    chunk_size = 10 * max(ls['insert_max'] for ls in lib_stats)
+    chunk_size = 10 * rough_insert_median
 
+    rough_insert_max = opts['insert_max_mu_multiple'] * rough_insert_median
     reads_processed = [0 for i in range(nlib)]
     chunks_processed = 0
+    # TODO reads_per_chunk should mean completed
     while min(reads_processed) < opts['approx_stats_nreads']:
         # extract random chunk
         start = np.random.randint(0, chrom_size - chunk_size)
@@ -66,10 +66,9 @@ def extract_approximate_library_stats(opts, bamfiles, meta):
             pair = (aln, mate)
             del seen_aln[aln.qname]
             if not mate.is_duplicate:  # not sure if this is needed?
-                lib_idx = get_lib_idx(aln.get_tag('RG'), lib_dict, lib_patterns)
-                process_insert_len(pair, insert_len[lib_idx], lib_stats[lib_idx],
-                                   opts['min_mapq_reads'])
-                process_read_len(pair, read_len_shorter[lib_idx], read_len_longer[lib_idx])
+                lib_idx = 0  # get_lib_idx(aln.get_tag('RG'), lib_dict, lib_patterns)
+                process_insert_len(pair, insert_len[lib_idx], opts['min_mapq_reads'],
+                                   opts['read_len'], maximum_insert_size=rough_insert_max)
                 reads_processed[lib_idx] += 1
                 if min(reads_processed) % 100000 == 0:
                     print('processed >= {0} reads ({2} chunks) for each lib: {1}'.
@@ -91,14 +90,27 @@ def extract_approximate_library_stats(opts, bamfiles, meta):
 
 # parse a single bam file, extracting breakpoints,
 # insert size distribution, and/or visualization tracks in bed/bigwig format
-def parse_bam(opts, reference_files, bamfiles, meta, do_bp, do_junction_align):
+def parse_bam(opts, reference_files, bamfiles, do_bp, do_junction_align):
     print('[parse_bam] extracting approximate library stats')
     chrom_name = opts['chromosome']
     start, end = opts['region_start'], opts['region_end']
     outdir = opts['outdir']
     min_mapq_reads = opts['min_mapq_reads']
     do_viz = opts['do_viz']
-    als = extract_approximate_library_stats(opts, bamfiles, meta)
+
+    ref = pysam.FastaFile(reference_files['reference'])
+    # maps read groups matching lib_patterns to indices in lib_stats
+    # lib_patterns, lib_stats = parse_library_stats(meta)
+    # lib_dict = {}
+    nlib = opts['nlib']         # MULTILIB
+
+    bam = BamGroup(bamfiles)
+    opts['read_len'] = bam_read_len(bam)
+    rough_insert_median = get_rough_insert_median(opts, bam)
+    print('read_len: {0}; rough_insert_median: {1}'.
+          format(opts['read_len'], rough_insert_median))
+
+    als = extract_approximate_library_stats(opts, bam, rough_insert_median)
     mean_approx, sd_approx, pmf_approx, qlower, qupper, rlen_medians = als
 
     for i in range(len(pmf_approx)):
@@ -158,16 +170,6 @@ def parse_bam(opts, reference_files, bamfiles, meta, do_bp, do_junction_align):
     #     min_concordant_insert = [1393, 1099, 1548, 1206, -76, -262]
     #     max_concordant_insert = [2468, 2477, 2712, 2820, 742, 1152]
 
-    bam = BamGroup(bamfiles)
-    ref = pysam.FastaFile(reference_files['reference'])
-    lib_patterns, lib_stats = parse_library_stats(meta)
-    # maps read groups matching lib_patterns to indices in lib_stats
-    lib_dict = {}
-    nlib = len(lib_stats)
-    # DEPRECATED
-    # lib_do_junction_align = [do_junction_align and ls['do_junction_align']
-    # for ls in lib_stats]
-
     if do_viz:
         ucsc_chrom = get_ucsc_name(chrom_name)
         coverage = [[0]*get_chrom_size(chrom_name, reference_files['reference'])
@@ -208,7 +210,7 @@ def parse_bam(opts, reference_files, bamfiles, meta, do_bp, do_junction_align):
             if do_viz and aln.has_tag('SA') and \
                not aln.is_duplicate and \
                aln.mapq >= min_mapq_reads:
-                lib_idx = get_lib_idx(aln.get_tag('RG'), lib_dict, lib_patterns)
+                lib_idx = 0  # get_lib_idx(aln.get_tag('RG'), lib_dict, lib_patterns)
                 process_coverage(aln, coverage[lib_idx])
             continue
 
@@ -224,17 +226,17 @@ def parse_bam(opts, reference_files, bamfiles, meta, do_bp, do_junction_align):
             if (not bam_has_unmapped and aln.mate_is_unmapped and not aln.is_unmapped) \
                     or aln.rname != aln.mrnm:
                 if do_viz:
-                    handle_unpaired_read(opts, aln, lib_dict, coverage,
+                    handle_unpaired_read(opts, aln, coverage,
                                          hanging_unmapped_plus, hanging_unmapped_minus,
                                          hanging_same_chrom_plus, hanging_same_chrom_minus,
                                          hanging_other_chrom_plus, hanging_other_chrom_minus,
-                                         softclips, splits, bam, lib_stats, mapstats)
+                                         softclips, splits, bam, mapstats)
                 else:
-                    handle_unpaired_read(opts, aln, lib_dict, None,
+                    handle_unpaired_read(opts, aln, None,
                                          None, None,
                                          None, None,
                                          None, None,
-                                         softclips, splits, bam, lib_stats, mapstats)
+                                         softclips, splits, bam, mapstats)
                 continue
             else:
                 seen_aln[aln.qname] = aln
@@ -251,8 +253,8 @@ def parse_bam(opts, reference_files, bamfiles, meta, do_bp, do_junction_align):
             num_read_through += 1
             continue
 
-        rg = aln.get_tag('RG')
-        lib_idx = get_lib_idx(rg, lib_dict, lib_patterns)
+        # rg = aln.get_tag('RG')
+        lib_idx = 0          # get_lib_idx(rg, lib_dict, lib_patterns)
 
         # completed pair, process it
         if do_viz:
@@ -274,9 +276,7 @@ def parse_bam(opts, reference_files, bamfiles, meta, do_bp, do_junction_align):
             elif min(aln.mapq, mate.mapq) >= min_mapq_reads and not (aln.is_duplicate or
                                                                      mate.is_duplicate):
                 if not aln.has_tag('SA') or mate.has_tag('SA'):
-                    process_insert_viz(pair,
-                                       insert_plus[lib_idx], insert_minus[lib_idx],
-                                       lib_stats[lib_idx])
+                    process_insert_viz(pair, insert_plus[lib_idx], insert_minus[lib_idx])
                     process_inverted(pair, inverted_pairs[lib_idx], bam)
                 for a in pair:
                     if a.mapq >= min_mapq_reads and not a.is_duplicate:
@@ -286,11 +286,11 @@ def parse_bam(opts, reference_files, bamfiles, meta, do_bp, do_junction_align):
         # (duplicates OK for softclips, but not read-throughs)
         if not (opts['filter_read_through'] and is_read_through(opts, pair)):
             process_softclip(pair, softclips[lib_idx], bam,
-                             lib_stats[lib_idx]['do_splits'], opts['min_mapq_softclip'],
+                             opts['do_splits'], opts['min_mapq_softclip'],
                              opts['min_clipped_bases'], opts['min_clipped_qual'])
         if not (aln.is_duplicate or mate.is_duplicate):
             ilen = process_insert_len(pair, insert_len[lib_idx],
-                                      lib_stats[lib_idx], min_mapq_reads)
+                                      opts['min_mapq_reads'], opts['read_len'])
             if not opts['use_mate_tags']:
                 process_aggregate_mapstats(pair, mapstats[lib_idx],
                                            min_mapq_reads, opts['max_pair_distance'])
@@ -299,8 +299,8 @@ def parse_bam(opts, reference_files, bamfiles, meta, do_bp, do_junction_align):
                                         discordant_pairs[lib_idx], min_mapq_reads,
                                         ilen, min_concordant_insert[lib_idx],
                                         max_concordant_insert[lib_idx],
-                                        lib_stats[lib_idx]['is_rf'])
-            if lib_stats[lib_idx]['do_splits']:
+                                        opts['library_is_rf'])
+            if opts['do_splits']:
                 a1_split = process_splits(pair[0], splits[lib_idx],
                                           bam, min_mapq=min_mapq_reads)
                 a2_split = process_splits(pair[1], splits[lib_idx],
@@ -317,17 +317,17 @@ def parse_bam(opts, reference_files, bamfiles, meta, do_bp, do_junction_align):
     print('handling unpaired reads')
     for aln in seen_aln.values():
         if do_viz:
-            handle_unpaired_read(opts, aln, lib_dict, coverage,
+            handle_unpaired_read(opts, aln, coverage,
                                  hanging_unmapped_plus, hanging_unmapped_minus,
                                  hanging_same_chrom_plus, hanging_same_chrom_minus,
                                  hanging_other_chrom_plus, hanging_other_chrom_minus,
-                                 softclips, splits, bam, lib_stats, mapstats)
+                                 softclips, splits, bam, mapstats)
         else:
-            handle_unpaired_read(opts, aln, lib_dict, None,
+            handle_unpaired_read(opts, aln, None,
                                  None, None,
                                  None, None,
                                  None, None,
-                                 softclips, splits, bam, lib_stats, mapstats)
+                                 softclips, splits, bam, mapstats)
 
     # report stats
     print('processed {0} reads'.format(nreads))
@@ -341,7 +341,7 @@ def parse_bam(opts, reference_files, bamfiles, meta, do_bp, do_junction_align):
     print('[parse_bam] insert 25-50-75 percentiles by library:')
     percentiles = [np.percentile(ins, (25, 50, 75)) for ins in insert_len]
     print(''.join(['{0}: {1}\n'.
-                   format(lib_stats[l]['name'], tuple(percentiles[l]))
+                   format(opts['library_names'][l], tuple(percentiles[l]))
                    for l in range(nlib)]))
     print('computing insert length pmfs')
     # CLEANUP just for il in insert_len?
@@ -357,7 +357,7 @@ def parse_bam(opts, reference_files, bamfiles, meta, do_bp, do_junction_align):
 
     # insert dist plots
     print('insert dist {0}'.format(len(insert_len_dist)))
-    plot_insert_dist(insert_len_dist, outdir, lib_stats)
+    plot_insert_dist(opts, insert_len_dist, outdir)
 
     # find breakpoints via soft-clipped reads
     if do_bp:
@@ -366,7 +366,7 @@ def parse_bam(opts, reference_files, bamfiles, meta, do_bp, do_junction_align):
         junction_ref_out = []
         global junction_ref_offset
         for l in range(nlib):
-            libname = lib_stats[l]['name']
+            libname = opts['library_names'][l]
             softclips_merged.append(merge_softclips(softclips[l], ref, chrom_name, outdir,
                                                     name=libname,
                                                     min_overlap=opts['min_junction_overlap'],
@@ -377,8 +377,9 @@ def parse_bam(opts, reference_files, bamfiles, meta, do_bp, do_junction_align):
 
     if do_viz:
         # combine signal tracks by group
-        groups = set(lib_stats[i]['group'] for i in range(len(lib_stats)))
-        groups = list(groups)
+        # groups = set(lib_stats[i]['group'] for i in range(len(lib_stats)))
+        # groups = list(groups)
+        groups = [0]
         i = 0
         g_coverage, g_insert_plus, g_insert_minus = [], [], []
         g_hanging_unmapped_plus, g_hanging_unmapped_minus = [], []
@@ -387,7 +388,8 @@ def parse_bam(opts, reference_files, bamfiles, meta, do_bp, do_junction_align):
         g_inverted_pairs, g_softclips, g_splits = [], [], []
         g_insert_mean, g_insert_sd = [], []
         for grp in groups:
-            which_grp = [l for l in range(nlib) if lib_stats[l]['group'] == grp]
+            which_grp = [0]
+            # which_grp = [l for l in range(nlib) if lib_stats[l]['group'] == grp]
             cov = [sum([coverage[j][i] for j in which_grp]) for i in range(len(coverage[0]))]
             g_coverage.append(cov)
             for (g_tracks, tracks) in zip(
@@ -499,13 +501,11 @@ def parse_bam(opts, reference_files, bamfiles, meta, do_bp, do_junction_align):
         if opts['do_pecluster']:
             return (junction_ref_out, splits, mapstats, rlen_medians, insert_len_dist,
                     insert_mean, insert_sd,
-                    discordant_pairs, min_concordant_insert, max_concordant_insert,
-                    lib_stats, lib_dict)
+                    discordant_pairs, min_concordant_insert, max_concordant_insert)
         else:
             return (junction_ref_out, splits, mapstats, rlen_medians, insert_len_dist,
                     insert_mean, insert_sd,
-                    None, None, None,
-                    lib_stats, lib_dict)
+                    None, None, None)
     else:
         return (None, None, None, None, None, None, None,
                 None, None, None,
@@ -547,26 +547,28 @@ def process_splits(aln, splits, bam, min_mapq):
 # Input: pair of reads on the same chromosome
 # Output: none if read pair invalid (mapq or orientation), else insert length
 # Side effects: adds to len_array (checking truncate = True)
-def process_insert_len(pair, len_array, library_info, min_mapq, truncate=True):
+def process_insert_len(pair, len_array, min_mapq, read_len,
+                       truncate=True, maximum_insert_size=np.Inf,
+                       lib_is_rf=False, lib_insert_is_inner=False):
     # if not fully_aligned(pair[0]) or \
     #         not fully_aligned(pair[1]) or \
     if pair[0].is_reverse == pair[1].is_reverse or \
        min(pair[0].mapq, pair[1].mapq) < min_mapq:
         return None
     which_minus = 0 if pair[0].is_reverse else 1
-    which_first = which_minus if library_info['is_rf'] else (1 - which_minus)
+    which_first = which_minus if lib_is_rf else (1 - which_minus)
     which_last = 1 - which_first
-    if library_info['inner_insert']:
+    if lib_insert_is_inner:
         ilen = pair[which_last].reference_start - pair[which_first].reference_end
     else:
         ilen = pair[which_last].reference_end - pair[which_first].reference_start
     # adjust for read trimming
-    if library_info['readlen'] != 0:
-        ilen += 2 * library_info['readlen'] - pair[0].query_length - pair[1].query_length
+    if read_len != 0:
+        ilen += 2 * read_len - pair[0].query_length - pair[1].query_length
     # adjust for soft-clipping of 5' end (3' end of MP)
     ilen += pair[which_first].query_alignment_start + \
         pair[which_last].query_length - pair[which_last].query_alignment_end
-    if (not truncate) or (ilen <= library_info['insert_max'] and ilen >= 0):
+    if (not truncate) or (ilen <= maximum_insert_size and ilen >= 0):
         len_array.append(ilen)
     return ilen
 
@@ -593,15 +595,15 @@ def process_insert_viz(pair, insert_plus, insert_minus, library_info):
     return 1
 
 
-def handle_unpaired_read(opts, aln, lib_dict, coverage,
+def handle_unpaired_read(opts, aln, coverage,
                          hanging_unmapped_plus, hanging_unmapped_minus,
                          hanging_same_chrom_plus, hanging_same_chrom_minus,
                          hanging_other_chrom_plus, hanging_other_chrom_minus,
-                         softclips, splits, bam, lib_stats, mapstats):
-    rg = aln.get_tag('RG')
-    lib_idx = lib_dict.get(rg)
-    if lib_idx is None:
-        return
+                         softclips, splits, bam, mapstats):
+    # rg = aln.get_tag('RG')
+    lib_idx = 0  # lib_dict.get(rg)
+    # if lib_idx is None:
+    #     return
 
     if opts['do_viz'] and not aln.is_duplicate and aln.mapq >= opts['min_mapq_reads']:
         process_coverage(aln, coverage[lib_idx])
@@ -618,10 +620,10 @@ def handle_unpaired_read(opts, aln, lib_dict, coverage,
 
     pair = (aln, None)
     process_softclip(pair, softclips[lib_idx], bam,
-                     lib_stats[lib_idx]['do_splits'], opts['min_mapq_softclip'],
+                     opts['do_splits'], opts['min_mapq_softclip'],
                      opts['min_clipped_bases'], opts['min_clipped_qual'])
     if not aln.is_duplicate:
-        if lib_stats[lib_idx]['do_splits']:
+        if opts['do_splits']:
             process_splits(aln, splits[lib_idx], bam, min_mapq=opts['min_mapq_reads'])
         if not opts['use_mate_tags']:
             process_aggregate_mapstats(pair, mapstats[lib_idx],
@@ -645,7 +647,7 @@ class BamGroup:
 
     # TODO
     def fetch_sorted(self, *o1, **o2):
-        pass
+        raise Warning('fetch_sorted not implemented')
         # fs = [b.fetch(*o1, **o2) for b in self.bamlist]
 
     def getrname(self, *o1, **o2):
@@ -706,16 +708,54 @@ def has_unmapped_records(bam, pairs_to_check=10):
     return True
 
 
-def plot_insert_dist(insert_len_dists, outdir, lib_stats):
-    outfile = outdir + 'insert_' + lib_stats[0]['name'] + '.pdf'
-    pp = PdfPages(outfile)
-    for l in range(len(lib_stats)):
+def bam_read_len(bam, reads_to_check=1000):
+    rlen = -np.Inf
+    nreads = 0
+    for aln in bam.fetch_unsorted():
+        if aln.is_unmapped or 'H' in aln.cigarstring:
+            continue
+        rlen = max(rlen, aln.query_length)
+        nreads += 1
+        if nreads > reads_to_check:
+            break
+    return rlen
+
+
+# TODO currently probably only gets from one library in BamGroup bam
+def get_rough_insert_median(opts, bam, pairs_to_check=10000):
+    # check min_mapq, neither unmapped, neither supp
+    ilen = []
+    seen = {}
+    rej = set()
+    for aln in bam.fetch_unsorted():
+        if aln.qname in seen:
+            if aln.mapq < opts['min_mapq_reads'] or aln.is_unmapped or not_primary(aln):
+                del seen[aln.qname]
+            else:
+                pair = (aln, seen[aln.qname])
+                process_insert_len(pair, ilen, opts['min_mapq_reads'],
+                                   opts['read_len'], truncate=False)
+                del seen[aln.qname]
+        else:
+            if aln.mapq < opts['min_mapq_reads'] or aln.is_unmapped or not_primary(aln):
+                rej.add(aln.qname)
+            else:
+                seen[aln.qname] = aln
+        if len(ilen) >= pairs_to_check:
+            break
+    return np.median(ilen)
+
+
+def plot_insert_dist(opts, insert_len_dists, outdir):
+    for l in range(opts['nlib']):
+        outfile = outdir + 'insert_' + opts['library_names'][l] + '.pdf'
+        pp = PdfPages(outfile)
         plt.figure()
         plt.plot(insert_len_dists[l])
-        plt.title(lib_stats[l]['name'])
+        plt.title(opts['library_names'][l])
         pp.savefig()
         plt.close()
-    pp.close()
+        pp.close()
 
 
 def test_bamgroup():

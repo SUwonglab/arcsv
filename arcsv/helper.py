@@ -162,37 +162,37 @@ class GenomeInterval:
         return str((self.start, self.end))
 
 
-def parse_library_stats(filename):
-    lib_patterns = []
-    lib_stats = []
-    with open(filename, 'r') as file:
-        lines = [line for line in file if line != '' and line[0] != '#']
-        for line in lines:
-            if line[0] == '#' or line == '\n':
-                continue
-            print(line)
-            toks = line.strip().split('\t')
-            group, name, pattern, is_rf, do_splits, \
-                inner_insert, insert_max, do_jalign, readlen = toks
-            lib_patterns.append(re.compile(pattern))
-            lib_stats.append({'group': group, 'name': name, 'is_rf': is_rf == 'yes',
-                              'do_splits': do_splits == 'yes',
-                              'inner_insert': inner_insert == 'yes',
-                              'insert_max': int(insert_max),
-                              'do_junction_align': do_jalign == 'yes',
-                              'readlen': int(readlen)})
-    return lib_patterns, lib_stats
+# def parse_library_stats(filename):
+#     lib_patterns = []
+#     lib_stats = []
+#     with open(filename, 'r') as file:
+#         lines = [line for line in file if line != '' and line[0] != '#']
+#         for line in lines:
+#             if line[0] == '#' or line == '\n':
+#                 continue
+#             print(line)
+#             toks = line.strip().split('\t')
+#             group, name, pattern, is_rf, do_splits, \
+#                 inner_insert, insert_max, do_jalign, readlen = toks
+#             lib_patterns.append(re.compile(pattern))
+#             lib_stats.append({'group': group, 'name': name, 'is_rf': is_rf == 'yes',
+#                               'do_splits': do_splits == 'yes',
+#                               'inner_insert': inner_insert == 'yes',
+#                               'insert_max': int(insert_max),
+#                               'do_junction_align': do_jalign == 'yes',
+#                               'readlen': int(readlen)})
+#     return lib_patterns, lib_stats
 
 
-def combine_lib_dict(lib_dict_all):
-    lib_dict_combined = {}
-    cur_offset = 0
-    print(lib_dict_all)
-    for lib_dict in lib_dict_all:
-        for key, val in lib_dict.items():
-            lib_dict_combined[key] = val + cur_offset
-        cur_offset = max(lib_dict_combined.values()) + 1
-    return lib_dict_combined
+# def combine_lib_dict(lib_dict_all):
+#     lib_dict_combined = {}
+#     cur_offset = 0
+#     print(lib_dict_all)
+#     for lib_dict in lib_dict_all:
+#         for key, val in lib_dict.items():
+#             lib_dict_combined[key] = val + cur_offset
+#         cur_offset = max(lib_dict_combined.values()) + 1
+#     return lib_dict_combined
 
 
 # Merges a generic list of objects according to their locations (which may be interval-valued).
@@ -235,20 +235,20 @@ def merge_nearby(objects, mergefun, type='integer', max_distance=5):
 
 # if rg matches an existing read group in lib_dict, return the index
 # otherwise check against lib_patterns and add this read group to lib_dict
-def get_lib_idx(rg, lib_dict, lib_patterns):
-    lib_idx = lib_dict.get(rg)
-    if lib_idx is None:
-        found = False
-        for i in range(len(lib_patterns)):
-            pat = lib_patterns[i]
-            if pat.match(rg) is not None:
-                found = True
-                lib_dict[rg] = i
-                lib_idx = i
-                break
-        if not found:
-            raise Warning('RG ' + rg + ' not found')
-    return lib_idx
+# def get_lib_idx(rg, lib_dict, lib_patterns):
+#     lib_idx = lib_dict.get(rg)
+#     if lib_idx is None:
+#         found = False
+#         for i in range(len(lib_patterns)):
+#             pat = lib_patterns[i]
+#             if pat.match(rg) is not None:
+#                 found = True
+#                 lib_dict[rg] = i
+#                 lib_idx = i
+#                 break
+#         if not found:
+#             raise Warning('RG ' + rg + ' not found')
+#     return lib_idx
 
 
 def reverse_complement(seq):

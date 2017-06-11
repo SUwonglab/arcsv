@@ -9,8 +9,8 @@ from arcsv.bamparser_streaming import parse_bam, BamGroup
 from arcsv.breakpoint_merge import merge_breakpoints
 from arcsv.conditional_mappable_model import (model_from_mapstats, load_aggregate_model,
                                               load_model)
-from arcsv.helper import get_chrom_size, combine_lib_dict, time_to_str, parse_library_stats
-from arcsv.localfiles import bam_files, meta_files, outdirs, default_outdir
+from arcsv.helper import get_chrom_size, time_to_str
+from arcsv.localfiles import bam_files, outdirs, default_outdir
 from arcsv.pecluster import apply_discordant_clustering
 from arcsv.sv_inference import do_inference
 from arcsv.sv_parse_reads import parse_reads_with_blocks
@@ -61,7 +61,7 @@ def run(args):
         opts['min_edge_support'] = 4
 
     input_names = opts['input_list'].split(',')
-    inputs = [(bam_files[ip], meta_files[ip]) for ip in input_names]
+    inputs = [(bam_files[ip],) for ip in input_names]
     outdir = outdirs.get(input_names[0], default_outdir).format(name=opts['output_name'])
     opts['outdir'] = outdir
 
@@ -131,19 +131,15 @@ def call_sv(opts, inputs, reference_files, do_bp, do_junction_align):
     insert_sigma = []
     insert_min = []
     insert_max = []
-    lib_stats_all = []
-    lib_dict_all = []
+    # lib_stats_all = []
+    # lib_dict_all = []
     disc = []
     print(inputs)
     print(len(inputs))
     # MULTILIB need to change to do multiple libraries with distinct stats
     bamfiles = [i[0] for i in inputs]
-    metafiles = list(set(i[1] for i in inputs))
-    if len(metafiles) > 1:
-        raise Warning('multiple meta files unsupported')
-    meta = metafiles[0]
-    pb_out = parse_bam(opts, reference_files, bamfiles, meta, do_bp, do_junction_align)
-    jout, sout, mout, rlout, iout, imean, isd, dout, imin, imax, lib_stats, lib_dict = pb_out
+    pb_out = parse_bam(opts, reference_files, bamfiles, do_bp, do_junction_align)
+    jout, sout, mout, rlout, iout, imean, isd, dout, imin, imax = pb_out
     junctions.extend(jout)
     splits.extend(sout)
     if not opts['use_mate_tags']:
@@ -156,21 +152,19 @@ def call_sv(opts, inputs, reference_files, do_bp, do_junction_align):
         disc.extend(dout)
         insert_min.extend(imin)
         insert_max.extend(imax)
-    lib_stats_all.extend(lib_stats)
-    lib_dict_all.append(lib_dict)
-
-    lib_dict_combined = combine_lib_dict(lib_dict_all)
+    # lib_stats_all.extend(lib_stats)
+    # lib_dict_all.append(lib_dict)
+    # lib_dict_combined = combine_lib_dict(lib_dict_all)
 
     # cluster discordant pairs
     if opts['do_pecluster']:
         bp_disc = apply_discordant_clustering(opts, disc, insert_mu, insert_sigma,
-                                              insert_min, insert_max, lib_stats_all,
-                                              reference_files['gap'])
+                                              insert_min, insert_max, reference_files['gap'])
     else:
         bp_disc = []
 
     # merge breakpoints
-    bp_merged = merge_breakpoints(opts, junctions, splits, bp_disc, lib_stats_all)
+    bp_merged = merge_breakpoints(opts, junctions, splits, bp_disc)
 
     # load mappability models from disk
     mappable_models = []
@@ -181,12 +175,12 @@ def call_sv(opts, inputs, reference_files, do_bp, do_junction_align):
         # MULTILIB TODO
         model_dir = '.'
         for inp in inputs:
-            tmp, tmp_lib_stats = parse_library_stats(inp[1])
+            # tmp, tmp_lib_stats = parse_library_stats(inp[1])
             if opts['use_mate_tags']:
-                out = load_model(model_dir, inp[0], tmp_lib_stats)
+                out = load_model(model_dir, inp[0])
                 mod, class_prob, rlen_stat = out
             else:
-                out = load_aggregate_model(model_dir, inp[0], tmp_lib_stats)
+                out = load_aggregate_model(model_dir, inp[0])
                 mod, class_prob, rlen_stat = out
             mappable_models.extend(mod)
             class_probs.extend(class_prob)
@@ -252,7 +246,6 @@ def call_sv(opts, inputs, reference_files, do_bp, do_junction_align):
     # BAM
     bamgroup = BamGroup(bamfiles)
     pr_out = parse_reads_with_blocks(opts, reference_files, [bamgroup],
-                                     lib_stats_all, lib_dict_combined,
                                      bp_merged, insert_ranges, mappable_models)
     graph, blocks, gap_indices, left_bp, right_bp = pr_out
     call_sv_second_time = time.time()
@@ -280,8 +273,8 @@ def call_sv(opts, inputs, reference_files, do_bp, do_junction_align):
         insert_q99.append(q99)
     print('[parse_bam] insert ranges: .01-.99 quantiles')
     print('\n'.join(['{0}: {1} - {2}'.
-                     format(lib_stats_all[i]['name'], insert_q01[i], insert_q99[i])
-                     for i in range(len(lib_stats_all))]))
+                     format(opts['library_names'][l], insert_q01[i], insert_q99[i])
+                     for i in range(opts['nlib'])]))
 
     do_inference_insertion_time = do_inference(opts, reference_files, graph, blocks,
                                                gap_indices, left_bp, right_bp,

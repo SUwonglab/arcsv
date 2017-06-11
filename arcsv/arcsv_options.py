@@ -16,6 +16,13 @@ DEFAULT_OPTS = {
     'region_end': None,
     'reference_name': None,
 
+    # LIBRARY PARAMETERS (put this somewhere else eventually)
+    'nlib': 1,
+    'library_names': ['lib1'],
+    'library_is_rf': False,
+    'read_len': None,
+    'do_splits': True,
+
     # LIBRARY QUANTIFICATION
     'approx_stats_nreads': 1000000,
     'approx_stats_nchunks': 1000,

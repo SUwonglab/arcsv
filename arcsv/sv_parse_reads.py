@@ -236,7 +236,7 @@ def block_seq_to_path(seq):
         path.append(flipped)
     return tuple(path)
 
-def parse_reads_with_blocks(opts, reference_files, bamgroups, lib_stats, lib_dict,
+def parse_reads_with_blocks(opts, reference_files, bamgroups,
                             breakpoints, insert_ranges, map_models):
     # get gaps
     chrom_name = opts['chromosome']
@@ -297,7 +297,7 @@ def parse_reads_with_blocks(opts, reference_files, bamgroups, lib_stats, lib_dic
             if aln.qname in seen_aln:
                 mate, mate_block_idx = seen_aln[aln.qname]
                 del seen_aln[aln.qname]
-                block_parser_handle_pair(opts, aln, mate, bam, g, blocks, lib_dict, lib_stats,
+                block_parser_handle_pair(opts, aln, mate, bam, g, blocks,
                                          insert_ranges, cached_dist, map_models,
                                          block_idx1 = cur_idx, block_idx2 = mate_block_idx)
                 npairs += 1
@@ -310,7 +310,7 @@ def parse_reads_with_blocks(opts, reference_files, bamgroups, lib_stats, lib_dic
         print(Counter([bam.getrname(a[0].mrnm) for a in seen_aln.values()]))
         print('')
         for (aln, block_idx) in seen_aln.values():
-            block_parser_handle_hanging(opts, aln, bam, g, blocks, lib_dict, lib_stats,
+            block_parser_handle_hanging(opts, aln, bam, g, blocks,
                                         insert_ranges, cached_dist, map_models, block_idx)
 
     print('within-block insert size stats:\n')
@@ -397,8 +397,8 @@ def create_blocks(breakpoints, gaps, chrom_name, start, end, verbosity):
         print(right_breakpoints)
     return blocks, gap_indices, left_breakpoints, right_breakpoints
 
-def block_parser_handle_hanging(opts, aln, bam, g, blocks, lib_dict, lib_stats,
-                                insert_ranges, cached_dist, map_models, block_idx):
+def block_parser_handle_hanging(opts, aln, bam, g, blocks, insert_ranges,
+                                cached_dist, map_models, block_idx):
     mate = pysam.AlignedSegment()
     mate.rname = aln.mrnm
     mate.pos = aln.mpos
@@ -410,11 +410,11 @@ def block_parser_handle_hanging(opts, aln, bam, g, blocks, lib_dict, lib_stats,
         # values don't matter in this case since we won't condition on qmean/rlen
         mate_rlen, mate_qmean = aln.query_length, 0
     mate.query_sequence = 'A' * mate_rlen
-    block_parser_handle_pair(opts, aln, mate, bam, g, blocks, lib_dict, lib_stats,
+    block_parser_handle_pair(opts, aln, mate, bam, g, blocks,
                              insert_ranges, cached_dist, map_models,
                              block_idx1 = block_idx, qmean2 = mate_qmean)
 
-def block_parser_handle_pair(opts, aln1, aln2, bam, g, blocks, lib_dict, lib_stats,
+def block_parser_handle_pair(opts, aln1, aln2, bam, g, blocks,
                              insert_ranges, cached_dist, map_models,
                              block_idx1 = None, block_idx2 = None,
                              qmean1 = None, qmean2 = None):
@@ -427,11 +427,11 @@ def block_parser_handle_pair(opts, aln1, aln2, bam, g, blocks, lib_dict, lib_sta
     else:
         aln1_in_range = aln1_chrom == chrom_name
         aln2_in_range = aln2_chrom == chrom_name
-    lib_idx = lib_dict[aln1.get_tag('RG')]
-    if (not lib_stats[lib_idx]['do_splits']) and (aln1.has_tag('SA') or aln2.has_tag('SA')):
+    lib_idx = 0  # lib_dict[aln1.get_tag('RG')]
+    if (not opts['do_splits']) and (aln1.has_tag('SA') or aln2.has_tag('SA')):
         return
-    is_rf = lib_stats[lib_idx]['is_rf']
-    true_rlen = lib_stats[lib_idx]['readlen']
+    is_rf = opts['library_is_rf']
+    true_rlen = opts['read_len']
     min_mapq = opts['min_mapq_reads']
     if aln1_in_range and aln1.mapq >= min_mapq:
         ba1 = get_blocked_alignment(opts, aln1, blocks, block_idx1, bam, is_rf, true_rlen)

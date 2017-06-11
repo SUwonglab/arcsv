@@ -241,23 +241,24 @@ def junction_end(junction):
         return junction[BPLOC] + (len(junction[SEQ]) - junction[NCLIP])
 
 # 1. softclips (i.e. junctions) are filtered 
-def merge_breakpoints(opts, junctions_out, splits, disc_bp, lib_stats):
+def merge_breakpoints(opts, junctions_out, splits, disc_bp):
     chrom_name = opts['chromosome']
     ##### DEBUG
     print('Beginning breakpoint merge. . .')
     print('with the following junctions:')
-    for l in range(len(junctions_out)):
-        print(lib_stats[l]['name'] + ': ')
+    nlib = opts['nlib']
+    for l in range(nlib):
+        print(opts['library_names'][l] + ': ')
         d = {LEFT:'left', RIGHT:'right'}
         pairs = [(junction[BPLOC], d[junction[ORIENT]]) for junction in junctions_out[l][0].values()]
         pairs.sort()
         for pair in pairs:
             print(str(pair[0]) + '\t' + pair[1])
     print('and the following splits:')
-    for l in range(len(junctions_out)):
-        if not lib_stats[l]['do_splits']:
+    for l in range(opts['nlib']):
+        if not opts['do_splits']:
             continue
-        print(lib_stats[l]['name'] + ': ')
+        print(opts['library_names'][l] + ': ')
         for split in splits[l]:
             bp1 = tuple(split[4])
             bp1_chrom = split[3]
@@ -274,11 +275,11 @@ def merge_breakpoints(opts, junctions_out, splits, disc_bp, lib_stats):
     for orientation in range(2):
         # SPEED this should be a true hash table where we hash a junction to its BPLOC
         bp_dict = {}
-        for l in range(len(junction_maps)):
+        for l in range(opts['nlib']):
             jm = junction_maps[l]
             for junction in jm.values():
                 if junction[ORIENT] == orientation:
-                    junction[LIBS].append('jct_' + lib_stats[l]['name'])
+                    junction[LIBS].append('jct_' + opts['library_names'][l])
                     bp_dict[junction[BPLOC]] = bp_dict.get(junction[BPLOC], []) + [junction]
         print('bp_dict: ')
         print(sorted(list(bp_dict.keys())))
@@ -343,11 +344,11 @@ def merge_breakpoints(opts, junctions_out, splits, disc_bp, lib_stats):
                 all_bp[bp_interval] = all_bp.get(bp_interval, []) + [bp]
 
     # add split reads to all_bp
-    for l in range(len(splits)):
-        if not lib_stats[l]['do_splits']:
+    for l in range(opts['nlib']):
+        if not opts['do_splits']:
             continue
         split_list = splits[l]
-        bptype = 'spl_' + lib_stats[l]['name']
+        bptype = 'spl_' + opts['library_names'][l]
         for split in split_list:
             split_qname = split[0]
             split_type = split[7][0:4] if split[7][0:3] == 'Inv' else split[7][0:3]

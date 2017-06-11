@@ -4,6 +4,7 @@ import numpy as np
 from arcsv.constants import *
 from arcsv.helper import fetch_seq
 
+
 def process_softclip(pair, softclips, bam, do_splits, min_mapq, min_clipped_bases, min_clipped_qual):
     num_softclips = 0
     for aln in pair:
@@ -19,8 +20,10 @@ def process_softclip(pair, softclips, bam, do_splits, min_mapq, min_clipped_base
         nclip_left = aln.query_alignment_start
         nclip_right = (len(aln.seq) - aln.query_alignment_end)
         any_clip = (max(nclip_left, nclip_right) >= min_clipped_bases)
-        med_qual_left = np.median(aln.query_qualities[0:nclip_left]) if nclip_left > 0 else None
-        med_qual_right = np.median(aln.query_qualities[-nclip_right:]) if nclip_right > 0 else None
+        med_qual_left = np.median(aln.query_qualities[0:nclip_left]) if nclip_left > 0 \
+            else None
+        med_qual_right = np.median(aln.query_qualities[-nclip_right:]) if nclip_right > 0 \
+            else None
         if not any_clip:
             continue
         sc = SoftclippedAlignment()
