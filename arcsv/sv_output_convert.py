@@ -1,15 +1,15 @@
-
 import os
 import pyinter
-from bisect import bisect_left, bisect_right
+
 
 from arcsv.breakpoint_merge import Breakpoint
 from arcsv.helper import GenomeInterval
 from arcsv.sv_output import do_sv_processing
 from arcsv.sv_parse_reads import load_genome_gaps, create_blocks
 
-def svelter_convert(svelterfile, outdir, reffile, filter_gaps = False, refgapfile = None,
-                    flank_size = 1000, verbosity = 0):
+
+def svelter_convert(svelterfile, outdir, reffile, filter_gaps=False, refgapfile=None,
+                    flank_size=1000, verbosity=0):
     os.system('mkdir -p %s' % outdir)
     # collect all bps
     # all_bp = []
@@ -25,7 +25,6 @@ def svelter_convert(svelterfile, outdir, reffile, filter_gaps = False, refgapfil
     data = []
 
     # it seems some sv can be repeated in svelter output with different scores
-    # 
     seen_svstring = set()
     seen_id = {}
     skipped_seen = 0

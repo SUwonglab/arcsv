@@ -1,5 +1,4 @@
 import numpy as np
-import re
 import pysam
 from math import sqrt, floor, log, erf
 

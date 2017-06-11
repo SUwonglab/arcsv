@@ -5,6 +5,7 @@ from math import floor, ceil
 
 from arcsv.helper import fetch_seq, reverse_complement, block_gap, GenomeInterval
 
+
 # merge reference blocks if the breakpoint between them is never used
 def simplify_blocks_diploid(blocks, path1, path2):
     block_nums = [int(floor(path1[i]/2)) for i in range(1, len(path1), 2)]
@@ -198,50 +199,50 @@ def altered_reference_sequence(path_orig, blocks_orig, reference, flank_size):
 
 def test_simplify_blocks():
     blocks = [GenomeInterval(1, 100*i, 100*(i+1)) for i in range(20)]
-    blocks.append(GenomeInterval(1,0,100,is_de_novo=True))
-    blocks.append(GenomeInterval(1,0,100,is_de_novo=True))
+    blocks.append(GenomeInterval(1, 0, 100, is_de_novo=True))
+    blocks.append(GenomeInterval(1, 0, 100, is_de_novo=True))
 
     # deletion
-    assert(simplify_blocks(blocks, [0,1,4,5], flank_size = 100)[1:] == ([0,1,4,5], True, True))
-    assert(simplify_blocks(blocks, [0,1,2,3,6,7], flank_size = 100)[1:] == ([0,1,4,5], True, True))
-    assert(simplify_blocks(blocks, [0,1,2,3,8,9], flank_size = 100)[1:] == ([0,1,4,5], True, True))
+    assert(simplify_blocks(blocks, [0, 1, 4, 5], flank_size = 100)[1:] == ([0, 1, 4, 5], True, True))
+    assert(simplify_blocks(blocks, [0, 1, 2, 3, 6, 7], flank_size = 100)[1:] == ([0, 1, 4, 5], True, True))
+    assert(simplify_blocks(blocks, [0, 1, 2, 3, 8, 9], flank_size = 100)[1:] == ([0, 1, 4, 5], True, True))
     # inversion
-    assert(simplify_blocks(blocks, [0,1,3,2,4,5], flank_size = 100)[1:] == ([0,1,3,2,4,5], True, True))
-    assert(simplify_blocks(blocks, [0,1,2,3,5,4,6,7,8,9], flank_size = 100)[1:] == ([0,1,3,2,4,5], True, True))
-    assert(simplify_blocks(blocks, [0,1,2,3,7,6,5,4,8,9,10,11], flank_size = 100)[1:] == ([0,1,3,2,4,5], True, True))
+    assert(simplify_blocks(blocks, [0, 1, 3, 2, 4, 5], flank_size = 100)[1:] == ([0, 1, 3, 2, 4, 5], True, True))
+    assert(simplify_blocks(blocks, [0, 1, 2, 3, 5, 4, 6, 7, 8, 9], flank_size = 100)[1:] == ([0, 1, 3, 2, 4, 5], True, True))
+    assert(simplify_blocks(blocks, [0, 1, 2, 3, 7, 6, 5, 4, 8, 9, 10, 11], flank_size = 100)[1:] == ([0, 1, 3, 2, 4, 5], True, True))
     # duplication
-    assert(simplify_blocks(blocks, [0,1,2,3,2,3,4,5], flank_size = 100)[1:] == ([0,1,2,3,2,3,4,5], True, True))
-    assert(simplify_blocks(blocks, [0,1,2,3,4,5,4,5,6,7,8,9], flank_size = 100)[1:] == ([0,1,2,3,2,3,4,5], True, True))
-    assert(simplify_blocks(blocks, [0,1,2,3,0,1,2,3,4,5,6,7,8,9,6,7,8,9], flank_size = 100)[1:] == ([0,1,0,1,2,3,4,5,4,5], False, False))
+    assert(simplify_blocks(blocks, [0, 1, 2, 3, 2, 3, 4, 5], flank_size = 100)[1:] == ([0, 1, 2, 3, 2, 3, 4, 5], True, True))
+    assert(simplify_blocks(blocks, [0, 1, 2, 3, 4, 5, 4, 5, 6, 7, 8, 9], flank_size = 100)[1:] == ([0, 1, 2, 3, 2, 3, 4, 5], True, True))
+    assert(simplify_blocks(blocks, [0, 1, 2, 3, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 6, 7, 8, 9], flank_size = 100)[1:] == ([0, 1, 0, 1, 2, 3, 4, 5, 4, 5], False, False))
     # dispersed duplication
-    assert(simplify_blocks(blocks, [0,1,4,5,2,3,4,5,6,7], flank_size = 100)[1:] == ([0,1,4,5,2,3,4,5,6,7], True, True))
-    assert(simplify_blocks(blocks, [0,1,2,3,8,9,10,11,4,5,6,7,8,9,10,11,12,13], flank_size = 100)[1:] == ([0,1,4,5,2,3,4,5,6,7], True, True))
-    print(simplify_blocks(blocks, [0,1,5,4,2,3,4,5,6,7], flank_size = 100))
-    assert(simplify_blocks(blocks, [0,1,5,4,2,3,4,5,6,7], flank_size = 100)[1:] == ([0,1,5,4,2,3,4,5,6,7], True, True))
-    assert(simplify_blocks(blocks, [0,1,2,3,11,10,9,8,4,5,6,7,8,9,10,11,12,13], flank_size = 100)[1:] == ([0,1,5,4,2,3,4,5,6,7], True, True))
+    assert(simplify_blocks(blocks, [0, 1, 4, 5, 2, 3, 4, 5, 6, 7], flank_size = 100)[1:] == ([0, 1, 4, 5, 2, 3, 4, 5, 6, 7], True, True))
+    assert(simplify_blocks(blocks, [0, 1, 2, 3, 8, 9, 10, 11, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13], flank_size = 100)[1:] == ([0, 1, 4, 5, 2, 3, 4, 5, 6, 7], True, True))
+    print(simplify_blocks(blocks, [0, 1, 5, 4, 2, 3, 4, 5, 6, 7], flank_size = 100))
+    assert(simplify_blocks(blocks, [0, 1, 5, 4, 2, 3, 4, 5, 6, 7], flank_size = 100)[1:] == ([0, 1, 5, 4, 2, 3, 4, 5, 6, 7], True, True))
+    assert(simplify_blocks(blocks, [0, 1, 2, 3, 11, 10, 9, 8, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13], flank_size = 100)[1:] == ([0, 1, 5, 4, 2, 3, 4, 5, 6, 7], True, True))
     # insertion
-    assert(simplify_blocks(blocks, [0,1,2,3,40,41,4,5,42,43,6,7], flank_size = 100)[1:] == ([0,1,6,7,2,3,8,9,4,5], True, True))
-    assert(simplify_blocks(blocks, [0,1,2,3,40,41,42,43,4,5,6,7], flank_size = 100)[1:] == ([0,1,4,5,6,7,2,3], True, True))
+    assert(simplify_blocks(blocks, [0, 1, 2, 3, 40, 41, 4, 5, 42, 43, 6, 7], flank_size = 100)[1:] == ([0, 1, 6, 7, 2, 3, 8, 9, 4, 5], True, True))
+    assert(simplify_blocks(blocks, [0, 1, 2, 3, 40, 41, 42, 43, 4, 5, 6, 7], flank_size = 100)[1:] == ([0, 1, 4, 5, 6, 7, 2, 3], True, True))
     # some other cases
-    assert(simplify_blocks(blocks, [2,3,0,1,2,3], flank_size = 100)[1:] == ([2,3,0,1,2,3], False, False))
-    assert(simplify_blocks(blocks, [0,1,2,3,0,1], flank_size = 100)[1:] == ([0,1,2,3,0,1], False, False))
-    assert(simplify_blocks(blocks, [0,1,2,3,4,5,6,7,2,3,4,5,8,9,2,3,10,11], flank_size = 100)[1:] == ([0,1,2,3,4,5,6,7,2,3,4,5,8,9,2,3,10,11], True, True))
+    assert(simplify_blocks(blocks, [2, 3, 0, 1, 2, 3], flank_size = 100)[1:] == ([2, 3, 0, 1, 2, 3], False, False))
+    assert(simplify_blocks(blocks, [0, 1, 2, 3, 0, 1], flank_size = 100)[1:] == ([0, 1, 2, 3, 0, 1], False, False))
+    assert(simplify_blocks(blocks, [0, 1, 2, 3, 4, 5, 6, 7, 2, 3, 4, 5, 8, 9, 2, 3, 10, 11], flank_size = 100)[1:] == ([0, 1, 2, 3, 4, 5, 6, 7, 2, 3, 4, 5, 8, 9, 2, 3, 10, 11], True, True))
 
 def test_altered_reference_sequence():
     ref = pysam.FastaFile('/home/jgarthur/sv/reference/GRCh37.fa')
     blocks = [GenomeInterval('20', 100000 + 100*i, 100000 + 100*(i+1)) for i in range(10)] + [GenomeInterval('20', 0, 1000, True)]
 
-    refpath = [0,1,2,3,4,5,6,7]
-    delpath = [0,1,2,3,6,7,8,9]
-    del2path = [0,1,2,3,8,9,10,11]
-    inspath = [0,1,2,3,20,21,4,5,6,7]
-    duppath = [0,1,2,3,4,5,4,5,6,7,8,9]
-    dup2path = [0,1,2,3,4,5,6,7,4,5,6,7,8,9,10,11]
-    dupend = [0,1,2,3,4,5,4,5]
-    dupstartdel = [0,1,0,1,4,5]
-    invpath = [0,1,2,3,5,4,6,7,8,9]
-    inv2path = [0,1,2,3,7,6,5,4,8,9,10,11]
-    dduppath = [0,1,2,3,6,7,4,5,6,7,8,9,10,11]
+    refpath = [0, 1, 2, 3, 4, 5, 6, 7]
+    delpath = [0, 1, 2, 3, 6, 7, 8, 9]
+    del2path = [0, 1, 2, 3, 8, 9, 10, 11]
+    inspath = [0, 1, 2, 3, 20, 21, 4, 5, 6, 7]
+    duppath = [0, 1, 2, 3, 4, 5, 4, 5, 6, 7, 8, 9]
+    dup2path = [0, 1, 2, 3, 4, 5, 6, 7, 4, 5, 6, 7, 8, 9, 10, 11]
+    dupend = [0, 1, 2, 3, 4, 5, 4, 5]
+    dupstartdel = [0, 1, 0, 1, 4, 5]
+    invpath = [0, 1, 2, 3, 5, 4, 6, 7, 8, 9]
+    inv2path = [0, 1, 2, 3, 7, 6, 5, 4, 8, 9, 10, 11]
+    dduppath = [0, 1, 2, 3, 6, 7, 4, 5, 6, 7, 8, 9, 10, 11]
 
     flank_size = 1000
 
@@ -288,10 +289,10 @@ def test_altered_reference_sequence():
     assert(out[3][0] == [0,0,0,0,0])
 
     blocks = [GenomeInterval('20', 100000, 101000), GenomeInterval('20', 101025, 101125),GenomeInterval('20', 101130, 102500)]
-    refpath = [0,1,2,3,4,5]
-    delpath = [0,1,4,5]
-    duppath = [0,1,2,3,2,3,4,5]
-    invpath = [0,1,3,2,4,5]
+    refpath = [0, 1, 2, 3, 4, 5]
+    delpath = [0, 1, 4, 5]
+    duppath = [0, 1, 2, 3, 2, 3, 4, 5]
+    invpath = [0, 1, 3, 2, 4, 5]
     out = altered_reference_sequence(refpath, blocks, ref, flank_size)
     assert(out[0] == [])
     out = altered_reference_sequence(delpath, blocks, ref, flank_size)

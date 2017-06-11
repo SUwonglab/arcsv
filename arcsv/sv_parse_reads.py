@@ -758,6 +758,7 @@ def test_intersects():
     assert(i.intersects((0, 11)))
     assert(i.intersects((11, 12)))
 
+
 def test_get_blocked_alignment():
     bam = pysam.AlignmentFile('/home/jgarthur/sv/analysis/alignments/bwa_mem/short-reads/jun_jul.mdup.merge.mdup.bam', 'rb')
     blocks = [GenomeInterval('1', 0, 100),

@@ -64,8 +64,7 @@ DEFAULT_OPTS = {
     # 'lh_tol': 1e-10,
 
     # OUTPUT
-    'output_name': 'test',
-    'outdir': './',
+    'outdir': 'arcsv_out',
     # (visualization)
     'do_viz': False,
     'max_dist_hanging_viz': 2000000,

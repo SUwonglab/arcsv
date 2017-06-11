@@ -4,7 +4,7 @@ import argparse
 import sys
 
 
-from arcsv.arcsv_options import DEFAULT_OPTS
+from arcsv.arcsv_call_options import DEFAULT_OPTS
 
 
 def main():
@@ -42,12 +42,14 @@ def add_call_parser(subparsers):
                                         help='Call SVs from alignment data',
                                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     required = parser_call.add_argument_group('required arguments')
-    required.add_argument('-i', '--input_list', required=True, type=str)
+    required.add_argument('-i', '--input_list', required=True, type=str,
+                          help='bam file to use for SV calling '
+                               '(for multiple files use a comma-separated list')
     required.add_argument('-r', '--region', required=True, type=str,
                           help='chromosome[:start-end]')
     optional = parser_call.add_argument_group('optional arguments')
-    optional.add_argument('-o', '--output_name', type=str,
-                          help='output folder name')
+    optional.add_argument('-o', '--outdir', type=str,
+                          help='output folder')
     # optional.add_argument('-D', '--reference_dir', type=str,
     # default='/home/jgarthur/sv/reference')
     optional.add_argument('-R', '--reference_name', type=str,

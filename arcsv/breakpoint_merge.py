@@ -3,9 +3,10 @@ import numpy as np
 from arcsv.constants import *
 from arcsv.helper import merge_nearby
 
+
 # offsets: if set, minimum must be 0
-def compute_consensus_sequence(seqs, quals, offsets = None):
-    BASE_DICT = {'A':0, 'T':1, 'C':2, 'G':3, 'N':4}
+def compute_consensus_sequence(seqs, quals, offsets=None):
+    BASE_DICT = {'A': 0, 'T': 1, 'C': 2, 'G': 3, 'N': 4}
     BASE_CHR = 'ATCGN'
     nseq = len(seqs)
     if offsets is None:
@@ -23,6 +24,7 @@ def compute_consensus_sequence(seqs, quals, offsets = None):
     consensus_qual = np.max(voting, 0)
     consensus_seq = ''.join([BASE_CHR[i] for i in consensus_idx])
     return consensus_seq, consensus_qual
+
 
 # given two sorted lists of numbers, get pairs (a[i], b[j]) such that |a[i] - b[j]| <= max_dist
 def get_closeby_pairs(a, b, max_dist):
@@ -48,6 +50,7 @@ def get_closeby_pairs(a, b, max_dist):
             i += 1
             j += 1
     return pairs
+
 
 def junction_mergefun(locs, junctions):
     # merge sequences
@@ -87,9 +90,10 @@ def junction_mergefun(locs, junctions):
                        consensus_nclip, nuniq, ndup, mapq, nsupp, libs]
     return ((consensus_bp, merged_junction), )
 
+
 def junction_mergefun_test():
-    j1 = ['AAATT', [4,4,4,4,4], '', RIGHT, 100, 2, 5, 5, 60, 1]
-    j2 = ['AAAAGTT', [5,5,5,5,5,5, 5], '', RIGHT, 100, 3, 1, 1, 60, 0]
+    j1 = ['AAATT', [4, 4, 4, 4, 4], '', RIGHT, 100, 2, 5, 5, 60, 1]
+    j2 = ['AAAAGTT', [5, 5, 5, 5, 5, 5, 5], '', RIGHT, 100, 3, 1, 1, 60, 0]
     junctions = [j1, j2]
     bplocs = [j[BPLOC] for j in junctions]
     merged_bp, merged_junction = junction_mergefun(bplocs, junctions)
@@ -100,18 +104,20 @@ def junction_mergefun_test():
     print('observed: ')
     print(merged_junction)
 
+
 def bp_mergefun(locs, bps):
     combined = sum(bps)
     # print('merging locs {0} bps {1}'.format(locs, bps))
     # print('combined {0}'.format(combined))
     return ((combined.interval, combined), )
 
-def bp_mergefun_precedence(locs, bps, max_distance = 0):
+
+def bp_mergefun_precedence(locs, bps, max_distance=0):
     dist = lambda x, y: max(x[0] - y[1], y[0] - x[1], 0)
     merged_above = []
     merged = {}
     prec_list = list(set(bp.precedence for bp in bps))
-    prec_list.sort(reverse = True)
+    prec_list.sort(reverse=True)
     for i in range(len(prec_list)):
         p = prec_list[i]
         # from highest to lowest precedence level
@@ -120,9 +126,10 @@ def bp_mergefun_precedence(locs, bps, max_distance = 0):
         for bp in bps:
             if bp.precedence == p and bp not in merged_above:
                 p_dict[bp.interval] = p_dict.get(bp.interval, []) + [bp]
-        p_mrg = merge_nearby(p_dict, bp_mergefun, type = 'interval', max_distance = max_distance)
+        p_mrg = merge_nearby(p_dict, bp_mergefun, type='interval', max_distance=max_distance)
         if any([k in merged for k in p_mrg.keys()]):
-            print('key(s) {0} found in merged:'.format([k for k in p_mrg.keys() if k in merged]))
+            print('key(s) {0} found in merged:'
+                  .format([k for k in p_mrg.keys() if k in merged]))
             print('locs: {0}\nbps: {1}\n'.format(locs, bps))
             raise Warning('p_mrg key in merged')
         merged.update(p_mrg)
@@ -140,92 +147,94 @@ def bp_mergefun_precedence(locs, bps, max_distance = 0):
                         merged_above.append(lower_bp)
     return merged
 
+
 def bp_mergefun_precedence_test():
-    bps = [Breakpoint((1, 2), splits = [1]),
-           Breakpoint((4, 5), splits = [3])]
-    merged = merge_nearby({bp.interval:[bp] for bp in bps},
+    bps = [Breakpoint((1, 2), splits=[1]),
+           Breakpoint((4, 5), splits=[3])]
+    merged = merge_nearby({bp.interval: [bp] for bp in bps},
                           bp_mergefun_precedence,
-                          type = 'interval',
-                          max_distance = 0)
+                          type='interval',
+                          max_distance=0)
     mbp = tuple(m[1] for m in sorted(merged.items()))
     print('\n'.join(str(merged[loc]) for loc in sorted(merged.keys())))
     print('')
-    assert(mbp[0].interval == (1,2) and mbp[1].interval == (4,5))
+    assert(mbp[0].interval == (1, 2) and mbp[1].interval == (4, 5))
 
-    bps = [Breakpoint((1, 2), splits = [1]),
-           Breakpoint((2, 3), splits = [3])]
-    merged = merge_nearby({bp.interval:[bp] for bp in bps},
+    bps = [Breakpoint((1, 2), splits=[1]),
+           Breakpoint((2, 3), splits=[3])]
+    merged = merge_nearby({bp.interval: [bp] for bp in bps},
                           bp_mergefun_precedence,
-                          type = 'interval',
-                          max_distance = 0)
+                          type='interval',
+                          max_distance=0)
     mbp = tuple(m[1] for m in sorted(merged.items()))
     print('\n'.join(str(merged[loc]) for loc in sorted(merged.keys())))
     print('')
-    assert(mbp[0].interval == (1,3) and len(mbp) == 1)
+    assert(mbp[0].interval == (1, 3) and len(mbp) == 1)
 
-    bps = [Breakpoint((1, 2), splits = [1]),
-           Breakpoint((2, 3), pe = [3])]
-    merged = merge_nearby({bp.interval:[bp] for bp in bps},
+    bps = [Breakpoint((1, 2), splits=[1]),
+           Breakpoint((2, 3), pe=[3])]
+    merged = merge_nearby({bp.interval: [bp] for bp in bps},
                           bp_mergefun_precedence,
-                          type = 'interval',
-                          max_distance = 0)
+                          type='interval',
+                          max_distance=0)
     mbp = tuple(m[1] for m in sorted(merged.items()))
     print('\n'.join(str(merged[loc]) for loc in sorted(merged.keys())))
     print('')
-    assert(mbp[0].interval == (1,2) and len(mbp) == 1)
+    assert(mbp[0].interval == (1, 2) and len(mbp) == 1)
 
-    bps = [Breakpoint((1, 10), splits = [1]),
-           Breakpoint((2, 15), pe = [3]),
-           Breakpoint((11,20), splits = [4])]
-    merged = merge_nearby({bp.interval:[bp] for bp in bps},
+    bps = [Breakpoint((1, 10), splits=[1]),
+           Breakpoint((2, 15), pe=[3]),
+           Breakpoint((11, 20), splits=[4])]
+    merged = merge_nearby({bp.interval: [bp] for bp in bps},
                           bp_mergefun_precedence,
-                          type = 'interval',
-                          max_distance = 0)
+                          type='interval',
+                          max_distance=0)
     mbp = tuple(m[1] for m in sorted(merged.items()))
     print('\n'.join(str(merged[loc]) for loc in sorted(merged.keys())))
     print('')
-    assert(mbp[0].interval == (1,10) and mbp[1].interval == (11,20) and len(mbp) == 2)
+    assert(mbp[0].interval == (1, 10) and mbp[1].interval == (11, 20) and len(mbp) == 2)
 
-    bps = [Breakpoint((1, 10), pe = [1]),
-           Breakpoint((2, 15), splits = [3]),
-           Breakpoint((11,20), pe = [4])]
-    merged = merge_nearby({bp.interval:[bp] for bp in bps},
+    bps = [Breakpoint((1, 10), pe=[1]),
+           Breakpoint((2, 15), splits=[3]),
+           Breakpoint((11, 20), pe=[4])]
+    merged = merge_nearby({bp.interval: [bp] for bp in bps},
                           bp_mergefun_precedence,
-                          type = 'interval',
-                          max_distance = 0)
+                          type='interval',
+                          max_distance=0)
     mbp = tuple(m[1] for m in sorted(merged.items()))
     print('\n'.join(str(merged[loc]) for loc in sorted(merged.keys())))
     print('')
-    assert(mbp[0].interval == (2,15) and len(mbp) == 1)
+    assert(mbp[0].interval == (2, 15) and len(mbp) == 1)
 
-    bps = [Breakpoint((1, 10), splits = [1]),
-           Breakpoint((15, 25), splits = [3]),
-           Breakpoint((9, 12), pe = [4]),
-           Breakpoint((11, 20), pe = [5])]
-    merged = merge_nearby({bp.interval:[bp] for bp in bps},
+    bps = [Breakpoint((1, 10), splits=[1]),
+           Breakpoint((15, 25), splits=[3]),
+           Breakpoint((9, 12), pe=[4]),
+           Breakpoint((11, 20), pe=[5])]
+    merged = merge_nearby({bp.interval: [bp] for bp in bps},
                           bp_mergefun_precedence,
-                          type = 'interval',
-                          max_distance = 0)
+                          type='interval',
+                          max_distance=0)
     mbp = tuple(m[1] for m in sorted(merged.items()))
     print('\n'.join(str(merged[loc]) for loc in sorted(merged.keys())))
     print('')
-    assert(mbp[0].interval == (1,10) and mbp[1].interval == (15,25) and len(mbp) == 2)
+    assert(mbp[0].interval == (1, 10) and mbp[1].interval == (15, 25) and len(mbp) == 2)
 
-    bps = [Breakpoint((1, 10), splits = [1]),
-           Breakpoint((5,11), splits = [2]),
-           Breakpoint((30, 40), splits = [3]),
-           Breakpoint((30, 50), pe = [4]),
-           Breakpoint((41, 55), pe = [5]),
-           Breakpoint((1, 100), pe = [6])]
-    merged = merge_nearby({bp.interval:[bp] for bp in bps},
+    bps = [Breakpoint((1, 10), splits=[1]),
+           Breakpoint((5, 11), splits=[2]),
+           Breakpoint((30, 40), splits=[3]),
+           Breakpoint((30, 50), pe=[4]),
+           Breakpoint((41, 55), pe=[5]),
+           Breakpoint((1, 100), pe=[6])]
+    merged = merge_nearby({bp.interval: [bp] for bp in bps},
                           bp_mergefun_precedence,
-                          type = 'interval',
-                          max_distance = 0)
+                          type='interval',
+                          max_distance=0)
     mbp = tuple(m[1] for m in sorted(merged.items()))
     print('\n'.join(str(merged[loc]) for loc in sorted(merged.keys())))
     print('')
-    assert(mbp[0].interval == (1,11) and mbp[1].interval == (30,40) and \
-           mbp[2].interval == (41,55) and len(mbp) == 3)
+    assert(mbp[0].interval == (1, 11) and mbp[1].interval == (30, 40)
+           and mbp[2].interval == (41, 55) and len(mbp) == 3)
+
 
 # TEMPORARY until replace with class Junction
 def junction_start(junction):
@@ -234,44 +243,48 @@ def junction_start(junction):
     else:
         return junction[BPLOC] - (len(junction[SEQ]) - junction[NCLIP])
 
+
 def junction_end(junction):
     if junction[ORIENT] == RIGHT:
         return junction[BPLOC] + junction[NCLIP]
     else:
         return junction[BPLOC] + (len(junction[SEQ]) - junction[NCLIP])
 
-# 1. softclips (i.e. junctions) are filtered 
+
+# 1. softclips (i.e. junctions) are filtered
 def merge_breakpoints(opts, junctions_out, splits, disc_bp):
     chrom_name = opts['chromosome']
-    ##### DEBUG
-    print('Beginning breakpoint merge. . .')
-    print('with the following junctions:')
-    nlib = opts['nlib']
-    for l in range(nlib):
-        print(opts['library_names'][l] + ': ')
-        d = {LEFT:'left', RIGHT:'right'}
-        pairs = [(junction[BPLOC], d[junction[ORIENT]]) for junction in junctions_out[l][0].values()]
-        pairs.sort()
-        for pair in pairs:
-            print(str(pair[0]) + '\t' + pair[1])
-    print('and the following splits:')
-    for l in range(opts['nlib']):
-        if not opts['do_splits']:
-            continue
-        print(opts['library_names'][l] + ': ')
-        for split in splits[l]:
-            bp1 = tuple(split[4])
-            bp1_chrom = split[3]
-            bp2 = tuple(split[6])
-            bp2_chrom = split[5]
-            if bp1_chrom == bp2_chrom and bp1_chrom == chrom_name:
-                print(str(bp1) + ' -> ' + str(bp2))
-    #####
-    junction_maps = [j[0] for j in junctions_out] # SPEED tuples in these cases are faster
+    if opts['verbosity'] > 1:
+        print('Beginning breakpoint merge. . .')
+        print('with the following junctions:')
+        nlib = opts['nlib']
+        for l in range(nlib):
+            print(opts['library_names'][l] + ': ')
+            d = {LEFT: 'left', RIGHT: 'right'}
+            pairs = [(junction[BPLOC], d[junction[ORIENT]])
+                     for junction in junctions_out[l][0].values()]
+            pairs.sort()
+            for pair in pairs:
+                print(str(pair[0]) + '\t' + pair[1])
+        print('and the following splits:')
+        for l in range(opts['nlib']):
+            if not opts['do_splits']:
+                continue
+            print(opts['library_names'][l] + ': ')
+            for split in splits[l]:
+                bp1 = tuple(split[4])
+                bp1_chrom = split[3]
+                bp2 = tuple(split[6])
+                bp2_chrom = split[5]
+                if bp1_chrom == bp2_chrom and bp1_chrom == chrom_name:
+                    print(str(bp1) + ' -> ' + str(bp2))
+    junction_maps = [j[0] for j in junctions_out]  # SPEED tuples in these cases are faster
     junctions_merged = [None, None]
-    all_bp = {}            # breakpoint-evidence mapping before merging junction-derived BP and split-derived BP
+    # breakpoint-evidence mapping before merging junction-derived BP and split-derived BP
+    all_bp = {}
 
-    # merge junction sequences (filtering those with less than min_junction_support supporting alignments)
+    # merge junction sequences
+    # (filtering those with less than min_junction_support supporting alignments)
     for orientation in range(2):
         # SPEED this should be a true hash table where we hash a junction to its BPLOC
         bp_dict = {}
@@ -286,11 +299,14 @@ def merge_breakpoints(opts, junctions_out, splits, disc_bp):
         # print('162481678')
         # for i in range(162481678-5, 162481678+6):
         #     print(bp_dict.get(i))
-        junctions_merged[orientation] = merge_nearby(bp_dict, junction_mergefun, type='integer', max_distance = opts['max_junction_merge_distance'])
+        junctions_merged[orientation] = \
+            merge_nearby(bp_dict, junction_mergefun, type='integer',
+                         max_distance=opts['max_junction_merge_distance'])
         for item in list(junctions_merged[orientation].items()):
             loc = item[0]
             junction = item[1]
-            if junction[NUNIQ] + junction[NSUPP] < opts['min_junction_support']: # note junction[NSUPP] == 0 if not doing jct. align
+            # note junction[NSUPP] == 0 if not doing jct. align
+            if junction[NUNIQ] + junction[NSUPP] < opts['min_junction_support']:
                 del junctions_merged[orientation][loc]
 
     # find in(v/s)ersion microhomologies
@@ -324,7 +340,7 @@ def merge_breakpoints(opts, junctions_out, splits, disc_bp):
                 supp_left = junction1[NUNIQ] + junction1[NSUPP]
                 supp_right = junction2[NUNIQ] + junction2[NSUPP]
                 libs = junction1[LIBS] + junction2[LIBS]
-                bp = Breakpoint(bp_interval, supp_left, supp_right, libs = libs)
+                bp = Breakpoint(bp_interval, supp_left, supp_right, libs=libs)
                 all_bp[bp_interval] = all_bp.get(bp_interval, []) + [bp]
         elif valid_insertion_inversion_microhomology(junction1, junction2):
             # already found, output for debugging
@@ -340,7 +356,7 @@ def merge_breakpoints(opts, junctions_out, splits, disc_bp):
                 jct = junctions_merged[orientation][bp]
                 supp_left = jct[NUNIQ] + jct[NSUPP] if orientation == LEFT else 0
                 supp_right = jct[NUNIQ] + jct[NSUPP] if orientation == RIGHT else 0
-                bp = Breakpoint(bp_interval, supp_left, supp_right, libs = jct[LIBS])
+                bp = Breakpoint(bp_interval, supp_left, supp_right, libs=jct[LIBS])
                 all_bp[bp_interval] = all_bp.get(bp_interval, []) + [bp]
 
     # add split reads to all_bp
@@ -356,12 +372,12 @@ def merge_breakpoints(opts, junctions_out, splits, disc_bp):
             bp1_interval = tuple(split[4])
             bp1_chrom = split[3]
             if bp1_chrom == chrom_name:
-                bp1 = Breakpoint(bp1_interval, splits = split_list, libs = [bptype])
+                bp1 = Breakpoint(bp1_interval, splits=split_list, libs=[bptype])
                 all_bp[bp1_interval] = all_bp.get(bp1_interval, []) + [bp1]
             bp2_interval = tuple(split[6])
             bp2_chrom = split[5]
             if bp2_chrom == chrom_name:
-                bp2 = Breakpoint(bp2_interval, splits = split_list, libs = [bptype])
+                bp2 = Breakpoint(bp2_interval, splits=split_list, libs=[bptype])
                 all_bp[bp2_interval] = all_bp.get(bp2_interval, []) + [bp2]
 
     # add PE clusters to all_bp
@@ -373,7 +389,7 @@ def merge_breakpoints(opts, junctions_out, splits, disc_bp):
     all_bploc = list(all_bp.keys())
     all_bploc.sort()
     print('\n'.join(['{0}: {1}'.format(bpl, all_bp[bpl]) for bpl in all_bploc]))
-    merged = merge_nearby(all_bp, bp_mergefun_precedence, type = 'interval', max_distance = 0)
+    merged = merge_nearby(all_bp, bp_mergefun_precedence, type='interval', max_distance=0)
     mbploc = sorted(merged.keys())
     print('\njust merged bp ({0} total):'.format(len(mbploc)))
     print('\n'.join(['{0}: {1}'.format(bpl, merged[bpl]) for bpl in mbploc]))
@@ -388,9 +404,10 @@ def merge_breakpoints(opts, junctions_out, splits, disc_bp):
 
     return merged
 
+
 class Breakpoint:
-    def __init__(self, interval, supp_clip_left = 0, supp_clip_right = 0,
-                 splits = [], pe = [], libs = []):
+    def __init__(self, interval, supp_clip_left=0, supp_clip_right=0,
+                 splits=[], pe=[], libs=[]):
         self.interval = interval
         self.supp_clip_left = supp_clip_left
         self.supp_clip_right = supp_clip_right
@@ -432,14 +449,9 @@ class Breakpoint:
             raise TypeError('addition of Breakpoint and {0} not supported'.format(type(other)))
 
     def __str__(self):
-        return '({0}, L={1}, R={2}, PE={3}: {4}, Spl={5}: {6}, {7})'.format(self.interval,
-                                                                              self.supp_clip_left,
-                                                                              self.supp_clip_right,
-                                                                              self.supp_pe,
-                                                                              self.pe,
-                                                                              self.supp_split,
-                                                                              self.splits,
-                                                                              self.libs)
+        return ('({0}, L={1}, R={2}, PE={3}: {4}, Spl={5}: {6}, {7})'
+                .format(self.interval, self.supp_clip_left, self.supp_clip_right,
+                        self.supp_pe, self.pe, self.supp_split, self.splits, self.libs))
 
     def __repr__(self):
         return str(self)
@@ -473,6 +485,7 @@ def valid_insertion_inversion_microhomology(junction1, junction2):
     leftover_right = len(right[SEQ]) - right[NCLIP] - abs(diff)
     return diff > 0 and leftover_left > 0 and leftover_right > 0
 
+
 def test_compute_consensus_sequence():
     seqs = ['ATTCGGG',
             'TTCGCCA',
@@ -481,8 +494,9 @@ def test_compute_consensus_sequence():
     offsets = [0, 1, 0]
     print(compute_consensus_sequence(seqs, quals, offsets))
 
+
 def test_get_closeby_pairs():
     assert(get_closeby_pairs([0], [100], 5) == [])
-    assert(get_closeby_pairs([0,3,4], [6,7], 5) == [(3,6), (3,7), (4,6), (4,7)])
-    assert(get_closeby_pairs([0, 10, 20], [5, 15, 25], 5) == [(0,5), (10,5), (10,15), (20,15), (20,25)])
-
+    assert(get_closeby_pairs([0, 3, 4], [6, 7], 5) == [(3, 6), (3, 7), (4, 6), (4, 7)])
+    assert(get_closeby_pairs([0, 10, 20], [5, 15, 25], 5)
+           == [(0, 5), (10, 5), (10, 15), (20, 15), (20, 25)])

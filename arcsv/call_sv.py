@@ -10,7 +10,6 @@ from arcsv.breakpoint_merge import merge_breakpoints
 from arcsv.conditional_mappable_model import (model_from_mapstats, load_aggregate_model,
                                               load_model)
 from arcsv.helper import get_chrom_size, time_to_str
-from arcsv.localfiles import bam_files, outdirs, default_outdir
 from arcsv.pecluster import apply_discordant_clustering
 from arcsv.sv_inference import do_inference
 from arcsv.sv_parse_reads import parse_reads_with_blocks
@@ -60,23 +59,10 @@ def run(args):
         opts['min_bp_support'] = 4
         opts['min_edge_support'] = 4
 
-    input_names = opts['input_list'].split(',')
-    inputs = [(bam_files[ip],) for ip in input_names]
-    outdir = outdirs.get(input_names[0], default_outdir).format(name=opts['output_name'])
-    opts['outdir'] = outdir
-
-    # TEMPORARY mate tags -- can detect this automatically
-    has_mate_tags = {'venter_short': True,
-                     'venter_1rg': True,
-                     'example': True,
-                     'small': True,
-                     'varsim': True,
-                     'hepg2_short': False,
-                     'k562_short': False,
-                     'na12878': True}
-    if opts['use_mate_tags'] and not all([has_mate_tags.get(ip, False) for ip in input_names]):
-        raise Warning('[arcsv] use_mate_tags = True was specified but not all inputs have'
-                      'mate tag annotations')
+    # TODO no tuple
+    inputs = [(os.path.realpath(ip.strip()),)
+              for ip in opts['input_list'].split(',')]
+    opts['outdir'] = os.path.realpath(opts['outdir'])
 
     # call SVs
     if opts['verbosity'] > 0:
@@ -107,13 +93,13 @@ def call_sv(opts, inputs, reference_files, do_bp, do_junction_align):
     # create ouput directories if needed
     if not os.path.exists(outdir):
         os.makedirs(outdir)
-    if do_viz and not os.path.exists(outdir + 'tracks/'):
-        os.makedirs(outdir + 'tracks/')
-    os.system('rm -f ' + outdir + 'tracks/trackDb.txt')
-    if not os.path.exists(outdir + 'figs/'):
-        os.makedirs(outdir + 'figs/')
-    if not os.path.exists(outdir + 'lh/'):
-        os.makedirs(outdir + 'lh/')
+    track_dir = os.path.join(outdir, 'tracks')
+    fig_dir = os.path.join(outdir, 'figs')
+    lh_dir = os.path.join(outdir, 'lh')
+    for dd in (track_dir, fig_dir, lh_dir):
+        if not os.path.exists(dd):
+            os.makedirs(dd)
+    os.system('rm -f ' + os.path.join(track_dir, 'trackDb.txt'))
 
     # random seed
     input_cat = ''.join([ip[0] for ip in inputs])

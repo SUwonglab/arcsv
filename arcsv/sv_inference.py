@@ -1,5 +1,6 @@
 import copy
 import numpy as np
+import os
 import pickle
 import pyinter
 import pysam
@@ -32,15 +33,15 @@ def do_inference(opts, reference_files, g, blocks,
     g.print_summary()
 
 
-    altered_reference_file = open(outdir + 'altered.fasta', 'w')
-    altered_reference_data = open(outdir + 'altered.pkl', 'wb')
+    altered_reference_file = open(os.path.join(outdir, 'altered.fasta'), 'w')
+    altered_reference_data = open(os.path.join(outdir, 'altered.pkl'), 'wb')
     qnames, block_positions, insertion_sizes, del_sizes = [], [], [], []
     simplified_blocks, simplified_paths = [], []
     has_left_flank, has_right_flank = [], []
-    sv_complex_outfile = open(outdir + 'sv_complex.txt', 'w')
-    sv_logfile = open(outdir + 'sv_log.txt', 'w')
-    sv_outfile = open(outdir + 'sv_out.bed', 'w')
-    sv_outfile2 = open(outdir + 'sv_out2.bed', 'w')
+    sv_complex_outfile = open(os.path.join(outdir, 'sv_complex.txt'), 'w')
+    sv_logfile = open(os.path.join(outdir, 'sv_log.txt'), 'w')
+    sv_outfile = open(os.path.join(outdir, 'sv_out.bed'), 'w')
+    sv_outfile2 = open(os.path.join(outdir, 'sv_out2.bed'), 'w')
     sv_outfile2.write(svout_header_line())
 
     ref = pysam.FastaFile(reference_files['reference'])
@@ -180,12 +181,12 @@ def do_inference(opts, reference_files, g, blocks,
         vertex_block_ids = [int(floor(v/2)) for v in range(len(g.graph.vs))]
         vertex_block_is_in = [v % 2 == 0 for v in range(len(g.graph.vs))]
         vertex_labels = ['{0} - {1}'.format(v, blocks[id].start if ii else blocks[id].end) for (v, id, ii) in zip(range(len(g.graph.vs)), vertex_block_ids, vertex_block_is_in)]
-        g.graph.write_svg(fname = outdir + 'graph.svg',
-                          width = 4000,
-                          height = 4000,
-                          layout = 'fruchterman_reingold',
-                          edge_colors = edge_colors,
-                          labels = vertex_labels)
+        g.graph.write_svg(fname=os.path.join(outdir, 'graph.svg'),
+                          width=4000,
+                          height=4000,
+                          layout='fruchterman_reingold',
+                          edge_colors=edge_colors,
+                          labels=vertex_labels)
 
     # call SVs
     sv_calls = []
@@ -394,16 +395,16 @@ def do_inference(opts, reference_files, g, blocks,
             # if complex variant called, write out figure
             if variant_called and has_complex:
                 # 1-indexed inclusive coords to match vcf
-                figname = '{0}figs/{1}_{2}_{3}.png'.format(outdir, blocks[0].chrom,
-                                                           blocks[start].start + 1,
-                                                           blocks[end].end)
-                if best[0] == best[1]: # homozygous
-                    plot_rearrangement(figname, blocks, start, end,
-                                       path1, show_ref = True)
-                else:                  # heterozygous
-                    plot_rearrangement(figname, blocks, start, end,
+                figname = ('{0}_{1}_{2}.png'
+                           .format(blocks[0].chrom, blocks[start].start + 1, blocks[end].end))
+                figpath = os.path.join(outdir, 'figs', figname)
+                if best[0] == best[1]:  # homozygous
+                    plot_rearrangement(figpath, blocks, start, end,
+                                       path1, show_ref=True)
+                else:           # heterozygous
+                    plot_rearrangement(figpath, blocks, start, end,
                                        path1, path2,
-                                       show_ref = True)
+                                       show_ref=True)
 
             # write altered reference to file
             sv1 = [sv for sv in svs if sv.genotype == '1|1' or sv.genotype == '1|0']
@@ -472,7 +473,7 @@ def do_inference(opts, reference_files, g, blocks,
             print('')
 
     # write sorted VCF
-    vcf_file = open(outdir + 'sv_calls.vcf', 'w')
+    vcf_file = open(os.path.join(outdir, 'sv_calls.vcf'), 'w')
     vcf_file.write(get_vcf_header(reference_files['reference']))
     sv_calls.sort()
     for (pos, line) in sv_calls:

@@ -194,7 +194,7 @@ def create_aggregate_mappable_model(bam_name, meta, outdir, min_mapq,
         pairs.sort()
         freq = [p[1]/n for p in pairs]
         print('\tfrequencies {0}'.format(freq))
-        outname = outdir + 'mapstats_{0}_{1}.pkl'.format(l, os.path.basename(bam_name))
+        outname = os.path.join(outdir, 'mapstats_{0}_{1}.pkl'.format(l, os.path.basename(bam_name)))
         outfile = open(outname, 'wb')
         pickle.dump(freq, outfile)
         outfile.close()
@@ -264,7 +264,7 @@ def create_mappable_model(bam_name, meta, outdir, min_mapq,
         pairs.sort()
         freq = [p[1]/n for p in pairs]
         print('\tfrequencies {0}'.format(freq))
-        outname = outdir + 'mapstats_{0}_{1}.pkl'.format(l, os.path.basename(bam_name))
+        outname = os.path.join(outdir, 'mapstats_{0}_{1}.pkl'.format(l, os.path.basename(bam_name)))
         outfile = open(outname, 'wb')
         pickle.dump(freq, outfile)
         outfile.close()
@@ -275,7 +275,7 @@ def create_mappable_model(bam_name, meta, outdir, min_mapq,
         rlen_long = [max(r1, r2) for (r1,r2) in zip(mappable_stats[l]['rlen1'],
                                                     mappable_stats[l]['rlen2'])]
         rlen_stats = (int(np.mean(rlen_long)), int(np.mean(rlen_short)))
-        outname = outdir + 'rlen_{0}_{1}.pkl'.format(l, os.path.basename(bam_name))
+        outname = os.path.join(outdir, 'rlen_{0}_{1}.pkl'.format(l, os.path.basename(bam_name)))
         outfile = open(outname, 'wb')
         pickle.dump(rlen_stats, outfile)
         outfile.close()
@@ -284,19 +284,19 @@ def create_mappable_model(bam_name, meta, outdir, min_mapq,
     for l in range(nlib):
         use_rlen = lib_stats[l]['readlen'] > 0
         model, builder, qr = fit_mappable_model(mappable_stats[l], use_rlen)
-        prefix = outdir + 'fit_{0}_{1}'.format(l, lib_stats[l]['name'])
+        prefix = os.path.join(outdir, 'fit_{0}_{1}'.format(l, lib_stats[l]['name']))
         do_plot_fits(prefix, model, qr, builder, use_rlen, mappable_stats[l])
         if use_rlen:
             qgrid, rgrid, fitted_prob = predict_grid(model, builder,
                                                      mappable_stats[l],
                                                      use_rlen)
-            outname = outdir + 'pmappable_{0}_{1}.pkl'.format(l, os.path.basename(bam_name))
+            outname = os.path.join(outdir, 'pmappable_{0}_{1}.pkl'.format(l, os.path.basename(bam_name)))
             save_model(outname, fitted_prob, qgrid, rgrid)
         else:
             qgrid, fitted_prob = predict_grid(model, builder,
                                               mappable_stats[l],
                                               use_rlen)
-            outname = outdir + 'pmappable_{0}_{1}.pkl'.format(l, os.path.basename(bam_name))
+            outname = os.path.join(outdir, 'pmappable_{0}_{1}.pkl'.format(l, os.path.basename(bam_name)))
             save_model(outname, fitted_prob, qgrid)
 
 def add_dummy_obs(mappable_stats, use_rlen):

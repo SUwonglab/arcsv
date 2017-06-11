@@ -1,12 +1,13 @@
-import pysam
-import numpy as np
-import itertools
-import gc
-import objgraph
 from collections import Counter, defaultdict, OrderedDict
 from matplotlib.backends.backend_pdf import PdfPages
 from sklearn.neighbors.kde import KernelDensity
+import gc
+import itertools
 import matplotlib.pyplot as plt
+import numpy as np
+import objgraph
+import os
+import pysam
 import random as rnd
 import resource
 
@@ -114,7 +115,7 @@ def parse_bam(opts, reference_files, bamfiles, do_bp, do_junction_align):
     mean_approx, sd_approx, pmf_approx, qlower, qupper, rlen_medians = als
 
     for i in range(len(pmf_approx)):
-        with open('{0}lib{1}_insert_pmf.txt'.format(outdir, i), 'w') as f:
+        with open(os.path.join(outdir, 'lib{0}_insert_pmf.txt'.format(i)), 'w') as f:
             for j in range(len(pmf_approx[i])):
                 f.write('{0}\t{1}\n'.format(j, pmf_approx[i][j]))
 
@@ -148,27 +149,13 @@ def parse_bam(opts, reference_files, bamfiles, do_bp, do_junction_align):
     min_concordant_insert = [get_lr_cutoff(pmf, opts['insert_cutoff'], do_min=True)
                              for pmf in pmf_approx]
     max_concordant_insert = [get_lr_cutoff(pmf, opts['insert_cutoff']) for pmf in pmf_approx]
-
-    # min_concordant_insert = [mu - 3*sigma for (mu, sigma) in zip(mean_approx, sd_approx)]
-    # max_concordant_insert = [mu + 3*sigma for (mu, sigma) in zip(mean_approx, sd_approx)]
-    # min_concordant_insert = qlower
-    # max_concordant_insert = qupper
-    print('insert size ranges (+/- 3 sd):')
-    print('\n'.join(['{0}-{1}'.format(min_concordant_insert[i], max_concordant_insert[i])
-                     for i in range(len(mean_approx))]))
-    print('equivalent quantiles to normal:')
-    print(qlower)
-    print(qupper)
-    # TEMPORARY so we don't have to run the above every time during devlopment
-    # if meta is jun_jul_meta:
-    #     min_concordant_insert = [250, 250]
-    #     max_concordant_insert = [483, 483]
-    # if meta is mp_5k_meta:
-    #     min_concordant_insert = [3694, 3853, 5]
-    #     max_concordant_insert = [5868, 6017, 637]
-    # if meta is mp_2k_meta:
-    #     min_concordant_insert = [1393, 1099, 1548, 1206, -76, -262]
-    #     max_concordant_insert = [2468, 2477, 2712, 2820, 742, 1152]
+    if opts['verbosity'] > 0:
+        print('insert size ranges (+/- 3 sd):')
+        print('\n'.join(['{0}-{1}'.format(min_concordant_insert[i], max_concordant_insert[i])
+                         for i in range(len(mean_approx))]))
+        print('equivalent quantiles to normal:')
+        print(qlower)
+        print(qupper)
 
     if do_viz:
         ucsc_chrom = get_ucsc_name(chrom_name)
@@ -371,7 +358,8 @@ def parse_bam(opts, reference_files, bamfiles, do_bp, do_junction_align):
                                                     name=libname,
                                                     min_overlap=opts['min_junction_overlap'],
                                                     indel_bp=indel_bp))
-            write_softclip_merge_stats(softclips_merged[l], outdir + libname + '-scmerge.txt')
+            write_softclip_merge_stats(softclips_merged[l],
+                                       os.path.join(outdir, libname + '-scmerge.txt'))
             junction_map = {i: softclips_merged[l][i] for i in range(len(softclips_merged[l]))}
             junction_ref_out.append((junction_map, None))
 
@@ -413,11 +401,11 @@ def parse_bam(opts, reference_files, bamfiles, do_bp, do_junction_align):
         g_hanging_distant_minus = [t1 + t2 for (t1, t2) in zip(g_hanging_other_chrom_minus,
                                                                g_hanging_same_chrom_minus)]
 
-        trackdbfile = open(outdir + 'tracks/trackDb.txt', 'a')
+        trackdbfile = open(os.path.join(outdir, 'tracks', 'trackDb.txt'), 'a')
         for i in range(len(groups)):
             print('i {0}'.format(i))
             name = groups[i]
-            prefix = outdir + 'tracks/{0}-'.format(name)
+            prefix = os.path.join(outdir, 'tracks', name + '-')
             print('library group: {name}'.format(name=name))
             print('# insert locations: {0} {1}'
                   .format(len(g_insert_plus[i]),
@@ -748,7 +736,7 @@ def get_rough_insert_median(opts, bam, pairs_to_check=10000):
 
 def plot_insert_dist(opts, insert_len_dists, outdir):
     for l in range(opts['nlib']):
-        outfile = outdir + 'insert_' + opts['library_names'][l] + '.pdf'
+        outfile = os.path.join(outdir, 'insert_' + opts['library_names'][l] + '.pdf')
         pp = PdfPages(outfile)
         plt.figure()
         plt.plot(insert_len_dists[l])
@@ -758,11 +746,11 @@ def plot_insert_dist(opts, insert_len_dists, outdir):
         pp.close()
 
 
-def test_bamgroup():
-    bamfiles = ['/home/jgarthur/sv/analysis/alignments/bwa_mem/'
-                'short-reads/jun_jul.mdup.merge.mdup.1rg.qnamesorted.matedata.sorted.bam',
-                '/home/jgarthur/sv/simdata/varsim-40x-HiSeq2k/alignments/bwa_mem/'
-                'merged.matedata.bam']
-    bg = BamGroup(bamfiles)
-    print(len([aln for aln in bg.fetch_unsorted('1', 0, 1000000)]))
-    print(bg.references)
+# def test_bamgroup():
+#     bamfiles = ['/home/jgarthur/sv/analysis/alignments/bwa_mem/'
+#                 'short-reads/jun_jul.mdup.merge.mdup.1rg.qnamesorted.matedata.sorted.bam',
+#                 '/home/jgarthur/sv/simdata/varsim-40x-HiSeq2k/alignments/bwa_mem/'
+#                 'merged.matedata.bam']
+#     bg = BamGroup(bamfiles)
+#     print(len([aln for aln in bg.fetch_unsorted('1', 0, 1000000)]))
+#     print(bg.references)

@@ -20,7 +20,7 @@ def build_junction_reference(softclips_merged, outdir, reference_name, junction_
         io_type = 'w'           # start fresh in case old file exists
     else:
         io_type = 'a'           # append
-    ref = open(outdir + reference_name + '.fa', io_type)
+    ref = open(os.path.join(outdir, reference_name + '.fa'), io_type)
     # write junction sequences separated by Ns
     ref.write('>{chr}\n'.format(chr = junction_chrom))
     junction_map = {}
@@ -52,7 +52,8 @@ def build_junction_reference(softclips_merged, outdir, reference_name, junction_
 def index_junction_reference(outdir, reference_name):
     wd = os.getcwd()
     os.chdir(outdir)
-    os.system('bwa index -p {0} '.format(reference_name) + outdir + reference_name + '.fa')
+    os.system('bwa index -p {0} '.format(reference_name)
+              + os.path.join(outdir, reference_name + '.fa'))
     os.chdir(wd)
 
 def is_fastq(filename):
@@ -71,14 +72,14 @@ samtools index {outname}.sorted.bam
 rm {outname}.bam
 EOF
 """
-    cmd = cmd.format(partition = partition,
-                     opt = opt,
-                     threads = threads,
-                     mem = mem,
-                     ref = outdir + reference_name,
-                     reads = read_file_name,
-                     outdir = outdir,
-                     outname = out_name)
+    cmd = cmd.format(partition=partition,
+                     opt=opt,
+                     threads=threads,
+                     mem=mem,
+                     ref=os.path.join(outdir, reference_name),
+                     reads=read_file_name,
+                     outdir=outdir,
+                     outname=out_name)
     print(cmd)
     os.system(cmd)
 
@@ -105,7 +106,7 @@ def process_junction_alignments(junction_ref_out, outdir, name = '', min_overlap
     junction_map = junction_ref_out[0]
     junction_bploc = junction_ref_out[1]
     prefix = (name + '-') if (name != '') else ''
-    of = open(outdir + prefix + 'junction_align_stats.txt', 'w')
+    of = open(os.path.join(outdir, prefix + 'junction_align_stats.txt'), 'w')
     of.write('bploc\tqname\tcigar\tmapq\terror_rate\tmismatch\n')
     # SPEEDUP might make more sense to index junction_map by bp loc 
     junction_locs = list(junction_map.keys()) # locations of junction start in pseudo-reference
@@ -122,7 +123,7 @@ def process_junction_alignments(junction_ref_out, outdir, name = '', min_overlap
     listing = [fn for fn in os.listdir(outdir) if fn.endswith('.bam')]
     for fn in listing:
         print('processing junction alignments in ' + fn)
-        bamfile = pysam.AlignmentFile(outdir + fn)
+        bamfile = pysam.AlignmentFile(os.path.join(outdir, fn))
         alignments = bamfile.fetch(junction_chrom, multiple_iterators = True)
         nreads = 0
         cur = 0             # index of current junction
@@ -174,7 +175,7 @@ def process_junction_alignments(junction_ref_out, outdir, name = '', min_overlap
     of.close()
 
     # print out results to log
-    lf = open(outdir + prefix + 'log_junctionalign.txt', 'w')
+    lf = open(os.path.join(outdir, prefix + 'log_junctionalign.txt'), 'w')
     for loc in junction_locs:
         if junction_alignments.get(loc) is None:
             continue
