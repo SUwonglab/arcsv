@@ -3,10 +3,13 @@ import matplotlib.patheffects as path_effects
 import numpy as np
 import os
 from math import floor
+import matplotlib
+matplotlib.use('Agg')           # required if X11 display is not present
+from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.cm import jet, rainbow, gist_rainbow
 from matplotlib.collections import PatchCollection
 from matplotlib.patches import Polygon
-from matplotlib.backends.backend_pdf import PdfPages
+
 
 from arcsv.helper import GenomeInterval
 

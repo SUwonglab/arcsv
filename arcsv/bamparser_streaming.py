@@ -1,5 +1,4 @@
 from collections import Counter, defaultdict, OrderedDict
-from matplotlib.backends.backend_pdf import PdfPages
 from sklearn.neighbors.kde import KernelDensity
 import gc
 import itertools
@@ -11,6 +10,7 @@ import resource
 import matplotlib
 matplotlib.use('Agg')           # required if X11 display is not present
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
 
 
 from arcsv.conditional_mappable_model import process_aggregate_mapstats
