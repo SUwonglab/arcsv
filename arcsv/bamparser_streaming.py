@@ -37,7 +37,7 @@ def extract_approximate_library_stats(opts, bam, rough_insert_median):
 
     chrom_name = opts['chromosome']
     chrom_size = get_chrom_size_from_bam(chrom_name, bam)
-    chunk_size = 10 * rough_insert_median
+    chunk_size = 10 * opts['insert_max_mu_multiple'] * rough_insert_median
 
     rough_insert_max = opts['insert_max_mu_multiple'] * rough_insert_median
     reads_processed = [0 for i in range(nlib)]
@@ -70,6 +70,7 @@ def extract_approximate_library_stats(opts, bam, rough_insert_median):
                 lib_idx = 0  # get_lib_idx(aln.get_tag('RG'), lib_dict, lib_patterns)
                 process_insert_len(pair, insert_len[lib_idx], opts['min_mapq_reads'],
                                    opts['read_len'], maximum_insert_size=rough_insert_max)
+                process_read_len(pair, read_len_shorter[lib_idx], read_len_longer[lib_idx])
                 reads_processed[lib_idx] += 1
                 if min(reads_processed) % 100000 == 0:
                     print('processed >= {0} reads ({2} chunks) for each lib: {1}'.

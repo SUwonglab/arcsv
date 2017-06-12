@@ -8,6 +8,10 @@ from arcsv.arcsv_call_options import DEFAULT_OPTS
 
 
 def main():
+    # import warnings
+    # warnings.simplefilter("error")
+    # warnings.filterwarnings("ignore", category=DeprecationWarning)
+
     parser = prepare_argparser()
 
     if len(sys.argv) < 2:
