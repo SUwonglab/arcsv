@@ -745,13 +745,3 @@ def plot_insert_dist(opts, insert_len_dists, outdir):
         pp.savefig()
         plt.close()
         pp.close()
-
-
-# def test_bamgroup():
-#     bamfiles = ['/home/jgarthur/sv/analysis/alignments/bwa_mem/'
-#                 'short-reads/jun_jul.mdup.merge.mdup.1rg.qnamesorted.matedata.sorted.bam',
-#                 '/home/jgarthur/sv/simdata/varsim-40x-HiSeq2k/alignments/bwa_mem/'
-#                 'merged.matedata.bam']
-#     bg = BamGroup(bamfiles)
-#     print(len([aln for aln in bg.fetch_unsorted('1', 0, 1000000)]))
-#     print(bg.references)
