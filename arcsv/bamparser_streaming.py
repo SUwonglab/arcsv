@@ -5,7 +5,6 @@ import gc
 import itertools
 import matplotlib.pyplot as plt
 import numpy as np
-import objgraph
 import os
 import pysam
 import random as rnd
@@ -207,7 +206,6 @@ def parse_bam(opts, reference_files, bamfiles, do_bp, do_junction_align):
             print('%d reads processed' % nreads)
             print('Memory usage: %s (kb)' % resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
             gc.collect()
-            objgraph.show_most_common_types()
 
         if aln.qname not in seen_aln:
             # if unpaired reads non-existent, handle them no so they don't pile up in memory
