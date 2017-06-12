@@ -375,8 +375,8 @@ def double_int(cdf_sum, a1, b1, a2, b2,
         return 0
     if b1 < xmin or b2 < ymin:
         return 0
-    a1, a2 = max(xmin, a1), max(ymin, a2)
-    b1, b2 = min(xmax, b1), min(ymax, b2)
+    a1, a2 = int(max(xmin, a1)), int(max(ymin, a2))
+    b1, b2 = int(min(xmax, b1)), int(min(ymax, b2))
     if a1 > b1 or a2 > b2:
         return 0
     else:
