@@ -281,7 +281,7 @@ def fetch_seq(ref, ctg, start, end, truncate=False, pad_N=False, is_reverse=Fals
             pad_left = max(0, 0-start)
             pad_right = max(0, end-length)
             start, end = max(0, start), min(end, length)
-    seq = ref.fetch(ctg, start, end).decode().upper()
+    seq = ref.fetch(ctg, start, end).upper()
     if pad_N:
         seq = ('N'*pad_left) + seq + ('N'*pad_right)
     if is_reverse:
