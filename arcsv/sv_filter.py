@@ -1,4 +1,4 @@
-import pybedtools
+# import pybedtools
 
 
 # LATER slop != 0 for SVs with uncertainty, or maybe = 50ish by default
@@ -32,39 +32,38 @@ import pybedtools
 #     return intervals
 
 
-def get_bp_intervals_bedtool(sv, slop=0):
-    intervals = list(set((sv.bp1, sv.bp2)))
-    bedstring = ''
-    for interval in intervals:
-        bedstring += '{0}\t{1}\t{2}\n'.format(sv.ref_chrom,
-                                              interval[0],
-                                              interval[1])
-    if bedstring == '':
-        return None
-    else:
-        print(bedstring)
-        bt = pybedtools.BedTool(bedstring, from_string=True)
-        bt_sorted = bt.sort()
-        return bt_sorted
+# def get_bp_intervals_bedtool(sv, slop=0):
+#     intervals = list(set((sv.bp1, sv.bp2)))
+#     bedstring = ''
+#     for interval in intervals:
+#         bedstring += '{0}\t{1}\t{2}\n'.format(sv.ref_chrom,
+#                                               interval[0],
+#                                               interval[1])
+#     if bedstring == '':
+#         return None
+#     else:
+#         print(bedstring)
+#         bt = pybedtools.BedTool(bedstring, from_string=True)
+#         bt_sorted = bt.sort()
+#         return bt_sorted
 
 
-def compute_repeat_overlaps(rmsk_track, segdup_track, sv, slop=0):
-    bp_intervals = get_bp_intervals_bedtool(sv, slop)
-    if bp_intervals is None:
-        return []
+# def compute_repeat_overlaps(rmsk_track, segdup_track, sv, slop=0):
+#     bp_intervals = get_bp_intervals_bedtool(sv, slop)
+#     if bp_intervals is None:
+#         return []
 
-    overlaps = set()
-    rmsk_intersect = rmsk_track.intersect(bp_intervals, u=True, sorted=True)
-    print(rmsk_intersect)
-    segdup_intersect = segdup_track.intersect(bp_intervals, u=True, sorted=True)
-    print(segdup_intersect)
+#     overlaps = set()
+#     rmsk_intersect = rmsk_track.intersect(bp_intervals, u=True, sorted=True)
+#     print(rmsk_intersect)
+#     segdup_intersect = segdup_track.intersect(bp_intervals, u=True, sorted=True)
+#     print(segdup_intersect)
 
-    for bed in rmsk_intersect:
-        overlaps.add(bed.fields[3].upper())
-    if any(segdup_intersect):
-        overlaps.add('SEG_DUP')
-
-    return sorted(list(overlaps))
+#     for bed in rmsk_intersect:
+#         overlaps.add(bed.fields[3].upper())
+#     if any(segdup_intersect):
+#         overlaps.add('SEG_DUP')
+#     return sorted(list(overlaps))
 
 
 def apply_filters(sv_list, rmsk_track=None, segdup_track=None):
@@ -76,10 +75,11 @@ def apply_filters(sv_list, rmsk_track=None, segdup_track=None):
         elif sv.type == 'BND' and sv.bnd_ins > 0:
             print('adding BND_INS filter to {0}'.format(sv))
             sv.filters.add('INSERTION')
-        do_overlap = rmsk_track is not None and segdup_track is not None
-        if do_overlap:
-            for ov in compute_repeat_overlaps(rmsk_track, segdup_track, sv):
-                sv.filters.add(ov)
+        # REMOVED to get rid of pybedtools dependency
+        # do_overlap = rmsk_track is not None and segdup_track is not None
+        # if do_overlap:
+        #     for ov in compute_repeat_overlaps(rmsk_track, segdup_track, sv):
+        #         sv.filters.add(ov)
         if sv.type == 'DUP:TANDEM':
             # check gap
             print('[sv_filter] checking tandem dup')
@@ -91,15 +91,8 @@ def apply_filters(sv_list, rmsk_track=None, segdup_track=None):
             if gap_ratio > sv_call_gap_ratio_cutoff:
                 sv.filters.add('BP_UNCERTAINTY')
 
-# def pass_filter(path, blocks, start, end,
-#                 insertion_filter=True,
-#                 gap_ratio_filter=True, simple_rpt_filter=True):
-#     pass_insertion = has_insertion(path, blocks) if insertion_filter else True
-#     pass_gap = (compute_max_gap_ratio(blocks) <= sv_call_gap_ratio_cutoff) \
-#         if gap_ratio_filter else True
-#     # pass_simple_rpt_filter =
-#     return pass_insertion and pass_gap # and pass_simple_rpt_filter
 
+# DEPRECATED use of SEG_DUP overlap etc.
 def get_filter_string(sv, event_filtered, filter_criteria):
     f = sv.filters
     if 'INSERTION' in filter_criteria and 'INSERTION' in f:
@@ -118,6 +111,7 @@ def get_filter_string(sv, event_filtered, filter_criteria):
         return 'EVENT'
     else:
         return 'PASS'
+
 
 def is_event_filtered(sv_list, has_complex, filter_criteria):
     if not has_complex:
