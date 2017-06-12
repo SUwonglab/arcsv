@@ -3,12 +3,14 @@ from matplotlib.backends.backend_pdf import PdfPages
 from sklearn.neighbors.kde import KernelDensity
 import gc
 import itertools
-import matplotlib.pyplot as plt
 import numpy as np
 import os
 import pysam
 import random as rnd
 import resource
+import matplotlib
+matplotlib.use('Agg')           # required if X11 display is not present
+import matplotlib.pyplot as plt
 
 
 from arcsv.conditional_mappable_model import process_aggregate_mapstats

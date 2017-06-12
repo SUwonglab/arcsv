@@ -2,6 +2,8 @@ import os
 import pysam
 import pickle
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')           # required if X11 display is not present
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from collections import Counter, defaultdict

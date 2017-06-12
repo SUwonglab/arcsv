@@ -1,6 +1,8 @@
 import gc
 import resource
 import itertools
+import matplotlib
+matplotlib.use('Agg')           # required if X11 display is not present
 import matplotlib.pyplot as plt
 import pickle
 import pysam
