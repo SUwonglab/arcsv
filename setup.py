@@ -24,6 +24,7 @@ setup(
         'matplotlib',
         'patsy',
         'python-igraph',
+        'pyinter'
     ],
     scripts=['bin/arcsv']
     # TODO specific dependency links
