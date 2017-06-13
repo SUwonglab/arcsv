@@ -89,7 +89,6 @@ def call_sv(opts, inputs, reference_files, do_bp, do_junction_align):
     print('[call_sv] start time: {0}'.format(call_sv_start_time))
     # load some options for convenience
     outdir = opts['outdir']
-    do_viz = opts['do_viz']
     # create ouput directories if needed
     if not os.path.exists(outdir):
         os.makedirs(outdir)
@@ -102,11 +101,12 @@ def call_sv(opts, inputs, reference_files, do_bp, do_junction_align):
     os.system('rm -f ' + os.path.join(track_dir, 'trackDb.txt'))
 
     # random seed
-    input_cat = ''.join([ip[0] for ip in inputs])
-    random_seed = sum(ord(char) for char in input_cat)
-    rnd.seed(random_seed)
-    np.random.seed(random_seed + 1)
-    print('[call_sv] random seed based on input filenames: {0}'.format(random_seed))
+    if opts['nondeterministic_seed']:
+        opts['random_seed'] = int(call_sv_start_time)
+    rnd.seed(opts['random_seed'])
+    np.random.seed(opts['random_seed'] + 1)
+    if opts['verbosity'] > 0:
+        print('[call_sv] random seed: {0}'.format(opts['random_seed']))
 
     junctions = []
     splits = []
@@ -124,8 +124,10 @@ def call_sv(opts, inputs, reference_files, do_bp, do_junction_align):
     print(len(inputs))
     # MULTILIB need to change to do multiple libraries with distinct stats
     bamfiles = [i[0] for i in inputs]
+
     pb_out = parse_bam(opts, reference_files, bamfiles, do_bp, do_junction_align)
     jout, sout, mout, rlout, iout, imean, isd, dout, imin, imax = pb_out
+
     junctions.extend(jout)
     splits.extend(sout)
     if not opts['use_mate_tags']:

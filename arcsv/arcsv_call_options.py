@@ -6,6 +6,7 @@ DEFAULT_OPTS = {
     'min_mapq_reads': 20,
     'max_pair_distance': 2000000,
     'use_mate_tags': False,
+    'nondeterministic_seed': False,
 
     # COMMAND LINE ONLY
     'cutoff_type': 'low',
@@ -15,6 +16,7 @@ DEFAULT_OPTS = {
     'region_start': None,
     'region_end': None,
     'reference_name': None,
+    'random_seed': 204178949,   # chosen in R: sample(1e9, 1)
 
     # LIBRARY PARAMETERS (put this somewhere else eventually)
     'nlib': 1,
