@@ -152,7 +152,7 @@ def generic_vcf_convert(vcffile, outdir, reffile, filter_gaps = False, refgapfil
 
         if caller == 'pindel':
             homlen = int(tagd['HOMLEN'])
-            if pos + homlen > end or svtype == 'INS': # TODO insertions later, see below
+            if pos + homlen > end or svtype == 'INS':
                 print('pos + homlen > end: positions {0}'.format((pos, end)))
                 cipos = (0,0)
                 ciend = (0,0)
@@ -225,7 +225,7 @@ def generic_vcf_convert(vcffile, outdir, reffile, filter_gaps = False, refgapfil
             refpath = (0,1,2,3,4,5)
             supptype = 'Dup'
         elif svtype == 'INS':
-            # TODO INSERTIONS inslen, insertion block
+            # INSERTIONS parse inslen, add insertion block to blocks
             path = (0,1,4,5,2,3)
             refpath = (0,1,2,3)
             supptype = 'Ins'

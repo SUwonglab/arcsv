@@ -174,7 +174,7 @@ def altered_reference_sequence(path_orig, blocks_orig, reference, flank_size):
         block_idx = int(floor(path[i] / 2))
         is_reverse = path[i] % 2 == 0
         block = blocks[block_idx]
-        if block.is_insertion(): # TODO what if insertion is at the end of the sequence
+        if block.is_insertion():  # INSERTIONS what if insertion is at the end of the sequence
             insertion_sizes.append(len(block))
             seq_idx += 1
             seq_pos = 0

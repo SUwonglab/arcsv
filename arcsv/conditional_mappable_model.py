@@ -20,7 +20,7 @@ PAIR_CLASSES = [(1,1), (1,0), (0,1),
                 (1,-1), (-1,1)]
 PAIR_CLASS_DICT = {PAIR_CLASSES[i]: i for i in range(len(PAIR_CLASSES))}
 
-# TODO max distance undefined
+# INSERTIONS max distance undefined further down
 
 # aln2 may be None
 def process_aggregate_mapstats(pair, mapstats, min_mapq, max_distance):

@@ -67,7 +67,7 @@
 
 
 def apply_filters(sv_list, rmsk_track=None, segdup_track=None):
-    sv_call_gap_ratio_cutoff = .25  # TODO
+    sv_call_gap_ratio_cutoff = .25  # DEPRECATED
     for sv in sv_list:
         if sv.type == 'INS':
             print('adding INS filter to {0}'.format(sv))

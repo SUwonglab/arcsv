@@ -37,9 +37,8 @@ def run(args):
     reference_files = {'reference': reference_file, 'gap': gap_file}
     print('ref files {0}'.format(reference_files))
 
-    # TODO put all this argument parsing in arcsv script
+    # CLEANUP put all this argument parsing in arcsv script
     region_split = opts['region'].split(':')
-    # BEFORE SUBMIT error handling
     if len(region_split) > 1:
         opts['chromosome'] = region_split[0]
         opts['region_start'] = int(region_split[1].split('-')[0])
@@ -59,7 +58,7 @@ def run(args):
         opts['min_bp_support'] = 4
         opts['min_edge_support'] = 4
 
-    # TODO no tuple
+    # CLEANUP no tuple
     inputs = [(os.path.realpath(ip.strip()),)
               for ip in opts['input_list'].split(',')]
     opts['outdir'] = os.path.realpath(opts['outdir'])
@@ -160,7 +159,7 @@ def call_sv(opts, inputs, reference_files, do_bp, do_junction_align):
     rlen_stats = []
     if opts['use_mate_tags']:   # NOT USED until implement INS calling
         # load mappability model from disk for each input bam file
-        # MULTILIB TODO
+        # MULTILIB
         model_dir = '.'
         for inp in inputs:
             # tmp, tmp_lib_stats = parse_library_stats(inp[1])

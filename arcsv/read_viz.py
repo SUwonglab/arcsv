@@ -209,7 +209,7 @@ def write_array_bed(arr, chrom_name, fileprefix, start = None, end = None):
     if start is None:
         start = 0
     if end is None:
-        # TODO need to specify reference
+        # VIZ need to specify reference
         end = get_chrom_size(chrom_name) - 1
     for i in range(start, end):
         file.write('{chr}\t{start}\t{end}\t{val}\n'.format(chr = ucsc_chrom, start = i, end = i+1,

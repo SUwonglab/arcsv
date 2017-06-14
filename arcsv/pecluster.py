@@ -154,8 +154,7 @@ def is_ins_compatible(opts, pair1, pair2, max_distance, insert_mu, insert_sigma,
         #     print('ins_compatible adjust mu={0} est={1} adjusted={2}'
         #           .format(insert_mu, est_insertion_size, adjusted_max_distance))
     else:
-        # TODO?
-        adjusted_max_distance = max_distance
+        adjusted_max_distance = max_distance  # INSERTIONS THESIS
     is_close = max(abs(pair1.pos1 - pair2.pos1), abs(pair1.pos2 - pair2.pos2)) <= max_distance
     overlap = max(0, max(pair1.pos1, pair2.pos1) - min(pair1.pos2, pair2.pos2))
 

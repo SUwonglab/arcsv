@@ -24,7 +24,7 @@ def do_inference(opts, reference_files, g, blocks,
                  gap_indices, left_bp, right_bp,
                  insert_dists, insert_cdfs, insert_cdf_sums,
                  class_probs, rlen_stats,
-                 insertion_search_width, pi_robust=.000001, # TODO
+                 insertion_search_width, pi_robust=.000001,
                  insert_lower=None, insert_upper=None, mode='both'):
     outdir = opts['outdir']
 

@@ -43,7 +43,7 @@ def extract_approximate_library_stats(opts, bam, rough_insert_median):
     rough_insert_max = opts['insert_max_mu_multiple'] * rough_insert_median
     reads_processed = [0 for i in range(nlib)]
     chunks_processed = 0
-    # TODO reads_per_chunk should mean completed
+    # MINOR reads_per_chunk should mean completed
     while min(reads_processed) < opts['approx_stats_nreads']:
         # extract random chunk
         start = np.random.randint(0, chrom_size - chunk_size)
@@ -634,7 +634,6 @@ class BamGroup:
     def fetch_unsorted(self, *o1, **o2):
         return itertools.chain.from_iterable(b.fetch(*o1, **o2) for b in self.bamlist)
 
-    # TODO
     def fetch_sorted(self, *o1, **o2):
         raise Warning('fetch_sorted not implemented')
         # fs = [b.fetch(*o1, **o2) for b in self.bamlist]
@@ -710,7 +709,6 @@ def bam_read_len(bam, reads_to_check=1000):
     return rlen
 
 
-# TODO currently probably only gets from one library in BamGroup bam
 def get_rough_insert_median(opts, bam, pairs_to_check=10000):
     # check min_mapq, neither unmapped, neither supp
     ilen = []

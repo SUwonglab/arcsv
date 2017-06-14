@@ -27,5 +27,4 @@ setup(
         'pyinter'
     ],
     scripts=['bin/arcsv']
-    # TODO specific dependency links
 )

@@ -6,7 +6,7 @@ import re
 
 from arcsv.constants import *
 
-# TODO move to constants
+# CLEANUP move to constants
 max_output_alignments = 25
 
 def quality_list_to_str(qual):

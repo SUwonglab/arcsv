@@ -22,7 +22,6 @@ GRCh37_alternate = tuple()
 
 max_slop = 50
 
-# TODO options
 match_score = 1
 mismatch_penalty = 9
 gap_open_penalty = 16
@@ -367,7 +366,7 @@ def handle_records(qname, samrecords, ref, bam, query_blocks,
                    2 * total_seg_len < total_inner_len:
                     # SPEEDUP instead of total_seg_len could take a union of all the query
                     # coord. intervals and look at the total length
-                    # TODO could compute an upper bound on the avg. block score
+                    # MINOR could compute an upper bound on the avg. block score
                     #      here by assigning query coverage to small blocks first etc...
                     print('SKIPPING')
                     num_clusters_skipped += 1
@@ -663,7 +662,6 @@ def blockwise_score(chain, query_blocks, del_positions, is_reverse, verbosity):
             add_err(query_blocks, del_positions, idx, err,
                     block_scores, del_scores, gaps, 'ref')
         if last_seg is not None:
-            # TODO also need to save this in class Segment
             query_gap_pos = (last_seg.query_coords[1], seg.query_coords[0])
             query_gap = seg.query_coords[0] - last_seg.query_coords[1]
             query_gap_len += query_gap
@@ -1440,7 +1438,7 @@ def test_split_segment_fail():
 # split ref [] query [0, 1000, 1000, 1068, 1068, 1136, 1136, 2136]
 
 
-# TODO insertion exactly at first two split points
+# TESTING insertion exactly at first two split points
 def test_split_segment():
     block_positions = [(0, 200)]
     query_len = 200
