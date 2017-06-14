@@ -28,7 +28,7 @@ def do_inference(opts, reference_files, g, blocks,
                  insert_lower=None, insert_upper=None, mode='both'):
     outdir = opts['outdir']
 
-    g.add_ref_path_support(9999) # ensure reference path is always available
+    g.add_ref_path_support(9999)  # ensure reference path is always available
     print('graph:')
     g.print_summary()
 

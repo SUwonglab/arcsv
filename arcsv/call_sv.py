@@ -239,13 +239,14 @@ def call_sv(opts, inputs, reference_files, do_bp, do_junction_align):
     time_string = time_to_str(call_sv_second_time - call_sv_start_time)
     print('[call_sv] second pass elapsed time: ' + time_string)
 
-    def compute_pi_robust(pmf, p=1e-4):
-        pmf_sorted = sorted(pmf, reverse=True)
-        cs = np.cumsum(pmf_sorted)
-        i = min([i for i in range(len(cs)) if cs[i] >= (1-p)])
-        return pmf_sorted[i]
-    pi_robust = [compute_pi_robust(ins, opts['robustness_parameter']) for ins in insert]
-    print(pi_robust)
+    # TODO
+    # def compute_pi_robust(pmf, p=1e-4):
+    #     pmf_sorted = sorted(pmf, reverse=True)
+    #     cs = np.cumsum(pmf_sorted)
+    #     i = min([i for i in range(len(cs)) if cs[i] >= (1-p)])
+    #     return pmf_sorted[i]
+    # pi_robust = [compute_pi_robust(ins, opts['robustness_parameter']) for ins in insert]
+    # print(pi_robust)
     # insert_dists = [(lambda x: ins[x] if x >= 0 and x < len(ins) else 0) for ins in insert]
 
     # DEPRECATED except for insertion search width = 1.1*max(insert_q99) ?
