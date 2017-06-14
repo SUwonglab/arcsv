@@ -5,6 +5,7 @@ import sys
 
 
 from arcsv.arcsv_call_options import DEFAULT_OPTS
+from arcsv._version import __version__
 
 
 def main():
@@ -19,7 +20,7 @@ def main():
     else:
         args = parser.parse_args()
 
-    print(args)
+    print(args)                 # MINOR print this in call_sv (updated args)
 
     command_name = args.command
 
@@ -79,6 +80,9 @@ def add_call_parser(subparsers):
     # optional.add_argument('--use_mate_tags', action='store_true')
     # optional.add_argument('--use_indels', action='store_true')
     optional.add_argument('--no_pecluster', dest='--do_pecluster', action='store_false')
+
+    other = parser_call.add_argument_group('other arguments')
+    other.add_argument('--version', action='version', version='%(prog)s ' + __version__)
 
     parser_call.set_defaults(**DEFAULT_OPTS)
 
