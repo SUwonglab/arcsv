@@ -22,8 +22,7 @@ def run(args):
     # insert_cutoff, do_viz, no_pecluster, use_mate_tags = get_args()
     opts = vars(args)
 
-    # TEMPORARY reference name
-    if opts.get('reference_name') is not None:
+    if opts.get('reference_name') is not None:  # NOT IMPLEMENTED
         reference_file = os.path.join(this_dir, 'resources', opts['reference_name']+'.fa')
         gap_file = os.path.join(this_dir, 'resources', opts['reference_name']+'_gap.bed')
     elif opts.get('reference_file') is not None and opts.get('gap_file') is not None:

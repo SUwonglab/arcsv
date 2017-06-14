@@ -57,13 +57,12 @@ def add_call_parser(subparsers):
                           help='output folder')
     # optional.add_argument('-D', '--reference_dir', type=str,
     # default='/home/jgarthur/sv/reference')
-    optional.add_argument('-R', '--reference_name', type=str,
-                          help='reference genome name. [name].fa, [name].fa.fai, and '
-                               '[name]_gaps.bed will be expected in arcsv/resources')
-    optional.add_argument('--reference_file', type=str,
-                          help='path to referece genome file. [file].fai will be '
-                               'expected in the same directory')
-    optional.add_argument('--gap_file', type=str,
+    # optional.add_argument('-R', '--reference_name', type=str,
+    #                       help='reference genome name. [name].fa, [name].fa.fai, and '
+    #                            '[name]_gaps.bed will be expected in arcsv/resources')
+    optional.add_argument('-R', '--reference_file', type=str,
+                          help='path to referece genome file')
+    optional.add_argument('-G', '--gap_file', type=str,
                           help='path to referece genome gaps file (BED format)')
     # BEFORE SUBMIT CHANGE DEFAULT LOWER
     optional.add_argument('-v', '--verbosity', type=int,
