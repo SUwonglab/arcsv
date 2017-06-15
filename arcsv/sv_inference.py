@@ -329,6 +329,13 @@ def do_inference(opts, reference_files, g, blocks,
                         diploid_likelihood2(likelihood_reads[i], likelihood_reads[j],
                                             lib_norm_consts[i], lib_norm_consts[j],
                                             lib_counts[0], pi_robust, inf_reads)
+                    new_output = \
+                                 diploid_likelihood2_new(likelihood_reads[i], likelihood_reads[j],
+                                                         lib_norm_consts[i], lib_norm_consts[j],
+                                                         lib_counts[0], pi_robust, inf_reads)
+                    print('current: {0}, new: {1}'.format(heterozygous_likelihood, new_output))
+                    assert(heterozygous_likelihood == new_output)
+                    
                     if heterozygous_likelihood > best_lh:
                         next_best = best
                         best = (i,j)
@@ -649,14 +656,16 @@ def haploid_likelihood2(likelihood, lib_norm_consts, lib_counts, pi_robust, whic
     return lh_nc + lh_rest
 
 # likelihood[12] inputs are not scaled by length
-def diploid_likelihood(likelihood1, likelihood2, norm_consts1, norm_consts2, total_reads, pi_robust, epsilon = 2e-10):
+def diploid_likelihood(likelihood1, likelihood2, norm_consts1, norm_consts2,
+                       total_reads, pi_robust, epsilon = 2e-10):
     return sum([-log(n1+n2+epsilon) + \
                      log(2*pi_robust + (1-pi_robust)*(l1 + l2)) \
                      for (l1, l2, n1, n2) in \
                      zip(likelihood1, likelihood2, norm_consts1, norm_consts2)])
 
-def diploid_likelihood2(likelihood1, likelihood2, lib_norm_consts1, lib_norm_consts2, lib_counts,
-                        pi_robust, which_reads = None, epsilon = 2e-10):
+def diploid_likelihood2(likelihood1, likelihood2, lib_norm_consts1,
+                            lib_norm_consts2, lib_counts,
+                            pi_robust, which_reads=None, epsilon=2e-10):
     lh_nc = sum([-count * log(n1 + n2 + epsilon) for (count, n1, n2) in zip(lib_counts,
                                                                             lib_norm_consts1,
                                                                             lib_norm_consts2)])
@@ -667,8 +676,30 @@ def diploid_likelihood2(likelihood1, likelihood2, lib_norm_consts1, lib_norm_con
     else:
         lh_rest = sum([log(2*pi_robust + (1-pi_robust)*(likelihood1[i] + likelihood2[i])) \
                        for i in which_reads])
+        # log(2) here is needed to make sure to match haploid_likelihood2 in the
+        # homozygous case. it's because we wrote numerator / (G1+G2) instead of
+        # 1/2 numerator / (1/2 G1 + 1/2 G2)
         lh_rest += log(2) * (len(likelihood1) - len(which_reads))
     return lh_nc + lh_rest
+
+
+def diploid_likelihood2_new(likelihood1, likelihood2, lib_norm_consts1, lib_norm_consts2,
+                            lib_counts, pi_robust, which_reads=None, epsilon=2e-10,
+                            allele_fraction = 0.5):
+    rho1 = 1 - allele_fraction
+    rho2 = allele_fraction
+    lh_nc = sum([-count * log(rho1 * n1 + rho2 * n2 + epsilon) for (count, n1, n2) in zip(lib_counts,
+                                                                                          lib_norm_consts1,
+                                                                                          lib_norm_consts2)])
+    if which_reads is None:
+        lh_rest = sum([log(pi_robust + (1-pi_robust)*(rho1 * l1 + rho2 * l2)) \
+                       for (l1, l2) in \
+                       zip(likelihood1, likelihood2)])
+    else:
+        lh_rest = sum([log(pi_robust + (1-pi_robust)*(rho1 * likelihood1[i] + rho2 * likelihood2[i])) \
+                       for i in which_reads])
+    return lh_nc + lh_rest
+
 
 def duplicated_blocks(paths):
     which_dup = set()
