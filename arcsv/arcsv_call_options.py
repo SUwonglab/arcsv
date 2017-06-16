@@ -53,17 +53,20 @@ DEFAULT_OPTS = {
     'discordant_fp_density': 1/200000,
 
     # ADJACENCY GRAPH CONSTRUCTION
-    'min_edge_support': 2,
+    'min_edge_support': 2,      # min. reads to test an adjacency
     'split_read_leeway': 2,
-    'insert_qlow': .025,
-    'insert_qhigh': .975,
+    'insert_qlow': .025,        # when considering whether a read supports an
+    'insert_qhigh': .975,       # ...adjacency, the computed insert size under
+                                # ...that adjacency must be b/t these quantiles
+                                # ...of the insert distribution
 
     # SV CALLING
-    'max_back_edges': 2,
-    'max_paths': 2000,
-    'max_mes_extra': 0,
+    'max_back_edges': 2,        # affects max copy number
+    'max_paths': 2000,          # maximum number of paths to consider
+    'max_mes_extra': 0,         # how much will we raise min_edge_support
+                                # ...to reduce the number of paths?
     'robustness_parameter': 1e-4,
-    'allele_fraction_list': '0.5,1',  # heterozygous, homozygous
+    'allele_fraction_list': '0.5,1',  # diploid -- heterozygous, homozygous
     'allele_fractions': None,   # parsed from allele_fraction_list
     # 'lh_tol': 1e-10,
 
