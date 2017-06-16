@@ -118,10 +118,11 @@ def do_sv_processing(opts, data, outdir, reffile,
     altered_reference_data.close()
     sv_outfile2.close()
 
+
 # writes out svs in our own format:
 # chrom, first bp, last bp, id (eg 20:1:1000:alt1), svtype (similar to vcf), bp list (with uncertainty), rearrangement, filter, hom/het?, other tags (INSLEN, SR, PE)
 def sv_output(path1, path2, blocks, event1, event2,
-              sv_list, complex_types,
+              frac1, frac2, sv_list, complex_types,
               event_lh, ref_lh, next_best_lh,
               next_best_pathstring, npaths,
               event_filtered, filter_criteria,
@@ -132,8 +133,8 @@ def sv_output(path1, path2, blocks, event1, event2,
     compound_het = (path1 != path2) and (len(sv1) > 0) and (len(sv2) > 0)
     is_het = (path1 != path2)
     # CLEANUP this duplicated above... merge sometime
-    for (k, path, event, svs, ct) in [(0, path1, event1, sv1, complex_types[0]),
-                                  (1, path2, event2, sv2, complex_types[1])]:
+    for (k, path, event, svs, ct,frac) in [(0, path1, event1, sv1, complex_types[0], frac1),
+                                           (1, path2, event2, sv2, complex_types[1], frac2)]:
         if k == 1 and path1 == path2:
             continue
         if len(svs) == 0:
@@ -190,13 +191,14 @@ def sv_output(path1, path2, blocks, event1, event2,
         pe = ','.join(str(sv.pe_support) for sv in svs)
         lhr = '%.2f' % (event_lh - ref_lh)
         lhr_next = '%.2f' % (event_lh - next_best_lh)
+        frac = '%.3f' % frac
 
         line = '\t'.join((chrom, str(minbp), str(maxbp), id,
                           svtypes, ct, str(nsv),
                           block_bp, block_bp_uncertainty, ref_string, s,
                           filters, event_filter,
                           sv_bp, sv_bp_uncertainty,
-                          gt, inslen, sr, pe, lhr, lhr_next,
+                          gt, frac, inslen, sr, pe, lhr, lhr_next,
                           next_best_pathstring, str(npaths))) + '\n'
         lines = lines + line
     return lines
@@ -207,5 +209,5 @@ def svout_header_line():
                       'bp', 'bp_uncertainty', 'reference', 'rearrangement',
                       'filter', 'eventfilter',
                       'sv_bp', 'sv_bp_uncertainty',
-                      'gt', 'inslen', 'sr_support', 'pe_support', 'score', 'score_next', 'rearrangement_next', 'num_paths')) + \
+                      'gt', 'af', 'inslen', 'sr_support', 'pe_support', 'score', 'score_next', 'rearrangement_next', 'num_paths')) + \
                       '\n'

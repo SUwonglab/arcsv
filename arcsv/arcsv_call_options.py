@@ -63,6 +63,8 @@ DEFAULT_OPTS = {
     'max_paths': 2000,
     'max_mes_extra': 0,
     'robustness_parameter': 1e-4,
+    'allele_fraction_list': '0.5,1',  # heterozygous, homozygous
+    'allele_fractions': None,   # parsed from allele_fraction_list
     # 'lh_tol': 1e-10,
 
     # OUTPUT

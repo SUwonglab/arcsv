@@ -79,6 +79,9 @@ def add_call_parser(subparsers):
     # optional.add_argument('--use_mate_tags', action='store_true')
     # optional.add_argument('--use_indels', action='store_true')
     optional.add_argument('--no_pecluster', dest='--do_pecluster', action='store_false')
+    optional.add_argument('-f', '--allele_fraction_list', type=str,
+                          help='(EXPERIMENTAL) comma-separated list of alternate allele'
+                               'fractions to check when calling SVs')
 
     other = parser_call.add_argument_group('other arguments')
     other.add_argument('--version', action='version', version='%(prog)s ' + __version__)

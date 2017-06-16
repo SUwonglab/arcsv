@@ -57,6 +57,14 @@ def run(args):
         opts['min_bp_support'] = 4
         opts['min_edge_support'] = 4
 
+    try:
+        opts['allele_fractions'] = [float(x) for x in opts['allele_fraction_list'].split(',')]
+    except ValueError:
+        print('invalid format for allele_fraction_list -- use a comma-separated list'
+              ', e.g.: 0, 0.5, 1')
+        sys.exit(1)
+    print('allele_fractions: ' + str(opts['allele_fractions']))
+
     # CLEANUP no tuple
     inputs = [(os.path.realpath(ip.strip()),)
               for ip in opts['input_list'].split(',')]
@@ -76,7 +84,7 @@ def run(args):
         print(l)
 
     call_sv(opts, inputs, reference_files,
-            do_bp=True, do_junction_align=False)  # DEPRECATED
+            do_bp=True, do_junction_align=False)  # these two opts DEPRECATED
 
 
 # e.g. chrom_name = '1' for chr1
