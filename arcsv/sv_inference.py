@@ -295,7 +295,8 @@ def do_inference(opts, reference_files, g, blocks,
                                         blocks[start + i].start,
                                         blocks[start + i].end))
         print('')
-        pathstrings = [rearrangement_to_letters(path_to_rearrangement(p), start, blocks) for p in paths]
+        pathstrings = [rearrangement_to_letters(path_to_rearrangement(p), start, blocks)
+                       for p in paths]
 
         all_lh = itertools.chain(zip(homozygous_likelihood, range(npaths), ['HOM'] * npaths),
                                  zip(heterozygous_likelihood, range(npaths), ['HET'] * npaths))
@@ -308,7 +309,8 @@ def do_inference(opts, reference_files, g, blocks,
             pathstring = pathstrings[idx]
             print('%-20s (%s) %20s' % (pathstring, gt, '%.3f' % lh))
 
-        # we consider the top 50 by het/hom
+        # get the 50 paths with highest likelihood, but don't
+        # double-count for HET and HOM likelihood
         s = set()
         idx_ordered_unique = [idx for (_, idx, _) in all_lh_sorted
                               if idx not in s and (s.add(idx) is None)]
