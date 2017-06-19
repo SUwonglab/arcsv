@@ -60,8 +60,8 @@ def run(args):
     try:
         opts['allele_fractions'] = [float(x) for x in opts['allele_fraction_list'].split(',')]
     except ValueError:
-        print('invalid format for allele_fraction_list -- use a comma-separated list'
-              ', e.g.: 0, 0.5, 1')
+        sys.stderr.write('\ninvalid format for allele_fraction_list -- '
+                         'use a comma-separated list, e.g.: 0, 0.5, 1\n')
         sys.exit(1)
     print('allele_fractions: ' + str(opts['allele_fractions']))
 
@@ -96,13 +96,26 @@ def call_sv(opts, inputs, reference_files, do_bp, do_junction_align):
     # load some options for convenience
     outdir = opts['outdir']
     # create ouput directories if needed
+
     if not os.path.exists(outdir):
         os.makedirs(outdir)
+    elif os.path.isfile(outdir):
+        sys.stderr.write('\nError: The specified output directory has the same name'
+                         ' as an existing file.\n')
+        sys.exit(1)
+    elif not opts['overwrite_outdir']:                       # is directory
+        sys.stderr.write('\nError: The specified output directory already exists.'
+                         ' Use --overwrite to overwrite existing ARC-SV output '
+                         'files in {0}.\n'.format(outdir))
+        sys.exit(1)
+
     track_dir = os.path.join(outdir, 'tracks')
     fig_dir = os.path.join(outdir, 'figs')
     lh_dir = os.path.join(outdir, 'lh')
     for dd in (track_dir, fig_dir, lh_dir):
+        # print('checking ' + dd)
         if not os.path.exists(dd):
+            # print('making {0}'.format(dd))
             os.makedirs(dd)
     os.system('rm -f ' + os.path.join(track_dir, 'trackDb.txt'))
 
@@ -126,8 +139,7 @@ def call_sv(opts, inputs, reference_files, do_bp, do_junction_align):
     # lib_stats_all = []
     # lib_dict_all = []
     disc = []
-    print(inputs)
-    print(len(inputs))
+    print('[call_sv] working with {0} input files'.format(len(inputs)))
     # MULTILIB need to change to do multiple libraries with distinct stats
     bamfiles = [i[0] for i in inputs]
 

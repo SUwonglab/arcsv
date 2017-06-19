@@ -6,6 +6,7 @@ from arcsv.constants import SPLIT_FIRST_PLUS, SPLIT_SECOND_PLUS, \
     SPLIT_OVERLAP, SPLIT_TYPES, SPLIT_LEFT_FIRST
 from arcsv.helper import get_ucsc_name
 
+
 def valid_split(aln, bam, min_mapq, max_splits=1):
     if max_splits != 1:
         raise Warning('max_splits = 1 is required for now')
@@ -25,11 +26,49 @@ def valid_split(aln, bam, min_mapq, max_splits=1):
     return True
 
 
+# LATER move this to helper.py and use for pe support as well
+# CLEANUP probably should use GenomeInterval for bp
+class SupportingSplit:
+    def __init__(self, aln,
+                 bp1_chrom, bp1, bp2_chrom, bp2,
+                 split_type, mate=None,
+                 mate_has_split=False):
+        self.aln = aln
+        self.bp1_chrom = bp1_chrom
+        self.bp1 = bp1
+        self.bp2_chrom = bp2_chrom
+        self.bp2 = bp2
+        self.split_type = split_type
+        self.mate = mate
+        self.mate_has_split = mate_has_split
+
+    def __repr__(self):
+        qname_numbered = self.aln.qname + ('_1' if self.aln.is_read1 else '_2')
+        return '({0}, {1})'.format(qname_numbered, self.split_type)
+
+    def __str__(self):
+        qname_numbered = self.aln.qname + ('_1' if self.aln.is_read1 else '_2')
+        return '({0}, {1})'.format(qname_numbered, self.split_type)
+
+    def __hash__(self):
+        return hash((self.aln, self.mate,
+                     self.bp1_chrom, self.bp1, self.bp2_chrom, self.bp2,
+                     self.split_type))
+
+    @property
+    def seq(self):
+        return self.aln.seq
+
+    @property
+    def mate_seq(self):
+        return self.mate.seq
+
+
 # Currently we only support one split and classify the split based on the "left" and "right"
 #       segments. For more splits (if needed) we'd probably want to process adjacent segments
 #       in the same manner.
 # returns a closed breakpoint interval, i.e. [bp_pos, bp_pos] if there's no uncertainty
-def parse_splits(aln, bam, min_mapq, max_splits=1):
+def parse_splits(aln, bam, min_mapq, mate, max_splits=1):
     if not valid_split(aln, bam, min_mapq, max_splits):
         return None
     SA = aln.get_tag('SA')
@@ -120,20 +159,20 @@ def parse_splits(aln, bam, min_mapq, max_splits=1):
     while bp_first_start_idx < 0 or first_ref[bp_first_start_idx] is None:
         bp_first_start_idx += 1
     if first.is_reverse:
-        bp_first = [first_ref[first_end_idx], first_ref[bp_first_start_idx]]
+        bp_first = (first_ref[first_end_idx], first_ref[bp_first_start_idx])
     else:
-        bp_first = [first_ref[bp_first_start_idx] + 1, first_ref[first_end_idx] + 1]
-    bp_first.sort()
+        bp_first = (first_ref[bp_first_start_idx] + 1, first_ref[first_end_idx] + 1)
+    bp_first = tuple(sorted(bp_first))
 
     # bp will occupy positions last_start_idx to bp_last_end_idx
     bp_last_end_idx = max(last_start_idx, first_end_idx + 1)
     while bp_last_end_idx >= len(last_ref) or last_ref[bp_last_end_idx] is None:
         bp_last_end_idx -= 1
     if last.is_reverse:
-        bp_last = [last_ref[bp_last_end_idx] + 1, last_ref[last_start_idx] + 1]
+        bp_last = (last_ref[bp_last_end_idx] + 1, last_ref[last_start_idx] + 1)
     else:
-        bp_last = [last_ref[last_start_idx], last_ref[bp_last_end_idx]]
-    bp_last.sort()
+        bp_last = (last_ref[last_start_idx], last_ref[bp_last_end_idx])
+    bp_last = tuple(sorted(bp_last))
 
     if left is first:
         bp1 = bp_first
@@ -153,15 +192,20 @@ def parse_splits(aln, bam, min_mapq, max_splits=1):
 
     bp1_rname = bam.getrname(left.rname)
     bp2_rname = bam.getrname(right.rname)
-    qname = aln.qname
-    if aln.is_read1:
-        qname += '_1'
-    else:
-        qname += '_2'
+    # qname = aln.qname
+    # if aln.is_read1:
+    #     qname += '_1'
+    # else:
+    #     qname += '_2'
+
     if bp1[0] <= bp2[0]:
-        return qname, aln.get_tag('RG'), aln.mapq, bp1_rname, bp1, bp2_rname, bp2, split_type
+        return SupportingSplit(aln, bp1_rname, bp1, bp2_rname, bp2,
+                               split_type, mate)
+        # return qname, aln.get_tag('RG'), aln.mapq, bp1_rname, bp1, bp2_rname, bp2, split_type
     elif bp2[0] < bp1[0]:
-        return qname, aln.get_tag('RG'), aln.mapq, bp2_rname, bp2, bp1_rname, bp1, split_type
+        return SupportingSplit(aln, bp2_rname, bp2, bp1_rname, bp1,
+                               split_type, mate)
+        # return qname, aln.get_tag('RG'), aln.mapq, bp2_rname, bp2, bp1_rname, bp1, split_type
 
 
 def parse_cigar(aln):
@@ -222,15 +266,14 @@ def splits_are_mirrored(s1, s2):
                       'Dup+': 1, 'Dup-': 1,
                       'InvL+': 2, 'InvL-': 2,
                       'InvR+': 3, 'InvR-': 3}
-    tmp, tmp, tmp, s1_bp1_rname, s1_bp1, s1_bp2_rname, s1_bp2, s1_type = s1
-    tmp, tmp, tmp, s2_bp1_rname, s2_bp1, s2_bp2_rname, s2_bp2, s2_type = s2
-    return (s1_bp1_rname == s2_bp1_rname
-            and s1_bp1 == s2_bp1
-            and s1_bp2_rname == s2_bp2_rname
-            and s1_bp2 == s2_bp2
-            and mirrored_split[s1_type] == mirrored_split[s2_type])
+    return (s1.bp1_chrom == s2.bp1_chrom
+            and s1.bp1 == s2.bp1
+            and s1.bp2_chrom == s2.bp2_chrom
+            and s1.bp2 == s2.bp2
+            and mirrored_split[s1.split_type] == mirrored_split[s2.split_type])
 
 
+# DEPRECATED splits are now SupportingSplit
 def split_to_bed12(split):
     cols = {'Del+': '180,30,0', 'Del-': '180,30,0',
             'Dup+': '80,170,0', 'Dup-': '80,170,0',

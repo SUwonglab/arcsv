@@ -272,12 +272,9 @@ def merge_breakpoints(opts, junctions_out, splits, disc_bp):
                 continue
             print(opts['library_names'][l] + ': ')
             for split in splits[l]:
-                bp1 = tuple(split[4])
-                bp1_chrom = split[3]
-                bp2 = tuple(split[6])
-                bp2_chrom = split[5]
-                if bp1_chrom == bp2_chrom and bp1_chrom == chrom_name:
-                    print(str(bp1) + ' -> ' + str(bp2))
+                if split.bp1_chrom == split.bp2_chrom and \
+                   split.bp1_chrom == chrom_name:
+                    print('{0} -> {1}'.format(split.bp1, split.bp2))
     junction_maps = [j[0] for j in junctions_out]  # SPEED tuples in these cases are faster
     junctions_merged = [None, None]
     # breakpoint-evidence mapping before merging junction-derived BP and split-derived BP
@@ -366,19 +363,12 @@ def merge_breakpoints(opts, junctions_out, splits, disc_bp):
         split_list = splits[l]
         bptype = 'spl_' + opts['library_names'][l]
         for split in split_list:
-            split_qname = split[0]
-            split_type = split[7][0:4] if split[7][0:3] == 'Inv' else split[7][0:3]
-            split_list = [(split_qname, split_type)]
-            bp1_interval = tuple(split[4])
-            bp1_chrom = split[3]
-            if bp1_chrom == chrom_name:
-                bp1 = Breakpoint(bp1_interval, splits=split_list, libs=[bptype])
-                all_bp[bp1_interval] = all_bp.get(bp1_interval, []) + [bp1]
-            bp2_interval = tuple(split[6])
-            bp2_chrom = split[5]
-            if bp2_chrom == chrom_name:
-                bp2 = Breakpoint(bp2_interval, splits=split_list, libs=[bptype])
-                all_bp[bp2_interval] = all_bp.get(bp2_interval, []) + [bp2]
+            if split.bp1_chrom == chrom_name:
+                bp1 = Breakpoint(split.bp1, splits=[split], libs=[bptype])
+                all_bp[split.bp1] = all_bp.get(split.bp1, []) + [bp1]
+            if split.bp2_chrom == chrom_name:
+                bp2 = Breakpoint(split.bp2, splits=[split], libs=[bptype])
+                all_bp[split.bp2] = all_bp.get(split.bp2, []) + [bp2]
 
     # add PE clusters to all_bp
     for pe_bp in disc_bp:

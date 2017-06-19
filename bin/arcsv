@@ -55,6 +55,9 @@ def add_call_parser(subparsers):
     optional = parser_call.add_argument_group('optional arguments')
     optional.add_argument('-o', '--outdir', type=str,
                           help='output folder')
+    optional.add_argument('--overwrite', dest='overwrite_outdir', action='store_true',
+                          help='overwrite existing files in the output directory,'
+                               ' if it exists')
     # optional.add_argument('-D', '--reference_dir', type=str,
     # default='/home/jgarthur/sv/reference')
     # optional.add_argument('-R', '--reference_name', type=str,
@@ -78,7 +81,7 @@ def add_call_parser(subparsers):
     optional.add_argument('--do_viz', action='store_true')
     # optional.add_argument('--use_mate_tags', action='store_true')
     # optional.add_argument('--use_indels', action='store_true')
-    optional.add_argument('--no_pecluster', dest='--do_pecluster', action='store_false')
+    optional.add_argument('--no_pecluster', dest='do_pecluster', action='store_false')
     optional.add_argument('-f', '--allele_fraction_list', type=str,
                           help='(EXPERIMENTAL) comma-separated list of alternate allele'
                                'fractions to check when calling SVs')

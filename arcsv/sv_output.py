@@ -86,7 +86,7 @@ def do_sv_processing(opts, data, outdir, reffile,
             qname = id
             qname += ':{0}'.format(pathstring)
             for sv in svlist:
-                qname += ':{0}'.format(sv.type.split(':')[0]) # just write DUP, not DUP:TANDEM
+                qname += ':{0}'.format(sv.type.split(':')[0])  # just write DUP, not DUP:TANDEM
             ars_out = altered_reference_sequence(path, blocks, ref, flank_size = opts['altered_flank_size'])
             seqs, block_pos, insertion_size, del_size, svb, svp, hlf, hrf = ars_out
             if sum(len(s) for s in seqs) > max_size_altered:
@@ -126,15 +126,18 @@ def sv_output(path1, path2, blocks, event1, event2,
               event_lh, ref_lh, next_best_lh,
               next_best_pathstring, npaths,
               event_filtered, filter_criteria,
-              filterstring_manual = None, id_extra = ''):
+              filterstring_manual=None, id_extra='',
+              output_split_support=False):
     lines = ''
+    if output_split_support:
+        splitlines = ''
     sv1 = [sv for sv in sv_list if sv.genotype == '1|1' or sv.genotype == '1|0']
     sv2 = [sv for sv in sv_list if sv.genotype == '1|1' or sv.genotype == '0|1']
     compound_het = (path1 != path2) and (len(sv1) > 0) and (len(sv2) > 0)
     is_het = (path1 != path2)
     # CLEANUP this duplicated above... merge sometime
-    for (k, path, event, svs, ct,frac) in [(0, path1, event1, sv1, complex_types[0], frac1),
-                                           (1, path2, event2, sv2, complex_types[1], frac2)]:
+    for (k, path, event, svs, ct, frac) in [(0, path1, event1, sv1, complex_types[0], frac1),
+                                            (1, path2, event2, sv2, complex_types[1], frac2)]:
         if k == 1 and path1 == path2:
             continue
         if len(svs) == 0:
@@ -201,7 +204,41 @@ def sv_output(path1, path2, blocks, event1, event2,
                           gt, frac, inslen, sr, pe, lhr, lhr_next,
                           next_best_pathstring, str(npaths))) + '\n'
         lines = lines + line
-    return lines
+
+        if output_split_support:
+            split_line_list = []
+            bp_orientations = {'Del': ('-', '+'),
+                               'Dup': ('+', '-'),
+                               'InvL': ('-', '-'),
+                               'InvR': ('+', '+')}
+            bp_idx = 1
+            for sv in svs:
+                bp1 = str(int(floor(np.median(sv.bp1))))
+                bp2 = str(int(floor(np.median(sv.bp2))))
+                for split in sv.supporting_splits:
+                    orientation = bp_orientations[split.split_type[:-1]]
+                    orientation = ','.join(orientation)
+                    strand = split.split_type[-1]
+                    qname = split.aln.qname
+                    seq = split.aln.seq
+                    mapq = str(split.aln.mapq)
+                    mate_seq = split.mate.seq
+                    mate_mapq = str(split.mate.mapq)
+                    mate_has_split = str(split.mate_has_split)
+                    line = '\t'.join((id, block_bp, ref_string, s, sv_bp,
+                                      'split', qname, str(bp_idx),
+                                      bp1, bp2, orientation,
+                                      qname, strand, seq, mapq,
+                                      mate_seq, mate_mapq, mate_has_split))
+                    split_line_list.append(line)
+                bp_idx += 1
+            if len(split_line_list) > 0:
+                splitlines = splitlines + '\n'.join(split_line_list) + '\n'
+    if output_split_support:
+        return lines, splitlines
+    else:
+        return lines
+
 
 def svout_header_line():
     return '\t'.join(('chrom', 'minbp', 'maxbp', 'id',
@@ -209,5 +246,15 @@ def svout_header_line():
                       'bp', 'bp_uncertainty', 'reference', 'rearrangement',
                       'filter', 'eventfilter',
                       'sv_bp', 'sv_bp_uncertainty',
-                      'gt', 'af', 'inslen', 'sr_support', 'pe_support', 'score', 'score_next', 'rearrangement_next', 'num_paths')) + \
+                      'gt', 'af', 'inslen', 'sr_support', 'pe_support',
+                      'score', 'score_next', 'rearrangement_next', 'num_paths')) + \
+                      '\n'
+
+
+def splitout_header_line():
+    return '\t'.join(('sv_id', 'bp', 'reference', 'rearrangement', 'sv_bp',
+                      'support_type', 'qname', 'bp_idx',
+                      'bp1', 'bp2', 'bp_orientation',
+                      'qname', 'strand', 'seq', 'mapq',
+                      'mate_seq', 'mate_mapq', 'mate_has_split')) + \
                       '\n'
