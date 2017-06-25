@@ -133,8 +133,8 @@ def bp_mergefun_precedence(locs, bps, max_distance=0):
             print('locs: {0}\nbps: {1}\n'.format(locs, bps))
             raise Warning('p_mrg key in merged')
         merged.update(p_mrg)
-        print('p_mrg {0}'.format(p_mrg))
-        print('merged {0}'.format(merged))
+        # print('p_mrg {0}'.format(p_mrg))
+        # print('merged {0}'.format(merged))
         # and merge BPs from the next level into already merged BPs
         if i + 1 < len(prec_list):
             lower_prec_bps = [b for b in bps if b.precedence == prec_list[i+1]]
