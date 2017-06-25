@@ -27,9 +27,10 @@ def do_inference(opts, reference_files, g, blocks,
                  gap_indices, left_bp, right_bp,
                  insert_dists, insert_cdfs, insert_cdf_sums,
                  class_probs, rlen_stats,
-                 insertion_search_width, pi_robust=.000001,
+                 insertion_search_width,
                  insert_lower=None, insert_upper=None, mode='both'):
     outdir = opts['outdir']
+    pi_robust = opts['pi_robust']
 
     g.add_ref_path_support(9999)  # ensure reference path is always available
     print('graph:')
@@ -352,7 +353,7 @@ def do_inference(opts, reference_files, g, blocks,
         which_consider = idx_ordered_unique[-50:]  # LATER make this a parameter
         # make sure reference is there:
         if idx_ref not in which_consider:
-            which_consider.append(ref)
+            which_consider.append(idx_ref)
         # TODO unique
         for (i, j) in itertools.product(which_consider, which_consider):
             if i < j:           # likelihood is symmetric in theta_1, theta_2
@@ -360,7 +361,7 @@ def do_inference(opts, reference_files, g, blocks,
             lhr_i, nc_i, lnc_i, _ = lh_out[i]
             lhr_j, nc_j, lnc_j, _ = lh_out[j]
             if i != j:
-                allele_fractions = opts['allele_fractions']
+                allele_fractions = opts['allele_fractions_symmetrized']
             else:
                 allele_fractions = [1]
             # SPEEDUP a lot of duplication here -- already tested
@@ -371,10 +372,10 @@ def do_inference(opts, reference_files, g, blocks,
                                             lnc_i, lnc_j,
                                             ref_lc, allele_fraction,
                                             pi_robust, inf_reads)
-                old_output = \
-                    diploid_likelihood2(lhr_i, lhr_j,
-                                        lnc_i, lnc_j,
-                                        lc, pi_robust, inf_reads)
+                # old_output = \
+                #     diploid_likelihood2(lhr_i, lhr_j,
+                #                         lnc_i, lnc_j,
+                #                         lc, pi_robust, inf_reads)
                 # print('current: {0}, old: {1}'.format(heterozygous_likelihood, old_output))
 
                 if heterozygous_likelihood > best_lh:

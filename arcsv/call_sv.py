@@ -1,3 +1,4 @@
+import itertools
 import numpy as np
 import os
 import random as rnd
@@ -58,12 +59,18 @@ def run(args):
         opts['min_edge_support'] = 4
 
     try:
-        opts['allele_fractions'] = [float(x) for x in opts['allele_fraction_list'].split(',')]
+        allele_fractions = [float(x) for x in opts['allele_fraction_list'].split(',')]
+        symmetrized = set(itertools.chain(allele_fractions,
+                                          (1-x for x in allele_fractions),
+                                          [1.0]))
+        if 0 in symmetrized:
+            symmetrized.remove(0)
+        opts['allele_fractions_symmetrized'] = sorted(symmetrized)
     except ValueError:
         sys.stderr.write('\ninvalid format for allele_fraction_list -- '
-                         'use a comma-separated list, e.g.: 0, 0.5, 1\n')
+                         'use a comma-separated list, e.g.: 0.5, 1\n')
         sys.exit(1)
-    print('allele_fractions: ' + str(opts['allele_fractions']))
+    print('allele_fractions: ' + str(opts['allele_fractions_symmetrized']))
 
     # CLEANUP no tuple
     inputs = [(os.path.realpath(ip.strip()),)
@@ -259,14 +266,16 @@ def call_sv(opts, inputs, reference_files, do_bp, do_junction_align):
     print('[call_sv] second pass elapsed time: ' + time_string)
 
     # TODO
-    # def compute_pi_robust(pmf, p=1e-4):
-    #     pmf_sorted = sorted(pmf, reverse=True)
-    #     cs = np.cumsum(pmf_sorted)
-    #     i = min([i for i in range(len(cs)) if cs[i] >= (1-p)])
-    #     return pmf_sorted[i]
-    # pi_robust = [compute_pi_robust(ins, opts['robustness_parameter']) for ins in insert]
-    # print(pi_robust)
-    # insert_dists = [(lambda x: ins[x] if x >= 0 and x < len(ins) else 0) for ins in insert]
+    def compute_pi_robust(pmf, p=opts['robustness_parameter']):
+        pmf_sorted = sorted(pmf, reverse=True)
+        cs = np.cumsum(pmf_sorted)
+        i = min([i for i in range(len(cs)) if cs[i] >= (1-p)])
+        return pmf_sorted[i]
+    # MULTILIB
+    pi_robust = np.median([compute_pi_robust(ins, opts['robustness_parameter'])
+                           for ins in insert])
+    opts['pi_robust'] = pi_robust
+    print('[call_sv] pi_robust: %.4f' % pi_robust)
 
     # DEPRECATED except for insertion search width = 1.1*max(insert_q99) ?
     insert_q01 = []

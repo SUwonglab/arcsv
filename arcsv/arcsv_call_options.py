@@ -66,6 +66,7 @@ DEFAULT_OPTS = {
     'max_mes_extra': 0,         # how much will we raise min_edge_support
                                 # ...to reduce the number of paths?
     'robustness_parameter': 1e-4,
+    'pi_robust': None,
     'allele_fraction_list': '0.5,1',  # diploid -- heterozygous, homozygous
     'allele_fractions': None,   # parsed from allele_fraction_list
     # 'lh_tol': 1e-10,
