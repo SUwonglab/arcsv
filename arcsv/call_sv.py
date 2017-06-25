@@ -229,8 +229,9 @@ def call_sv(opts, inputs, reference_files, do_bp, do_junction_align):
         cdf = np.cumsum(ins)
         return lambda x, cdf=cdf: 0 if x < 0 else 1 if x >= len(ins) else cdf[x]
     insert_cdfs = [create_insert_cdf(ins) for ins in insert]
-    print('insert_cdfs')
-    print('\n'.join([str([ic(i) for i in range(300)]) for ic in insert_cdfs]))
+    if opts['verbosity'] > 1:
+        print('insert_cdfs')
+        print('\n'.join([str([ic(i) for i in range(300)]) for ic in insert_cdfs]))
 
     def create_insert_cs(ins):
         cdf = np.cumsum(ins)

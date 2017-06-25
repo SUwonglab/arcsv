@@ -94,23 +94,24 @@ class GenomeGraph:
                 if floor(combined[i] / 2) == floor(combined[i + 1] / 2) and \
                         abs(combined[i] - combined[i+1]) == 1 and \
                         alt_dist >= insert_range[0]:
-                    print('skipping b/t DUP support at block {0}'.format(floor(combined[i]/2)))
-                    print('length {0}'.format(len(blocks[int(floor(combined[i]/2))])))
-                    print('combined path: {0}'.format(combined_full_path))
-                    print('distance: {0}\n'.format(dist))
-                    print('alt_dist: {0}\n'.format(alt_dist))
-                    print('dist - block_len: {0}\n'.format(dist - block_len))
+                    pass
+                    # print('skipping b/t DUP support at block {0}'.format(floor(combined[i]/2)))
+                    # print('length {0}'.format(len(blocks[int(floor(combined[i]/2))])))
+                    # print('combined path: {0}'.format(combined_full_path))
+                    # print('distance: {0}\n'.format(dist))
+                    # print('alt_dist: {0}\n'.format(alt_dist))
+                    # print('dist - block_len: {0}\n'.format(dist - block_len))
                 else:
                     self.add_support(combined[i], combined[i+1])
                     # print('adding b/t support {0}-{1}'.format(combined[i], combined[i+1]))
-                    if floor(combined[i] / 2) == floor(combined[i+1] / 2):
-                        if abs(combined[i] - combined[i+1]) == 1:
-                            print('adding b/t DUP support at block {0}'.format(floor(combined[i]/2)))
-                            print('length {0}'.format(len(blocks[int(floor(combined[i]/2))])))
-                        else:
-                            print('adding b/t INV support at block {0}'.format(floor(combined[i]/2)))
-                        print('combined path: {0}'.format(combined_full_path))
-                        print('distance: {0}\n'.format(dist))
+                    # if floor(combined[i] / 2) == floor(combined[i+1] / 2):
+                        # if abs(combined[i] - combined[i+1]) == 1:
+                        #     print('adding b/t DUP support at block {0}'.format(floor(combined[i]/2)))
+                        #     print('length {0}'.format(len(blocks[int(floor(combined[i]/2))])))
+                        # else:
+                        #     print('adding b/t INV support at block {0}'.format(floor(combined[i]/2)))
+                        # print('combined path: {0}'.format(combined_full_path))
+                        # print('distance: {0}\n'.format(dist))
             elif i != len(badj1) - 1:
                 self.add_support(combined[i], combined[i+1])
 
@@ -171,7 +172,7 @@ class GenomeGraph:
     def add_ref_path_support(self, min_support):
         for i in range(0, 2*self.size - 2, 2):
             a, b = i + 1, i + 2
-            print('adding support between {0} and {1}'.format(a, b))
+            # print('adding support between {0} and {1}'.format(a, b))
             self.add_support(a, b, amt = min_support)
 
     def supported_neighbors(self, v, min_support):
@@ -445,12 +446,14 @@ def block_parser_handle_pair(opts, aln1, aln2, bam, g, blocks,
 
     # not hanging, but aln2 was not in fetch range
     if same_chrom and not is_distant and aln2.query_qualities is None and not aln2.is_unmapped:
-        print('skipping pair, aln has pos = {0} mpos = {1}'.format(aln1.pos, aln1.mpos))
+        if opts['verbosity'] > 1:
+            print('skipping pair, aln has pos = {0} mpos = {1}'.format(aln1.pos, aln1.mpos))
         return
 
     if opts['filter_read_through'] and \
        is_read_through((aln1, aln2), opts['read_through_slop']):
-        print('[sv_parse_reads] read-through')
+        if opts['verbosity'] > 1:
+            print('[sv_parse_reads] read-through')
         return
 
     qmean1 = np.mean(aln1.query_qualities) if qmean1 is None else qmean1
@@ -507,9 +510,10 @@ def get_blocked_alignment(opts, aln, blocks, block_idx, bam, is_rf = False, true
         SA = aln.get_tag('SA')
         nsplits = len(SA.split(';')) - 1
         if nsplits > max_splits:
-            print('\nsplit blocks None: too many splits')
-            print(aln)
-            print('')
+            if opts['verbosity'] > 1:
+                print('\nsplit blocks None: too many splits')
+                print(aln)
+                print('')
             return (None, None)
         SA_split = SA.strip(';').split(',')
         supp = pysam.AlignedSegment()
@@ -536,8 +540,9 @@ def get_blocked_alignment(opts, aln, blocks, block_idx, bam, is_rf = False, true
         elif main_start > supp_start:
             first, second = supp, aln
         else:                   #
-            print('\nsplit blocks None: main_start == supp_start')
-            print(aln)
+            if opts['verbosity'] > 1:
+                print('\nsplit blocks None: main_start == supp_start')
+                print(aln)
             return (None, None)
         if is_rf:
             first, second = second, first
@@ -546,12 +551,14 @@ def get_blocked_alignment(opts, aln, blocks, block_idx, bam, is_rf = False, true
         block_idx_first = block_idx if (first is aln) else find_block_idx(first.pos, blocks)
         block_idx_second = block_idx if (second is aln) else find_block_idx(second.pos, blocks)
         if block_idx_first is None:
-            print('\nsplit blocks None: block_idx_first == None')
-            print(aln)
+            if opts['verbosity'] > 1:
+                print('\nsplit blocks None: block_idx_first == None')
+                print(aln)
             return (None, None)
         if block_idx_second is None:
-            print('\nsplit blocks None: block_idx_second == None')
-            print(aln)
+            if opts['verbosity'] > 1:
+                print('\nsplit blocks None: block_idx_second == None')
+                print(aln)
             return (None, None)
         first_blocks, first_gaps = get_blocks_gaps(first)
         first_overlapping_blocks, first_offset = get_overlapping_blocks(blocks,
@@ -559,7 +566,8 @@ def get_blocked_alignment(opts, aln, blocks, block_idx, bam, is_rf = False, true
                                                                         block_idx_first, first.is_reverse,
                                                                         find_offset = True, true_read_length = true_rlen,
                                                                         aln_read_length = first.query_length)
-        print('qname {0}, first {1} is_rev={2}'.format(first.qname, first_overlapping_blocks, first.is_reverse))
+        if opts['verbosity'] > 1:
+            print('qname {0}, first {1} is_rev={2}'.format(first.qname, first_overlapping_blocks, first.is_reverse))
         # DEBUG
         # if overlapping_blocks != []:
         #     print(overlapping_blocks)
@@ -589,15 +597,16 @@ def get_blocked_alignment(opts, aln, blocks, block_idx, bam, is_rf = False, true
                                                                           block_idx_second, second.is_reverse,
                                                                           find_offset = True, true_read_length = true_rlen,
                                                                           aln_read_length = second.query_length)
-        print('qname {0}, second {1} is_rev={2}'.format(second.qname, second_overlapping_blocks, second.is_reverse))
         overlapping_blocks = first_overlapping_blocks + second_overlapping_blocks
-        print('\n')
-        for a in first, second:
+        if opts['verbosity'] > 1:
+            print('qname {0}, second {1} is_rev={2}'.format(second.qname, second_overlapping_blocks, second.is_reverse))
             print('\n')
-            print(a)
+        for a in first, second:
+            # print('\n')
+            # print(a)
             b = -1 if a is first else 0
             ov = first_overlapping_blocks if a is first else second_overlapping_blocks
-            print('ov {0}'.format(ov))
+            # print('ov {0}'.format(ov))
             if ov == []:
                 continue
             ov_idx = floor(ov[b] / 2)
@@ -605,42 +614,42 @@ def get_blocked_alignment(opts, aln, blocks, block_idx, bam, is_rf = False, true
             if (a is first) ^ (a.is_reverse):
                 split_pos = a.reference_end
                 block_pos = block.end
-                print('checking agreement at end of block {0}'.format(block))
+                # print('checking agreement at end of block {0}'.format(block))
                 # print(first)
                 # print(second)
-                print('split_pos (reference_end) {0} block_pos (block end) {1}'.format(split_pos, block_pos))
+                # print('split_pos (reference_end) {0} block_pos (block end) {1}'.format(split_pos,
+                #                                                                        block_pos))
                 # print('')
                 if block_pos - split_pos > opts['split_read_leeway']:
-                    print('\n')
-                    print("split blocks None: split doesn't agree with bp")
+                    # print('\n')
+                    # print("split blocks None: split doesn't agree with bp")
                     # print(blocks)
                     # print('')
                     return (None, None)
             else:
                 split_pos = a.reference_start
                 block_pos = block.start
-                print('checking agreement at beginning of block {0}'.format(block))
+                # print('checking agreement at beginning of block {0}'.format(block))
                 # print(first)
                 # print(second)
                 # print(split_pos)
                 # print(block_pos)
-                print('split_pos (reference_start) {0} block_pos (block start) {1}'.format(split_pos, block_pos))
-
+                # print('split_pos (reference_start) {0} block_pos (block start) {1}'.format(split_pos, block_pos))
                 # print('')
                 if split_pos - block_pos > opts['split_read_leeway']:
-                    print('\n')
-                    print("split blocks None: split doesn't agree with bp")
+                    # print('\n')
+                    # print("split blocks None: split doesn't agree with bp")
                     # print(blocks)
                     # print('')
                     return (None, None)
         #
         # can happen if first_overlapping_blocks is None (should be very rare)
         offset = first_offset if first_offset is not None else second_offset
-        if first_offset is None:
-            print('first_offset was None in split read block aln')
+        # if first_offset is None:
+        #     print('first_offset was None in split read block aln')
     if len(overlapping_blocks) == 0:
-        print("blocks None: the following alignment didn't match any blocks")
-        print(aln)
+        # print("blocks None: the following alignment didn't match any blocks")
+        # print(aln)
         return (None, None)
     return overlapping_blocks, offset
 

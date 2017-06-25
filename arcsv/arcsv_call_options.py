@@ -1,6 +1,6 @@
 DEFAULT_OPTS = {
     # MISC
-    'verbosity': 10,
+    'verbosity': 1,
     'filter_read_through': False,
     'read_through_slop': 5,
     'min_mapq_reads': 20,

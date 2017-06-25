@@ -254,8 +254,9 @@ def junction_end(junction):
 # 1. softclips (i.e. junctions) are filtered
 def merge_breakpoints(opts, junctions_out, splits, disc_bp):
     chrom_name = opts['chromosome']
-    if opts['verbosity'] > 1:
+    if opts['verbosity'] > 0:
         print('Beginning breakpoint merge. . .')
+    if opts['verbosity'] > 1:
         print('with the following junctions:')
         nlib = opts['nlib']
         for l in range(nlib):
@@ -291,8 +292,9 @@ def merge_breakpoints(opts, junctions_out, splits, disc_bp):
                 if junction[ORIENT] == orientation:
                     junction[LIBS].append('jct_' + opts['library_names'][l])
                     bp_dict[junction[BPLOC]] = bp_dict.get(junction[BPLOC], []) + [junction]
-        print('bp_dict: ')
-        print(sorted(list(bp_dict.keys())))
+        if opts['verbosity'] > 1:
+            print('bp_dict: ')
+            print(sorted(list(bp_dict.keys())))
         # print('162481678')
         # for i in range(162481678-5, 162481678+6):
         #     print(bp_dict.get(i))
@@ -311,9 +313,10 @@ def merge_breakpoints(opts, junctions_out, splits, disc_bp):
     bploc_right = sorted(junctions_merged[RIGHT].keys())
     candidate_pairs = get_closeby_pairs(bploc_left, bploc_right,
                                         opts['max_insertion_inversion_mh'])
-    print('\ncandidate pairs for microhomology: ')
-    print(candidate_pairs)
-    print('')
+    if opts['verbosity'] > 1:
+        print('\ncandidate pairs for microhomology: ')
+        print(candidate_pairs)
+        print('')
     found_mh = [{}, {}]
     # LATER order matters -- maybe exclude those?
     for pair in candidate_pairs:
@@ -324,15 +327,16 @@ def merge_breakpoints(opts, junctions_out, splits, disc_bp):
             if valid_insertion_inversion_microhomology(junction1, junction2):
                 found_mh[LEFT][loc_left] = True
                 found_mh[RIGHT][loc_right] = True
-                print('\nmerged b/c MH:')
                 left = junction1 if junction1[ORIENT] == LEFT else junction2
                 right = junction1 if left is junction2 else junction2
-                print('left: pos {0} nonclipped {1}'.format(left[BPLOC],
-                                                            len(left[SEQ])-left[NCLIP]))
-                print('\t{0}'.format(left[SEQ][left[NCLIP]:]))
-                print('right: pos {0} nonclipped {1}\n'.format(right[BPLOC],
-                                                               len(right[SEQ])-right[NCLIP]))
-                print('\t{0}'.format(right[SEQ][:(-right[NCLIP])]))
+                if opts['verbosity'] > 1:
+                    print('\nmerged b/c MH:')
+                    print('left: pos {0} nonclipped {1}'.format(left[BPLOC],
+                                                                len(left[SEQ])-left[NCLIP]))
+                    print('\t{0}'.format(left[SEQ][left[NCLIP]:]))
+                    print('right: pos {0} nonclipped {1}\n'.format(right[BPLOC],
+                                                                   len(right[SEQ])-right[NCLIP]))
+                    print('\t{0}'.format(right[SEQ][:(-right[NCLIP])]))
                 bp_interval = (junction1[BPLOC], junction2[BPLOC])
                 supp_left = junction1[NUNIQ] + junction1[NSUPP]
                 supp_right = junction2[NUNIQ] + junction2[NSUPP]
@@ -341,9 +345,10 @@ def merge_breakpoints(opts, junctions_out, splits, disc_bp):
                 all_bp[bp_interval] = all_bp.get(bp_interval, []) + [bp]
         elif valid_insertion_inversion_microhomology(junction1, junction2):
             # already found, output for debugging
-            print("didn't merge though there is MH (some other bp was merged)")
-            print(junction1)
-            print(junction2)
+            if opts['verbosity'] > 1:
+                print("didn't merge though there is MH (some other bp was merged)")
+                print(junction1)
+                print(junction2)
 
     # add other junction breakpoints to all_bp
     for orientation in [LEFT, RIGHT]:
@@ -375,22 +380,25 @@ def merge_breakpoints(opts, junctions_out, splits, disc_bp):
         all_bp[pe_bp.interval] = all_bp.get(pe_bp.interval, []) + [pe_bp]
 
     # merge junctions and splits
-    print('\nall_bp')
     all_bploc = list(all_bp.keys())
     all_bploc.sort()
-    print('\n'.join(['{0}: {1}'.format(bpl, all_bp[bpl]) for bpl in all_bploc]))
+    if opts['verbosity'] > 1:
+        print('\nall_bp')
+        print('\n'.join(['{0}: {1}'.format(bpl, all_bp[bpl]) for bpl in all_bploc]))
     merged = merge_nearby(all_bp, bp_mergefun_precedence, type='interval', max_distance=0)
     mbploc = sorted(merged.keys())
-    print('\njust merged bp ({0} total):'.format(len(mbploc)))
-    print('\n'.join(['{0}: {1}'.format(bpl, merged[bpl]) for bpl in mbploc]))
+    if opts['verbosity'] > 1:
+        print('\njust merged bp ({0} total):'.format(len(mbploc)))
+        print('\n'.join(['{0}: {1}'.format(bpl, merged[bpl]) for bpl in mbploc]))
     # filter based on min_bp_support
     for (interval, bp) in list(merged.items()):
         if (bp.supp_pe == 0) and (bp.supp_split + bp.supp_clip < opts['min_bp_support']):
             del merged[interval]
     final_bploc = list(merged.keys())
     final_bploc.sort()
-    print('merged and filtered bp ({0} total):'.format(len(final_bploc)))
-    print('\n'.join(['{0}: {1}'.format(bpl, merged[bpl]) for bpl in final_bploc]))
+    if opts['verbosity'] > 1:
+        print('merged and filtered bp ({0} total):'.format(len(final_bploc)))
+        print('\n'.join(['{0}: {1}'.format(bpl, merged[bpl]) for bpl in final_bploc]))
 
     return merged
 

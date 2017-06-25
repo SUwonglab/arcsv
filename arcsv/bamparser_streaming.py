@@ -7,6 +7,9 @@ import os
 import pysam
 import random as rnd
 import resource
+import sys
+
+
 import matplotlib
 matplotlib.use('Agg')           # required if X11 display is not present
 import matplotlib.pyplot as plt
@@ -299,8 +302,9 @@ def parse_bam(opts, reference_files, bamfiles, do_bp, do_junction_align):
                 # it's quite likely that the reads were overlapping due to a short insert
                 if a1_split and a2_split and splits_are_mirrored(splits[lib_idx][-1],
                                                                  splits[lib_idx][-2]):
-                    print('[bamparser] mirrored split: {0} {1} {2}'.
-                          format(chrom_name, splits[lib_idx][-1].bp2, pair[0].qname))
+                    if opts['verbosity'] > 1:
+                        print('[bamparser] mirrored split: {0} {1} {2}'.
+                              format(chrom_name, splits[lib_idx][-1].bp2, pair[0].qname))
                     del splits[lib_idx][-1]
 
     # handle unpaired reads
@@ -321,6 +325,9 @@ def parse_bam(opts, reference_files, bamfiles, do_bp, do_junction_align):
 
     # report stats
     print('processed {0} reads'.format(nreads))
+    if nreads == 0:
+        print('Error: region specified contains no reads!')
+        sys.exit(1)
     if opts['filter_read_through']:
         print('found {0} read-through pairs'.format(num_read_through))
 
