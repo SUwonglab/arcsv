@@ -323,11 +323,12 @@ def parse_bam(opts, reference_files, bamfiles, do_bp, do_junction_align):
                                  None, None,
                                  softclips, splits, bam, mapstats)
 
-    # report stats
-    print('processed {0} reads'.format(nreads))
-    if nreads == 0:
+    if any(len(ins) == 0 for ins in insert_len):  # MULTILIB should only fail if all()
         print('Error: region specified contains no reads!')
         sys.exit(1)
+
+    # report stats
+    print('processed {0} reads'.format(nreads))
     if opts['filter_read_through']:
         print('found {0} read-through pairs'.format(num_read_through))
 
