@@ -276,7 +276,7 @@ def call_sv(opts, inputs, reference_files, do_bp, do_junction_align):
     pi_robust = np.median([compute_pi_robust(ins, opts['robustness_parameter'])
                            for ins in insert])
     opts['pi_robust'] = pi_robust
-    print('[call_sv] pi_robust: %.4f' % pi_robust)
+    print('[call_sv] pi_robust: %f' % pi_robust)
 
     # DEPRECATED except for insertion search width = 1.1*max(insert_q99) ?
     insert_q01 = []

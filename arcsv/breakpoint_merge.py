@@ -138,11 +138,11 @@ def bp_mergefun_precedence(locs, bps, max_distance=0):
         # and merge BPs from the next level into already merged BPs
         if i + 1 < len(prec_list):
             lower_prec_bps = [b for b in bps if b.precedence == prec_list[i+1]]
-            print('lower_prec_bps {0}'.format(lower_prec_bps))
+            # print('lower_prec_bps {0}'.format(lower_prec_bps))
             for lower_bp in lower_prec_bps:
                 for (loc, bp) in list(merged.items()):
                     if dist(lower_bp.interval, bp.interval) <= max_distance:
-                        print('match {0} and {1}'.format(lower_bp, bp))
+                        # print('match {0} and {1}'.format(lower_bp, bp))
                         merged[loc] = bp + lower_bp
                         merged_above.append(lower_bp)
     return merged
