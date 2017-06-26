@@ -209,8 +209,8 @@ def parse_bam(opts, reference_files, bamfiles, do_bp, do_junction_align):
         nreads += 1
         if nreads % (1000000) == 0:
             print('%d reads processed' % nreads)
-            print('Memory usage: %s (kb)' % resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
-            gc.collect()
+            # print('Memory usage: %s (kb)' % resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
+            # gc.collect()
 
         if aln.qname not in seen_aln:
             # if unpaired reads non-existent, handle them no so they don't pile up in memory
