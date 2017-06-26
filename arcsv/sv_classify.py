@@ -466,6 +466,7 @@ def classify_svs(path, blocks, num_genome_blocks, left_bp, right_bp, verbosity):
         if blocks[block_after].is_insertion():
             split_support = 0
             pe_support = 0
+            supporting_splits = []
         else:
             ordered = order_bnd_orientation(bp1, bp2, bnd_orientation)
             expected_split_type = BND_SPLIT_TYPES[ordered]
