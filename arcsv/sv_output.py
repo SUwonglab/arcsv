@@ -222,9 +222,14 @@ def sv_output(path1, path2, blocks, event1, event2,
                     qname = split.aln.qname
                     seq = split.aln.seq
                     mapq = str(split.aln.mapq)
-                    mate_seq = split.mate.seq
-                    mate_mapq = str(split.mate.mapq)
-                    mate_has_split = str(split.mate_has_split)
+                    if split.mate is not None:
+                        mate_seq = split.mate.seq
+                        mate_mapq = str(split.mate.mapq)
+                        mate_has_split = str(split.mate_has_split)
+                    else:
+                        mate_seq = 'NA'
+                        mate_mapq = 'NA'
+                        mate_has_split = 'NA'
                     line = '\t'.join((id, block_bp, ref_string, s, sv_bp,
                                       'split', qname, str(bp_idx),
                                       bp1, bp2, orientation,
