@@ -335,7 +335,8 @@ def parse_bam(opts, reference_files, bamfiles, do_bp, do_junction_align):
     # compute insert length distributions and save plots
     print('observed insert size min:')
     print('\n'.join([str(min(insert_len[i])) for i in range(nlib)]))
-    print('\n'.join([str(Counter(sorted(insert_len[i]))) for i in range(nlib)]))
+    if opts['verbosity'] > 1:
+        print('\n'.join([str(Counter(sorted(insert_len[i]))) for i in range(nlib)]))
     print('[parse_bam] insert 25-50-75 percentiles by library:')
     percentiles = [np.percentile(ins, (25, 50, 75)) for ins in insert_len]
     print(''.join(['{0}: {1}\n'.

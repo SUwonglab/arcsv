@@ -257,19 +257,20 @@ def parse_reads_with_blocks(opts, reference_files, bamgroups,
     #     last_end = bp[1]
     # blocks.append(GenomeInterval(chrom_name, last_end, end))
 
-    print('\n\nbreakpoints:')
     bploc = list(breakpoints.keys())
     bploc.sort()
-    print(bploc)
-    print('\ngaps:')
-    print(gaps)
-    print('gap_indices:')
-    print(gap_indices)
-    print('blocks_after_gaps:')
-    print([blocks[i] for i in range(len(blocks)) if i > 0 and i in gap_indices])
-    print('\nBLOCKS:')
-    print(blocks)
-    print('\n')
+    if opts['verbosity'] > 1:
+        print('\n\nbreakpoints:')
+        print(bploc)
+        print('\ngaps:')
+        print(gaps)
+        print('gap_indices:')
+        print(gap_indices)
+        print('blocks_after_gaps:')
+        print([blocks[i] for i in range(len(blocks)) if i > 0 and i in gap_indices])
+        print('\nBLOCKS:')
+        print(blocks)
+        print('\n')
 
     g = GenomeGraph(len(blocks))
     cached_dist = {}
@@ -314,19 +315,22 @@ def parse_reads_with_blocks(opts, reference_files, bamgroups,
             block_parser_handle_hanging(opts, aln, bam, g, blocks,
                                         insert_ranges, cached_dist, map_models, block_idx)
 
-    print('within-block insert size stats:\n')
-    for i in range(g.size):
-        edge = g.get_edge(2 * i, 2 * i + 1)
-        if len(edge['offset']) > 100:
-            print('block {0}: '.format(blocks[i]))
-            ulibs = set(edge['lib'])
-            for l in ulibs:
-                which_lib = [edge['lib'][j] == l and not (j in edge['which_hanging']) for j in range(len(edge['offset']))]
-                if any(which_lib):
-                    med = np.median([edge['offset'][j] for j in range(len(edge['offset'])) if which_lib[j]])
-                    print('\tlib {0} median {1} ({2} reads)'.format(l, med, sum(which_lib)))
-            print('\n')
+    if opts['verbosity'] > 1:
+        print('within-block insert size stats:\n')
+        for i in range(g.size):
+            edge = g.get_edge(2 * i, 2 * i + 1)
+            if len(edge['offset']) > 100:
+                print('block {0}: '.format(blocks[i]))
+                ulibs = set(edge['lib'])
+                for l in ulibs:
+                    which_lib = [edge['lib'][j] == l and not (j in edge['which_hanging']) for j in range(len(edge['offset']))]
+                    if any(which_lib):
+                        med = np.median([edge['offset'][j] for j in range(len(edge['offset'])) if which_lib[j]])
+                        print('\tlib {0} median {1} ({2} reads)'.format(l, med, sum(which_lib)))
+                        print('\n')
+
     return g, blocks, gap_indices, left_breakpoints, right_breakpoints
+
 
 def create_blocks(breakpoints, gaps, chrom_name, start, end, verbosity):
     # create list of blocks between breakpoints
