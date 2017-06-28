@@ -350,7 +350,7 @@ def do_inference(opts, reference_files, g, blocks,
         best_lh = -np.Inf
         next_lh = -np.Inf
         best_af = None
-        which_consider = idx_ordered_unique[-50:]  # LATER make this a parameter
+        which_consider = idx_ordered_unique[:50]  # LATER make this a parameter
         # make sure reference is there:
         if idx_ref not in which_consider:
             which_consider.append(idx_ref)
