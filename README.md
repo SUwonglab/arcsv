@@ -1,8 +1,7 @@
-ARC-SV: Automated Reconstruction of Complex Structural Variants
-===============================================================
+# ARC-SV: Automated Reconstruction of Complex Structural Variants #
 
-Requirements
-============
+## Requirements ##
+
 
 - python 3 (tested with 3.3.2 and 3.5.0)
 - python packages (pip with automatically install these) :
@@ -15,9 +14,7 @@ Requirements
   - scikit-learn
   - scipy
 
-
-Installation
-============
+## Installation ##
 
 ```
 git clone repo_to_be_decided
@@ -78,8 +75,7 @@ curl http://hgdownload.cse.ucsc.edu/goldenpath/hg19/database/gap.txt.gz | \
 ```
 
 
-Running the example
-===================
+## Running the example ##
 
 ```
 arcsv call -i arcsv/example/input.bam -r 20:0-250000 -o arcsv_example \
@@ -87,20 +83,3 @@ arcsv call -i arcsv/example/input.bam -r 20:0-250000 -o arcsv_example \
   
 diff arcsv_example/sv_out2.bed example/expected_output.bed
 ```
-
-
-Please see `scripts/fetch_reference_annotations.sh` 
-
-<!-- Possible errors and solutions -->
-<!-- ============================= -->
-
-<!-- 1. `_tkinter.TclError: no display name and no $DISPLAY environment variable` -->
-
-<!-- - use ssh -X or -Y -->
-
-
-<!-- https://scipy.org/install.html -->
-
-<!-- brewed python no --user! -->
-
-<!-- -- note don't put paths in quotes -->
