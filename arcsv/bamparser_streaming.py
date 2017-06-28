@@ -7,6 +7,9 @@ import os
 import pysam
 import random as rnd
 import resource
+import sys
+
+
 import matplotlib
 matplotlib.use('Agg')           # required if X11 display is not present
 import matplotlib.pyplot as plt
@@ -206,8 +209,8 @@ def parse_bam(opts, reference_files, bamfiles, do_bp, do_junction_align):
         nreads += 1
         if nreads % (1000000) == 0:
             print('%d reads processed' % nreads)
-            print('Memory usage: %s (kb)' % resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
-            gc.collect()
+            # print('Memory usage: %s (kb)' % resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
+            # gc.collect()
 
         if aln.qname not in seen_aln:
             # if unpaired reads non-existent, handle them no so they don't pile up in memory
@@ -290,15 +293,18 @@ def parse_bam(opts, reference_files, bamfiles, do_bp, do_junction_align):
                                         opts['library_is_rf'])
             if opts['do_splits']:
                 a1_split = process_splits(pair[0], splits[lib_idx],
-                                          bam, min_mapq=min_mapq_reads)
+                                          bam, min_mapq=min_mapq_reads,
+                                          mate=pair[1])
                 a2_split = process_splits(pair[1], splits[lib_idx],
-                                          bam, min_mapq=min_mapq_reads)
+                                          bam, min_mapq=min_mapq_reads,
+                                          mate=pair[0])
                 # if we found the same breakpoint in both reads,
                 # it's quite likely that the reads were overlapping due to a short insert
                 if a1_split and a2_split and splits_are_mirrored(splits[lib_idx][-1],
                                                                  splits[lib_idx][-2]):
-                    print('[bamparser] mirrored split: {0} {1} {2}'.
-                          format(chrom_name, splits[lib_idx][-1][4], pair[0].qname))
+                    if opts['verbosity'] > 1:
+                        print('[bamparser] mirrored split: {0} {1} {2}'.
+                              format(chrom_name, splits[lib_idx][-1].bp2, pair[0].qname))
                     del splits[lib_idx][-1]
 
     # handle unpaired reads
@@ -317,6 +323,10 @@ def parse_bam(opts, reference_files, bamfiles, do_bp, do_junction_align):
                                  None, None,
                                  softclips, splits, bam, mapstats)
 
+    if any(len(ins) == 0 for ins in insert_len):  # MULTILIB should only fail if all()
+        print('Error: region specified contains no reads!')
+        sys.exit(1)
+
     # report stats
     print('processed {0} reads'.format(nreads))
     if opts['filter_read_through']:
@@ -325,7 +335,8 @@ def parse_bam(opts, reference_files, bamfiles, do_bp, do_junction_align):
     # compute insert length distributions and save plots
     print('observed insert size min:')
     print('\n'.join([str(min(insert_len[i])) for i in range(nlib)]))
-    print('\n'.join([str(Counter(sorted(insert_len[i]))) for i in range(nlib)]))
+    if opts['verbosity'] > 1:
+        print('\n'.join([str(Counter(sorted(insert_len[i]))) for i in range(nlib)]))
     print('[parse_bam] insert 25-50-75 percentiles by library:')
     percentiles = [np.percentile(ins, (25, 50, 75)) for ins in insert_len]
     print(''.join(['{0}: {1}\n'.
@@ -524,8 +535,8 @@ def process_hanging(anchor_aln, hanging_plus, hanging_minus):
         hanging_plus.add(anchor_pos)
 
 
-def process_splits(aln, splits, bam, min_mapq):
-    spl = parse_splits(aln, bam, min_mapq)
+def process_splits(aln, splits, bam, min_mapq, mate):
+    spl = parse_splits(aln, bam, min_mapq, mate)
     if spl is not None:
         splits.append(spl)
         return 1
@@ -613,7 +624,8 @@ def handle_unpaired_read(opts, aln, coverage,
                      opts['min_clipped_bases'], opts['min_clipped_qual'])
     if not aln.is_duplicate:
         if opts['do_splits']:
-            process_splits(aln, splits[lib_idx], bam, min_mapq=opts['min_mapq_reads'])
+            process_splits(aln, splits[lib_idx], bam, min_mapq=opts['min_mapq_reads'],
+                           mate=None)
         if not opts['use_mate_tags']:
             process_aggregate_mapstats(pair, mapstats[lib_idx],
                                        opts['min_mapq_reads'], opts['max_pair_distance'])

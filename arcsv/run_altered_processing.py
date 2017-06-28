@@ -28,13 +28,13 @@ inputfile, chrom, reffile, altrefname, outdir, valdir, threads, verbosity, calle
 
 altrefname = altrefname.lower()
 if not altrefname in ('huref', 'grch37', 'na12878pb'):
-    print('-R option must be huref, grch37, or na12878pb')
+    sys.stderr.write('\n-R option must be huref, grch37, or na12878pb\n')
     sys.exit(1)
 
 # convert output to proper format
 caller = caller.lower()
 if not caller in ('svelter', 'lumpy', 'arcsv', 'delly', 'softsv', 'pindel'):
-    print('-C option must be svelter, lumpy, arcsv, delly, softsv', 'pindel')
+    sys.stderr.write('\n-C option must be svelter, lumpy, arcsv, delly, softsv, pindel\n')
     sys.exit(1)
 
 # if caller != 'arcsv':

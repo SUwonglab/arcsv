@@ -389,9 +389,10 @@ def compute_null_dist(opts, discordant_pairs, dtype,
     lr_clusters = [lr_fun[dtype](c, insert_mu, insert_sigma, opts['insert_cutoff'], lr_cond)
                    for c in clusters]
     print('[compute_null_dist] {0}'.format(dtype))
-    print('shuffled lr:')
-    print(lr_clusters)
-    print('')
+    if opts['verbosity'] > 1:
+        print('shuffled lr:')
+        print(lr_clusters)
+        print('')
 
     outname = 'lib{0}_{1}_null_cluster.txt'.format(lib_idx, dtype)
     fname = os.path.join(opts['outdir'], outname)

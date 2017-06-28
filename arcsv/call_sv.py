@@ -1,3 +1,4 @@
+import itertools
 import numpy as np
 import os
 import random as rnd
@@ -57,6 +58,20 @@ def run(args):
         opts['min_bp_support'] = 4
         opts['min_edge_support'] = 4
 
+    try:
+        allele_fractions = [float(x) for x in opts['allele_fraction_list'].split(',')]
+        symmetrized = set(itertools.chain(allele_fractions,
+                                          (1-x for x in allele_fractions),
+                                          [1.0]))
+        if 0 in symmetrized:
+            symmetrized.remove(0)
+        opts['allele_fractions_symmetrized'] = sorted(symmetrized)
+    except ValueError:
+        sys.stderr.write('\ninvalid format for allele_fraction_list -- '
+                         'use a comma-separated list, e.g.: 0.5, 1\n')
+        sys.exit(1)
+    print('allele_fractions: ' + str(opts['allele_fractions_symmetrized']))
+
     # CLEANUP no tuple
     inputs = [(os.path.realpath(ip.strip()),)
               for ip in opts['input_list'].split(',')]
@@ -76,7 +91,7 @@ def run(args):
         print(l)
 
     call_sv(opts, inputs, reference_files,
-            do_bp=True, do_junction_align=False)  # DEPRECATED
+            do_bp=True, do_junction_align=False)  # these two opts DEPRECATED
 
 
 # e.g. chrom_name = '1' for chr1
@@ -88,13 +103,26 @@ def call_sv(opts, inputs, reference_files, do_bp, do_junction_align):
     # load some options for convenience
     outdir = opts['outdir']
     # create ouput directories if needed
+
     if not os.path.exists(outdir):
         os.makedirs(outdir)
+    elif os.path.isfile(outdir):
+        sys.stderr.write('\nError: The specified output directory has the same name'
+                         ' as an existing file.\n')
+        sys.exit(1)
+    elif not opts['overwrite_outdir']:                       # is directory
+        sys.stderr.write('\nError: The specified output directory already exists.'
+                         ' Use --overwrite to overwrite existing ARC-SV output '
+                         'files in {0}.\n'.format(outdir))
+        sys.exit(1)
+
     track_dir = os.path.join(outdir, 'tracks')
     fig_dir = os.path.join(outdir, 'figs')
     lh_dir = os.path.join(outdir, 'lh')
     for dd in (track_dir, fig_dir, lh_dir):
+        # print('checking ' + dd)
         if not os.path.exists(dd):
+            # print('making {0}'.format(dd))
             os.makedirs(dd)
     os.system('rm -f ' + os.path.join(track_dir, 'trackDb.txt'))
 
@@ -118,8 +146,7 @@ def call_sv(opts, inputs, reference_files, do_bp, do_junction_align):
     # lib_stats_all = []
     # lib_dict_all = []
     disc = []
-    print(inputs)
-    print(len(inputs))
+    print('[call_sv] working with {0} input files'.format(len(inputs)))
     # MULTILIB need to change to do multiple libraries with distinct stats
     bamfiles = [i[0] for i in inputs]
 
@@ -202,8 +229,9 @@ def call_sv(opts, inputs, reference_files, do_bp, do_junction_align):
         cdf = np.cumsum(ins)
         return lambda x, cdf=cdf: 0 if x < 0 else 1 if x >= len(ins) else cdf[x]
     insert_cdfs = [create_insert_cdf(ins) for ins in insert]
-    print('insert_cdfs')
-    print('\n'.join([str([ic(i) for i in range(300)]) for ic in insert_cdfs]))
+    if opts['verbosity'] > 1:
+        print('insert_cdfs')
+        print('\n'.join([str([ic(i) for i in range(300)]) for ic in insert_cdfs]))
 
     def create_insert_cs(ins):
         cdf = np.cumsum(ins)
@@ -239,14 +267,16 @@ def call_sv(opts, inputs, reference_files, do_bp, do_junction_align):
     print('[call_sv] second pass elapsed time: ' + time_string)
 
     # TODO
-    # def compute_pi_robust(pmf, p=1e-4):
-    #     pmf_sorted = sorted(pmf, reverse=True)
-    #     cs = np.cumsum(pmf_sorted)
-    #     i = min([i for i in range(len(cs)) if cs[i] >= (1-p)])
-    #     return pmf_sorted[i]
-    # pi_robust = [compute_pi_robust(ins, opts['robustness_parameter']) for ins in insert]
-    # print(pi_robust)
-    # insert_dists = [(lambda x: ins[x] if x >= 0 and x < len(ins) else 0) for ins in insert]
+    def compute_pi_robust(pmf, p=opts['robustness_parameter']):
+        pmf_sorted = sorted(pmf, reverse=True)
+        cs = np.cumsum(pmf_sorted)
+        i = min([i for i in range(len(cs)) if cs[i] >= (1-p)])
+        return pmf_sorted[i]
+    # MULTILIB
+    pi_robust = np.median([compute_pi_robust(ins, opts['robustness_parameter'])
+                           for ins in insert])
+    opts['pi_robust'] = pi_robust
+    print('[call_sv] pi_robust: %f' % pi_robust)
 
     # DEPRECATED except for insertion search width = 1.1*max(insert_q99) ?
     insert_q01 = []

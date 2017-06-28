@@ -1,9 +1,11 @@
 import os
 import pyinter
+import pysam
 
 
 from arcsv.breakpoint_merge import Breakpoint
 from arcsv.helper import GenomeInterval
+from arcsv.splitreads import SupportingSplit
 from arcsv.sv_output import do_sv_processing
 from arcsv.sv_parse_reads import load_genome_gaps, create_blocks
 
@@ -263,7 +265,14 @@ def generic_vcf_convert(vcffile, outdir, reffile, filter_gaps = False, refgapfil
             else:
                 bp = [(pos, pos)]
         pe = [(x, supptype) for x in range(pe_support)]
-        splits = [(x, supptype) for x in range(split_support)]
+        # TODO SupportingSplit
+        splits = []
+        for i in range(split_support):
+            aln_tmp = pysam.AlignedSegment()
+            aln_tmp.qname = i
+            aln_tmp.is_read1 = True
+            split_type = supptype + '+'
+            splits.append(SupportingSplit(aln_tmp, None, None, None, None, split_type))
         breakpoints = {x: Breakpoint(x, pe = pe, splits = splits) for x in bp}
         slop_left, slop_right = flank_size, flank_size
         start = bp[0][0] - slop_left
