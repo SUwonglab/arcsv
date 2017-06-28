@@ -2,9 +2,8 @@
 
 ## Requirements ##
 
-
 - python 3 (tested with 3.3.2 and 3.5.0)
-- python packages (pip with automatically install these) :
+- python packages (automatically installed by pip)
   - matplotlib
   - numpy
   - patsy
@@ -22,11 +21,11 @@ cd arcsv
 pip3 install --user .
 ```
 
-### Install notes ###
+#### Notes ####
 
-- For Mac users who used `brew` to install python: don't use `--user` with pip.
+- Mac users who used `brew` to install python: don't use `--user` with pip.
 
-### example: Installing ARC-SV on a fresh Ubuntu install ###
+#### example: Installing ARC-SV on a fresh copy of Ubuntu ####
 
 ```
 
@@ -54,7 +53,7 @@ pip3 install --user .
 
 ```
 
-### Getting reference resources ###
+#### Getting reference resources ####
 
 You will need a bed file containing the locations of assembly gaps in your reference genome. If you are using hg19, for example:
 
@@ -81,5 +80,5 @@ curl http://hgdownload.cse.ucsc.edu/goldenpath/hg19/database/gap.txt.gz | \
 arcsv call -i arcsv/example/input.bam -r 20:0-250000 -o arcsv_example \
   -R arcsv/example/reference.fa -G arcsv/example/gaps.bed
   
-diff arcsv_example/sv_out2.bed example/expected_output.bed
+diff arcsv_example/sv_out2.bed arcsv/example/expected_output.bed
 ```
