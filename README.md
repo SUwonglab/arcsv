@@ -4,14 +4,14 @@
 
 - python 3 (tested with 3.3.2 and 3.5.0)
 - python packages (automatically installed by pip)
-  - matplotlib
-  - numpy
-  - patsy
-  - pyinter
-  - pysam
-  - python-igraph
-  - scikit-learn
-  - scipy
+    - matplotlib
+    - numpy
+    - patsy
+    - pyinter
+    - pysam
+    - python-igraph
+    - scikit-learn
+    - scipy
 
 ## Installation ##
 
