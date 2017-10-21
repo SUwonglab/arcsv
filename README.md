@@ -15,11 +15,15 @@
 
 ## Installation ##
 
+ARC-SV and its dependencies can be installed as follows:
+
 ```
 git clone repo_to_be_decided
 cd arcsv
 pip3 install --user .
 ```
+
+The installed location of the script called `arcsv` must be in your path. The most likely locations are `/usr/bin`, `/usr/local/bin`, or perhaps `~/.local/bin`. Otherwise, use `pip3 show -f arcsv` and find `bin/arcsv` -- the location will be shown relative to the installation of the python package itself.
 
 #### Notes ####
 
@@ -63,7 +67,7 @@ curl http://hgdownload.cse.ucsc.edu/goldenpath/hg19/database/gap.txt.gz | \
      cut -f2-4 > hg19_gap.bed
 ```
 
-or for the NCBI version:
+or for the NCBI version, without "chr" in the chromosome names:
 
 ```
 curl http://hgdownload.cse.ucsc.edu/goldenpath/hg19/database/gap.txt.gz | \
@@ -76,9 +80,11 @@ curl http://hgdownload.cse.ucsc.edu/goldenpath/hg19/database/gap.txt.gz | \
 
 ## Running the example ##
 
+From within the `arcsv` repository folder:
+
 ```
-arcsv call -i arcsv/example/input.bam -r 20:0-250000 -o arcsv_example \
-  -R arcsv/example/reference.fa -G arcsv/example/gaps.bed
+arcsv call -i example/input.bam -r 20:0-250000 -o example_output \
+  -R example/reference.fa -G example/gaps.bed
   
-diff arcsv_example/sv_out2.bed arcsv/example/expected_output.bed
+diff example/sv_out2.bed example/expected_output.bed
 ```

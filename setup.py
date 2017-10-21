@@ -12,7 +12,7 @@ for line in open('arcsv/_version.py'):
         version = line.split('=')[1].strip().strip('"')
 
 setup(
-    name='ARC-SV',
+    name='arcsv',
     version=version,
     description='Automated Reconstruction of Complex Structural Variants from WGS Data',
     long_description=arcsv_readme,
