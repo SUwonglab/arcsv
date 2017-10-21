@@ -59,22 +59,28 @@ pip3 install --user .
 
 #### Getting reference resources ####
 
-You will need a bed file containing the locations of assembly gaps in your reference genome. If you are using hg19, for example:
+You will need a bed file containing the locations of assembly gaps in your reference genome. The `resources/` folder contains files for hg19, GRCh37, and hg38, which were retrieved as follows:
 
 ```
 curl http://hgdownload.cse.ucsc.edu/goldenpath/hg19/database/gap.txt.gz | \
      zcat | \
      cut -f2-4 > hg19_gap.bed
-```
-
-or for the NCBI version, without "chr" in the chromosome names:
-
-```
+     
 curl http://hgdownload.cse.ucsc.edu/goldenpath/hg19/database/gap.txt.gz | \
      zcat | \
      cut -f2-4 | \
      sed 's/^chr//' \
      > GRCh37_gap.bed
+     
+curl http://hgdownload.cse.ucsc.edu/goldenpath/hg38/database/gap.txt.gz | \
+     zcat | \
+     cut -f2-4 > hg38_gap.bed
+```
+
+or for the NCBI version, without "chr" in the chromosome names:
+
+```
+
 ```
 
 
