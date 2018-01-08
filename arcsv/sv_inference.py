@@ -360,10 +360,10 @@ def do_inference(opts, reference_files, g, blocks,
                 continue
             lhr_i, nc_i, lnc_i, _ = lh_out[i]
             lhr_j, nc_j, lnc_j, _ = lh_out[j]
-            if i != j:
-                allele_fractions = opts['allele_fractions_symmetrized']
-            else:
+            if i == j:
                 allele_fractions = [1]
+            else:
+                allele_fractions = opts['allele_fractions_symmetrized']
             # SPEEDUP a lot of duplication here -- already tested
             # everything as HOM and HET variants
             for allele_fraction in allele_fractions:
@@ -372,6 +372,9 @@ def do_inference(opts, reference_files, g, blocks,
                                             lnc_i, lnc_j,
                                             ref_lc, allele_fraction,
                                             pi_robust, inf_reads)
+                s1 = rearrangement_to_letters(path_to_rearrangement(paths[i]), start, blocks)
+                s2 = rearrangement_to_letters(path_to_rearrangement(paths[j]), start, blocks)
+                print('{0}\t{1}\t{2}'.format(s1, s2, heterozygous_likelihood))
                 # old_output = \
                 #     diploid_likelihood2(lhr_i, lhr_j,
                 #                         lnc_i, lnc_j,

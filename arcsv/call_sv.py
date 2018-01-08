@@ -61,10 +61,11 @@ def run(args):
     try:
         allele_fractions = [float(x) for x in opts['allele_fraction_list'].split(',')]
         symmetrized = set(itertools.chain(allele_fractions,
-                                          (1-x for x in allele_fractions),
-                                          [1.0]))
+                                          (1-x for x in allele_fractions)))
         if 0 in symmetrized:
             symmetrized.remove(0)
+        if 1 in symmetrized:
+            symmetrized.remove(1)
         opts['allele_fractions_symmetrized'] = sorted(symmetrized)
     except ValueError:
         sys.stderr.write('\ninvalid format for allele_fraction_list -- '
