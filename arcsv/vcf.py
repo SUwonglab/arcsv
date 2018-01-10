@@ -1,5 +1,6 @@
 import os
 from time import strftime
+from pysam import FastaFile
 
 from arcsv.helper import fetch_seq
 from arcsv.sv_filter import get_filter_string
@@ -121,6 +122,7 @@ def get_vcf_header(reference_name, sample_name = 'sample1'):
 ##fileDate={0}
 ##source=complex_sv
 ##reference={1}
+{2}
 ##ALT=<ID=DEL,Description="Deletion">
 ##ALT=<ID=DUP,Description="Duplication">
 ##ALT=<ID=INV,Description="Inversion">
@@ -146,9 +148,15 @@ def get_vcf_header(reference_name, sample_name = 'sample1'):
 ##FILTER=<ID=SIMPLE_REPEAT,Description="Breakpoint overlaps simple repeat annotation">
 ##FORMAT=<ID=HCN,Number=1,Type=Integer,Description="Haploid copy number for duplications">
 ##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
-#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t{2}\n"""
+#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t{3}\n"""
     header = header.format(strftime('%Y%m%d'),
                            os.path.basename(reference_name),
+                           get_vcf_contigs(reference_name),
                            sample_name)
     return header
 
+
+def get_vcf_contigs(reference_name):
+    fa = FastaFile(reference_name)
+    return '\n'.join(['##contig=<ID={0},length={1}>\n'.format(r, l) for
+                      (r, l) in zip(fa.references, fa.lengths)])
