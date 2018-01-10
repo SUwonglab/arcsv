@@ -130,8 +130,8 @@ def apply_discordant_clustering(opts, discordant_pairs_list,
             print('lib {0}: {1} discordant {2} reads'.format(i, len(pairs), dtype))
             print('lib {0}: {1} clusters pass {2} fail {3} '
                   .format(i, dtype, len(clusters_pass), len(clusters_fail)))
-            outname = 'lib{0}_{1}_cluster.txt'.format(i, dtype)
-            fname = os.path.join(opts['outdir'], outname)
+            outname = '{0}_{1}_cluster.txt'.format(lib_name, dtype)
+            fname = os.path.join(opts['outdir'], 'logging', outname)
             write_clustering_results(fname, lr_pairs, first_reject)
 
     return breakpoints
@@ -394,8 +394,8 @@ def compute_null_dist(opts, discordant_pairs, dtype,
         print(lr_clusters)
         print('')
 
-    outname = 'lib{0}_{1}_null_cluster.txt'.format(lib_idx, dtype)
-    fname = os.path.join(opts['outdir'], outname)
+    outname = '{0}_{1}_null_cluster.txt'.format(opts['library_names'][lib_idx], dtype)
+    fname = os.path.join(opts['outdir'], 'logging', outname)
     write_clustering_results(fname, list(zip(lr_clusters, clusters)), first_reject=0)
 
     # print('there were {0} {1} clusters after shuffling'.format(len(clusters),

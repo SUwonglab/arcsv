@@ -118,9 +118,9 @@ def call_sv(opts, inputs, reference_files, do_bp, do_junction_align):
         sys.exit(1)
 
     track_dir = os.path.join(outdir, 'tracks')
-    fig_dir = os.path.join(outdir, 'figs')
-    lh_dir = os.path.join(outdir, 'lh')
-    for dd in (track_dir, fig_dir, lh_dir):
+    fig_dir = os.path.join(outdir, 'complex_figs')
+    log_dir = os.path.join(outdir, 'logging')
+    for dd in (track_dir, fig_dir, log_dir):
         # print('checking ' + dd)
         if not os.path.exists(dd):
             # print('making {0}'.format(dd))

@@ -32,8 +32,8 @@ def do_sv_processing(opts, data, outdir, reffile,
     simplified_blocks, simplified_paths = [], []
     has_left_flank, has_right_flank = [], []
 
-    sv_outfile2 = open(os.path.join(outdir, 'sv_out2.bed'), 'w')
-    sv_outfile2.write(svout_header_line())
+    sv_outfile = open(os.path.join(outdir, 'arcsv_out.bed'), 'w')
+    sv_outfile.write(svout_header_line())
     if write_extra:
         sv_extra = open(os.path.join(outdir, 'sv_vcf_extra.bed'), 'w')
 
@@ -58,7 +58,7 @@ def do_sv_processing(opts, data, outdir, reffile,
                              svs, complex_types, score, 0, 0, '.', 0,
                              False, [], filterstring_manual = filterstring,
                              id_extra = id_extra)
-        sv_outfile2.write(outlines)
+        sv_outfile.write(outlines)
 
         # write out extra info from VCF if necessary
         if write_extra:
@@ -116,7 +116,7 @@ def do_sv_processing(opts, data, outdir, reffile,
 
     altered_reference_file.close()
     altered_reference_data.close()
-    sv_outfile2.close()
+    sv_outfile.close()
 
 
 # writes out svs in our own format:

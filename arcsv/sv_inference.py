@@ -41,11 +41,9 @@ def do_inference(opts, reference_files, g, blocks,
     qnames, block_positions, insertion_sizes, del_sizes = [], [], [], []
     simplified_blocks, simplified_paths = [], []
     has_left_flank, has_right_flank = [], []
-    sv_complex_outfile = open(os.path.join(outdir, 'sv_complex.txt'), 'w')
-    sv_logfile = open(os.path.join(outdir, 'sv_log.txt'), 'w')
-    sv_outfile = open(os.path.join(outdir, 'sv_out.bed'), 'w')
-    sv_outfile2 = open(os.path.join(outdir, 'sv_out2.bed'), 'w')
-    sv_outfile2.write(svout_header_line())
+    sv_logfile = open(os.path.join(outdir, 'logging', 'graph_log.txt'), 'w')
+    sv_outfile = open(os.path.join(outdir, 'arcsv_out.bed'), 'w')
+    sv_outfile.write(svout_header_line())
     split_outfile = open(os.path.join(outdir, 'split_support.txt'), 'w')
     split_outfile.write(splitout_header_line())
 
@@ -206,7 +204,7 @@ def do_inference(opts, reference_files, g, blocks,
                          .format(v, blocks[id].start if ii else blocks[id].end)
                          for (v, id, ii) in
                          zip(range(len(g.graph.vs)), vertex_block_ids, vertex_block_is_in)]
-        g.graph.write_svg(fname=os.path.join(outdir, 'graph.svg'),
+        g.graph.write_svg(fname=os.path.join(outdir, 'adjacency_graph.svg'),
                           width=4000, height=4000,
                           layout='fruchterman_reingold',
                           edge_colors=edge_colors, labels=vertex_labels)
@@ -451,7 +449,7 @@ def do_inference(opts, reference_files, g, blocks,
                                          ev_filtered, filter_criteria,
                                          output_split_support=True)
         print(outlines)
-        sv_outfile2.write(outlines)
+        sv_outfile.write(outlines)
         print(splitlines)
         split_outfile.write(splitlines)
 
@@ -460,7 +458,7 @@ def do_inference(opts, reference_files, g, blocks,
             # 1-indexed inclusive coords to match vcf
             figname = ('{0}_{1}_{2}.png'
                        .format(blocks[0].chrom, blocks[start].start + 1, blocks[end].end))
-            figpath = os.path.join(outdir, 'figs', figname)
+            figpath = os.path.join(outdir, 'complex_figs', figname)
             if best[0] == best[1]:  # homozygous
                 plot_rearrangement(figpath, blocks, start, end,
                                    path1, show_ref=True)
@@ -512,33 +510,13 @@ def do_inference(opts, reference_files, g, blocks,
                 block_before_idx = min([i for i in range(len(blocks)) if blocks[i].end == sv.ref_start])
                 sl, sr = bp_left_counts[block_before_idx], bp_right_counts[block_before_idx]
                 hl, hr = hanging_left_counts[block_before_idx], hanging_right_counts[block_before_idx]
-                sv_outfile.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format(sv.to_bed(),
-                                                                    sl, sr,
-                                                                    hl, hr))
-            else:
-                sv_outfile.write(sv.to_bed() + '\n')
-
-        # write out complex SV
-        if any([ev == 'complex' for ev in (event1 + event2)]):
-            sv_complex_outfile.write('blocks:\n')
-            for i in range(0, end - start + 1):
-                sv_complex_outfile.write('{0}: {1}-{2}\n'.format(chr(65 + i),
-                                                                 blocks[start + i].start,
-                                                                 blocks[start + i].end))
-            for p in (path1, path2):
-                for i in range(0, len(p), 2):
-                    blockid = floor(p[i] / 2)
-                    if blocks[blockid].is_insertion():
-                        sv_complex_outfile.write('insertion: length {0}\n'
-                                                 .format(len(blocks[blockid])))
-            sv_complex_outfile.write('\n{0}\n{1}\n\n{2}\n'.format(s1, s2, '-'*40))
 
         print('')
         print('-' * 60)
         print('')
 
     # write sorted VCF
-    vcf_file = open(os.path.join(outdir, 'sv_calls.vcf'), 'w')
+    vcf_file = open(os.path.join(outdir, 'arcsv_out.vcf'), 'w')
     vcf_file.write(get_vcf_header(reference_files['reference']))
     sv_calls.sort()
     for (pos, line) in sv_calls:
@@ -550,7 +528,7 @@ def do_inference(opts, reference_files, g, blocks,
         pickle.dump(obj, altered_reference_data)
 
     for output_file in (altered_reference_file, altered_reference_data,
-                        sv_complex_outfile, sv_logfile, sv_outfile, sv_outfile2,
+                        sv_logfile, sv_outfile,
                         split_outfile):
         output_file.close()
 

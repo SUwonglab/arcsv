@@ -120,7 +120,8 @@ def parse_bam(opts, reference_files, bamfiles, do_bp, do_junction_align):
     mean_approx, sd_approx, pmf_approx, qlower, qupper, rlen_medians = als
 
     for i in range(len(pmf_approx)):
-        with open(os.path.join(outdir, 'lib{0}_insert_pmf.txt'.format(i)), 'w') as f:
+        with open(os.path.join(outdir, 'logging',
+                               '{0}_insert_pmf.txt'.format(opts['library_names'][i])), 'w') as f:
             for j in range(len(pmf_approx[i])):
                 f.write('{0}\t{1}\n'.format(j, pmf_approx[i][j]))
 
@@ -371,7 +372,7 @@ def parse_bam(opts, reference_files, bamfiles, do_bp, do_junction_align):
                                                     min_overlap=opts['min_junction_overlap'],
                                                     indel_bp=indel_bp))
             write_softclip_merge_stats(softclips_merged[l],
-                                       os.path.join(outdir, libname + '-scmerge.txt'))
+                                       os.path.join(outdir, 'logging', libname + '-scmerge.txt'))
             junction_map = {i: softclips_merged[l][i] for i in range(len(softclips_merged[l]))}
             junction_ref_out.append((junction_map, None))
 
