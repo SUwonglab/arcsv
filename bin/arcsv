@@ -36,7 +36,7 @@ def prepare_argparser():
     subparsers = parser.add_subparsers(dest='command')
 
     add_call_parser(subparsers)
-    add_validate_parser(subparsers)
+    # add_validate_parser(subparsers)
 
     return parser
 
