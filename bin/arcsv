@@ -78,7 +78,7 @@ def add_call_parser(subparsers):
     optional.add_argument('--nondeterministic_seed', action='store_true',
                           help='set random seed based on the current system time'
                                ' (breaks determinism/reproducibility)')
-    optional.add_argument('--do_viz', action='store_true')
+    # optional.add_argument('--do_viz', action='store_true')
     # optional.add_argument('--use_mate_tags', action='store_true')
     # optional.add_argument('--use_indels', action='store_true')
     optional.add_argument('--no_pecluster', dest='do_pecluster', action='store_false')

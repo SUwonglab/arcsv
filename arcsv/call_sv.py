@@ -117,15 +117,21 @@ def call_sv(opts, inputs, reference_files, do_bp, do_junction_align):
                          'files in {0}.\n'.format(outdir))
         sys.exit(1)
 
-    track_dir = os.path.join(outdir, 'tracks')
+    output_dirs = []
+    if opts['do_viz']:
+        track_dir = os.path.join(outdir, 'tracks')
+        os.system('rm -f ' + os.path.join(track_dir, 'trackDb.txt'))
+        output_dirs.append(track_dir)
+
     fig_dir = os.path.join(outdir, 'complex_figs')
+    output_dirs.append(fig_dir)
     log_dir = os.path.join(outdir, 'logging')
-    for dd in (track_dir, fig_dir, log_dir):
+    output_dirs.append(log_dir)
+    for d in output_dirs:
         # print('checking ' + dd)
-        if not os.path.exists(dd):
+        if not os.path.exists(d):
             # print('making {0}'.format(dd))
-            os.makedirs(dd)
-    os.system('rm -f ' + os.path.join(track_dir, 'trackDb.txt'))
+            os.makedirs(d)
 
     # random seed
     if opts['nondeterministic_seed']:
