@@ -468,8 +468,8 @@ def do_inference(opts, reference_files, g, blocks,
                                    show_ref=True)
 
         # write altered reference to file
-        sv1 = [sv for sv in svs if sv.genotype == '1|1' or sv.genotype == '1|0']
-        sv2 = [sv for sv in svs if sv.genotype == '1|1' or sv.genotype == '0|1']
+        sv1 = [sv for sv in svs if sv.genotype == '1/1' or sv.genotype == '1/0']
+        sv2 = [sv for sv in svs if sv.genotype == '1/1' or sv.genotype == '0/1']
         compound_het = (path1 != path2) and (len(sv1) > 0) and (len(sv2) > 0)
         for (k, path, ev, pathstring, svlist, frac) in [(0, path1, event1, s1, sv1, frac1),
                                                         (1, path2, event2, s2, sv2, frac2)]:

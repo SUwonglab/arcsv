@@ -136,9 +136,9 @@ def classify_paths(path1, path2, blocks, num_genome_blocks, left_bp, right_bp, v
             sv.event_type = evtype
             if sv.type == 'BND':
                 if all_hom:
-                    sv.genotype = '1|1'
+                    sv.genotype = '1/1'
                 else:
-                    sv.genotype = '1|0' if svlist is sv1 else '0|1'
+                    sv.genotype = '1/0' if svlist is sv1 else '0/1'
                 sv.event_id = '{0}{1}'.format(ev_id, ev_num)
                 ev_num += 1
                 sv_final.append(sv)
@@ -153,9 +153,9 @@ def classify_paths(path1, path2, blocks, num_genome_blocks, left_bp, right_bp, v
                         sv.event_type = 'COMPLEX'
                 elif not seen:
                     if is_hom:
-                        sv.genotype = '1|1'
+                        sv.genotype = '1/1'
                     else:
-                        sv.genotype = '1|0' if svlist is sv1 else '0|1'
+                        sv.genotype = '1/0' if svlist is sv1 else '0/1'
                     sv.event_id = '{0}{1}'.format(ev_id, ev_num)
                     ev_num += 1
                     sv_final.append(sv)

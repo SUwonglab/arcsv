@@ -69,8 +69,8 @@ def do_sv_processing(opts, data, outdir, reffile,
         # CLEANUP tons of stuff duplicated here from sv_inference.py
         s1 = rearrangement_to_letters(path_to_rearrangement(path1), blocks = blocks)
         s2 = rearrangement_to_letters(path_to_rearrangement(path2), blocks = blocks)
-        sv1 = [sv for sv in svs if sv.genotype == '1|1' or sv.genotype == '1|0']
-        sv2 = [sv for sv in svs if sv.genotype == '1|1' or sv.genotype == '0|1']
+        sv1 = [sv for sv in svs if sv.genotype == '1/1' or sv.genotype == '1/0']
+        sv2 = [sv for sv in svs if sv.genotype == '1/1' or sv.genotype == '0/1']
         compound_het = (path1 != path2) and (len(sv1) > 0) and (len(sv2) > 0)
         for (k,path,ev,pathstring,svlist) in [(0,path1,event1,s1,sv1),
                                               (1,path2,event2,s2,sv2)]:
@@ -131,8 +131,8 @@ def sv_output(path1, path2, blocks, event1, event2,
     lines = ''
     if output_split_support:
         splitlines = ''
-    sv1 = [sv for sv in sv_list if sv.genotype == '1|1' or sv.genotype == '1|0']
-    sv2 = [sv for sv in sv_list if sv.genotype == '1|1' or sv.genotype == '0|1']
+    sv1 = [sv for sv in sv_list if sv.genotype == '1/1' or sv.genotype == '1/0']
+    sv2 = [sv for sv in sv_list if sv.genotype == '1/1' or sv.genotype == '0/1']
     compound_het = (path1 != path2) and (len(sv1) > 0) and (len(sv2) > 0)
     is_het = (path1 != path2)
     # CLEANUP this duplicated above... merge sometime
