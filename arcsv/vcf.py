@@ -4,6 +4,7 @@ from pysam import FastaFile
 
 from arcsv.helper import fetch_seq
 from arcsv.sv_filter import get_filter_string
+from arcsv._version import __version__
 
 def sv_to_vcf(sv, reference, event_filtered = False, filter_criteria = None,
               event_lh = None, ref_lh = None):
@@ -120,9 +121,9 @@ def bnd_to_vcf(sv, reference, event_filtered, filter_criteria,
 def get_vcf_header(reference_name, sample_name = 'sample1'):
     header = """##fileformat=VCFv4.2
 ##fileDate={0}
-##source=complex_sv
-##reference={1}
-{2}
+##source=arcsv-{1}
+##reference={2}
+{3}
 ##ALT=<ID=DEL,Description="Deletion">
 ##ALT=<ID=DUP,Description="Duplication">
 ##ALT=<ID=INV,Description="Inversion">
@@ -148,8 +149,9 @@ def get_vcf_header(reference_name, sample_name = 'sample1'):
 ##FILTER=<ID=SIMPLE_REPEAT,Description="Breakpoint overlaps simple repeat annotation">
 ##FORMAT=<ID=HCN,Number=1,Type=Integer,Description="Haploid copy number for duplications">
 ##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
-#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t{3}\n"""
+#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t{4}\n"""
     header = header.format(strftime('%Y%m%d'),
+                           __version__,
                            os.path.basename(reference_name),
                            get_vcf_contigs(reference_name),
                            sample_name)
