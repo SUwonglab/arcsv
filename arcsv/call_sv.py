@@ -14,6 +14,7 @@ from arcsv.helper import get_chrom_size, time_to_str
 from arcsv.pecluster import apply_discordant_clustering
 from arcsv.sv_inference import do_inference
 from arcsv.sv_parse_reads import parse_reads_with_blocks
+from arcsv._version import __version__
 
 this_dir = os.path.dirname(os.path.realpath(__file__))
 
@@ -132,6 +133,10 @@ def call_sv(opts, inputs, reference_files, do_bp, do_junction_align):
         if not os.path.exists(d):
             # print('making {0}'.format(dd))
             os.makedirs(d)
+
+    # write version to log
+    with open(os.path.join(outdir, 'logging', 'version_info'), 'w') as f:
+        f.write('this run used ARC-SV version {0}'.format(__version__))
 
     # random seed
     if opts['nondeterministic_seed']:
