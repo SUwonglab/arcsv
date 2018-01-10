@@ -115,7 +115,7 @@ def call_sv(opts, inputs, reference_files, do_bp, do_junction_align):
     elif not opts['overwrite_outdir']:                       # is directory
         sys.stderr.write('\nError: The specified output directory already exists.'
                          ' Use --overwrite to overwrite existing ARC-SV output '
-                         'files in {0}.\n'.format(outdir))
+                         'files in {0}\n'.format(outdir))
         sys.exit(1)
 
     output_dirs = []
