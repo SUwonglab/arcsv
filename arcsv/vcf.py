@@ -28,7 +28,7 @@ def sv_to_vcf(sv, reference, event_filtered = False, filter_criteria = None,
     # ID
     id = sv.event_id
     # REF
-    ref = fetch_seq(reference, sv.ref_chrom, pos-1, pos) # pysam is 0-indexed
+    ref = fetch_seq(reference, sv.ref_chrom, pos-1, pos)  # pysam is 0-indexed
     # ALT
     alt = '<{0}>'.format(sv.type)
     # QUAL
@@ -77,6 +77,7 @@ def sv_to_vcf(sv, reference, event_filtered = False, filter_criteria = None,
                            format = format, gt = gt)
     return line
 
+
 def bnd_to_vcf(sv, reference, event_filtered, filter_criteria,
                event_lh, ref_lh):
     template = '{chr}\t{pos}\t{id}\t{ref}\t{alt}\t{qual}\t{filter}\t{info}\t{format}\t{gt}\n'
@@ -86,29 +87,45 @@ def bnd_to_vcf(sv, reference, event_filtered, filter_criteria,
     for i in range(2):
         info_list = []
 
+        id = '{0}_{1}'.format(sv.event_id, i + 1)
+
         bp = sv.bp1 if i == 0 else sv.bp2
         other_bp = sv.bp2 if i == 0 else sv.bp1
+        # adjust for 1-indexing in VCF
+        bp = (bp[0] + 1, bp[1] + 1)
+        other_bp = (other_bp[0] + 1, other_bp[1] + 1)
         orient = sv.bnd_orientation[i]
         other_orient = sv.bnd_orientation[1-i]
 
-        pos = bp[0] + 1 if orient == '-' else bp[0] + 2
-        id = '{0}_{1}'.format(sv.event_id, i + 1)
-        ref = fetch_seq(reference, sv.ref_chrom, pos + 1, pos + 2)
-        if orient != other_orient: # not an inversion breakend
-            alt_pos = other_bp[0] + 2 if other_orient == '+' else other_bp[0] + 1
-        else:                   # inversion breakend
-            alt_pos = other_bp[1] if other_orient == '+' else other_bp[1] - 1
+        pos = int(floor(np.median(bp)))
+        if orient == '-':
+            pos -= 1
+        pos_cilen = bp[1] - bp[0] - 2
+        pos_ci = (-int(floor(pos_cilen/2)), int(ceil(pos_cilen/2)))
+        ref = fetch_seq(reference, sv.ref_chrom, pos - 1, pos)
+        # pos = bp[0] + 1 if orient == '-' else bp[0] + 2
+
+        other_pos = int(floor(np.median(other_bp)))
+        if other_orient == '-':
+            other_pos -= 1
+        # if orient != other_orient:  # not an inversion breakend
+        #     alt_pos = other_bp[0] + 2 if other_orient == '+' else other_bp[0] + 1
+        # else:                   # inversion breakend
+        #     alt_pos = other_bp[1] if other_orient == '+' else other_bp[1] - 1
         alt_after = True if orient == '-' else False
         alt_location_template = ']{0}]' if other_orient == '-' else '[{0}['
-        alt_location = alt_location_template.format(str(chrom) + ':' + str(alt_pos))
+        alt_location = alt_location_template.format(str(chrom) + ':' + str(other_pos))
         alt_string = (ref + alt_location) if alt_after else (alt_location + ref)
         qual = '.'
         filter = get_filter_string(sv, event_filtered, filter_criteria)
         info_list = [('SVTYPE', 'BND'),
                      ('MATEID', id[:-1] + str(2-i))]
-        bp_uncertainty = bp[1] - bp[0] - 2
-        if bp_uncertainty > 0:
-            info_list.append(('CIPOS', '0,{0}'.format(bp_uncertainty)))
+        if pos_cilen > 0:
+            ci = '%d,%d' % (pos_ci[0], pos_ci[1])
+            info_list.append(('CIPOS', ci))
+        # bp_uncertainty = bp[1] - bp[0] - 2
+        # if bp_uncertainty > 0:
+        #     info_list.append(('CIPOS', '0,{0}'.format(bp_uncertainty)))
         if sv.bnd_ins > 0:
             info_list.append(('INSLEN', sv.bnd_ins))
         info_list.append(('LHR', '%.2f' % (event_lh - ref_lh)))
