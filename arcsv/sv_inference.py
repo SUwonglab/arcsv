@@ -10,7 +10,7 @@ from collections import Counter
 from math import log, floor
 
 from arcsv.constants import ALTERED_QNAME_MAX_LEN
-from arcsv.helper import GenomeInterval, rearrangement_to_letters, path_to_rearrangement, \
+from arcsv.helper import GenomeInterval, path_to_string, \
     is_path_ref, flip_parity, is_adj_satisfied, get_block_distances_between_nodes
 from arcsv.sv_call_viz import plot_rearrangement
 from arcsv.sv_classify import classify_paths
@@ -279,7 +279,7 @@ def do_inference(opts, reference_files, g, blocks,
         homozygous_likelihood = []
         heterozygous_likelihood = []
         for path in paths:
-            pathstring = rearrangement_to_letters(path_to_rearrangement(path), start, blocks)
+            pathstring = path_to_string(path, start, blocks)
             print('\nevaluating {0}'.format(pathstring))
             print(path)
             # print('AKA {0}'.format(path))
@@ -320,7 +320,7 @@ def do_inference(opts, reference_files, g, blocks,
                                         blocks[start + i].start,
                                         blocks[start + i].end))
         print('')
-        pathstrings = [rearrangement_to_letters(path_to_rearrangement(p), start, blocks)
+        pathstrings = [path_to_string(p, start, blocks)
                        for p in paths]
 
         all_lh = itertools.chain(zip(homozygous_likelihood, range(npaths), ['HOM'] * npaths),
@@ -370,8 +370,8 @@ def do_inference(opts, reference_files, g, blocks,
                                             lnc_i, lnc_j,
                                             ref_lc, allele_fraction,
                                             pi_robust, inf_reads)
-                s1 = rearrangement_to_letters(path_to_rearrangement(paths[i]), start, blocks)
-                s2 = rearrangement_to_letters(path_to_rearrangement(paths[j]), start, blocks)
+                s1 = path_to_string(paths[i], start, blocks)
+                s2 = path_to_string(paths[j], start, blocks)
                 print('{0}\t{1}\t{2}'.format(s1, s2, heterozygous_likelihood))
                 # old_output = \
                 #     diploid_likelihood2(lhr_i, lhr_j,
@@ -395,13 +395,13 @@ def do_inference(opts, reference_files, g, blocks,
             frac1, frac2 = 1 - best_af, best_af
         else:
             frac1, frac2 = 1, None
-        s1 = rearrangement_to_letters(path_to_rearrangement(path1), start, blocks)
-        s2 = rearrangement_to_letters(path_to_rearrangement(path2), start, blocks)
+        s1 = path_to_string(path1, start, blocks)
+        s2 = path_to_string(path2, start, blocks)
         print('\nBest heterozygous likelihood:\t%.3f' % best_lh)
         print('\t{0}\n\t{1}'.format(s1, s2))
         if next_best is not None:
-            s1next = rearrangement_to_letters(path_to_rearrangement(paths[next_best[0]]), start, blocks)
-            s2next = rearrangement_to_letters(path_to_rearrangement(paths[next_best[1]]), start, blocks)
+            s1next = path_to_string(paths[next_best[0]], start, blocks)
+            s2next = path_to_string(paths[next_best[1]], start, blocks)
             print('Next best likelihood:\t%.3f' % next_lh)
             print('\t{0}\n\t{1}'.format(s1next, s2next))
         else:
@@ -417,8 +417,8 @@ def do_inference(opts, reference_files, g, blocks,
         print('simplify_blocks_diploid')
         nb, np1, np2 = simplify_blocks_diploid(blocks, path1, path2)
 
-        s1 = rearrangement_to_letters(path_to_rearrangement(np1), blocks=nb)
-        s2 = rearrangement_to_letters(path_to_rearrangement(np2), blocks=nb)
+        s1 = path_to_string(np1, blocks=nb)
+        s2 = path_to_string(np2, blocks=nb)
 
         (event1, event2), svs, complex_types = \
           classify_paths(path1, path2, blocks, g.size, left_bp, right_bp, opts['verbosity'])

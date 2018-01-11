@@ -398,6 +398,11 @@ def path_to_block_path(path):
     return tuple(block_path)
 
 
+def path_to_string(path, start=0, blocks=None):
+    tmp = path_to_rearrangement(path)
+    return rearrangement_to_string(tmp, start, blocks)
+
+
 def path_to_rearrangement(path):
     rearrangement = []
     for i in range(1, len(path), 2):
@@ -407,7 +412,7 @@ def path_to_rearrangement(path):
     return rearrangement
 
 
-def rearrangement_to_letters(rearrangement, start=0, blocks=None):
+def rearrangement_to_string(rearrangement, start=0, blocks=None):
     convert = lambda x: chr(65 + x - start) if x != "'" and (x-start) < 26 \
                         else chr(97 + x - start - 26) if x != "'" \
                         else "'"

@@ -6,7 +6,7 @@ import pysam
 from math import floor
 
 from arcsv.constants import *
-from arcsv.helper import path_to_rearrangement, rearrangement_to_letters, block_gap
+from arcsv.helper import path_to_string, block_gap
 from arcsv.sv_classify import classify_paths
 from arcsv.sv_filter import get_filter_string
 from arcsv.sv_validate import altered_reference_sequence
@@ -67,8 +67,8 @@ def do_sv_processing(opts, data, outdir, reffile,
 
         # write altered reference to file
         # CLEANUP tons of stuff duplicated here from sv_inference.py
-        s1 = rearrangement_to_letters(path_to_rearrangement(path1), blocks = blocks)
-        s2 = rearrangement_to_letters(path_to_rearrangement(path2), blocks = blocks)
+        s1 = path_to_string(path1, blocks = blocks)
+        s2 = path_to_string(path2, blocks = blocks)
         sv1 = [sv for sv in svs if sv.genotype == '1/1' or sv.genotype == '1/0']
         sv2 = [sv for sv in svs if sv.genotype == '1/1' or sv.genotype == '0/1']
         compound_het = (path1 != path2) and (len(sv1) > 0) and (len(sv2) > 0)
@@ -182,10 +182,10 @@ def sv_output(path1, path2, blocks, event1, event2,
                                [0]
         block_bp_uncertainty = ','.join(str(x) for x in block_bp_uncertainty)
 
-        s = rearrangement_to_letters(path_to_rearrangement(path), blocks = blocks)
+        s = path_to_string(path, blocks=blocks)
         nblocks = len([b for b in blocks if not b.is_insertion()])
         refpath = list(range(2 * nblocks))
-        ref_string = rearrangement_to_letters(path_to_rearrangement(refpath), blocks = blocks)
+        ref_string = path_to_string(refpath, blocks = blocks)
         gt = 'HET' if is_het else 'HOM'
 
         sv_ins = lambda sv: (sv.length if sv.type == 'INS' else sv.bnd_ins)
