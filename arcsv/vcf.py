@@ -1,4 +1,6 @@
+import numpy as np
 import os
+from math import ceil, floor
 from time import strftime
 from pysam import FastaFile
 
@@ -13,12 +15,16 @@ def sv_to_vcf(sv, reference, event_filtered = False, filter_criteria = None,
                           event_lh, ref_lh)
     template = '{chr}\t{pos}\t{id}\t{ref}\t{alt}\t{qual}\t{filter}\t{info}\t{format}\t{gt}\n'
     info_list = []
-    bp1_uncertainty = sv.bp1[1] - sv.bp1[0] - 2
-    bp2_uncertainty = sv.bp2[1] - sv.bp2[0] - 2
+    bp1_pos = int(floor(np.median(sv.bp1)))
+    bp1_cilen = sv.bp1[1] - sv.bp1[0] - 2
+    bp1_ci = (-int(floor(bp1_cilen/2)), int(ceil(bp1_cilen/2)))
+    bp2_pos = int(floor(np.median(sv.bp2)))
+    bp2_cilen = sv.bp2[1] - sv.bp2[0] - 2
+    bp2_ci = (-int(floor(bp2_cilen/2)), int(ceil(bp2_cilen/2)))
     # CHROM
     chrom = sv.ref_chrom
     # POS (update to be 1-indexed)
-    pos = sv.bp1[0] + 1
+    pos = bp1_pos + 1
     # ID
     id = sv.event_id
     # REF
@@ -33,8 +39,8 @@ def sv_to_vcf(sv, reference, event_filtered = False, filter_criteria = None,
     # LATER add pathstring tag e.g. ABCD/ACBCD
     svtype = sv.type.split(':')[0]
     info_list.append(('SVTYPE', svtype))
-    end = sv.bp2[0] + 1                # note insertion bp1=bp2 so ok
-                                       # also note updating to be 1-indexed
+    end = bp2_pos + 1           # note insertion bp1=bp2 so ok
+                                # also note updating to be 1-indexed
     info_list.append(('END', end))
     if svtype == 'DEL':
         svlen = -(end-pos)
@@ -46,11 +52,11 @@ def sv_to_vcf(sv, reference, event_filtered = False, filter_criteria = None,
         svlen = None
     if svlen:
         info_list.append(('SVLEN', svlen))
-    if bp1_uncertainty > 0:
-        cipos = '0,' + str(bp1_uncertainty)
+    if bp1_cilen > 0:
+        cipos = '%d,%d' % (bp1_ci[0], bp1_ci[1])
         info_list.append(('CIPOS', cipos))
-    if bp2_uncertainty > 0 and svtype != 'INS':
-        ciend = '0,' + str(bp2_uncertainty)
+    if bp2_cilen > 0 and svtype != 'INS':
+        ciend = '%d,%d' % (bp2_ci[0], bp2_ci[1])
         info_list.append(('CIEND', ciend))
     info_list.append(('LHR', '%.2f' % (event_lh - ref_lh)))
     info_list.append(('SR', sv.split_support))
