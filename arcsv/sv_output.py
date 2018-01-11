@@ -121,6 +121,7 @@ def do_sv_processing(opts, data, outdir, reffile,
 
 # writes out svs in our own format:
 # chrom, first bp, last bp, id (eg 20:1:1000:alt1), svtype (similar to vcf), bp list (with uncertainty), rearrangement, filter, hom/het?, other tags (INSLEN, SR, PE)
+# NOTE: outputs one line per unique non-reference path
 def sv_output(path1, path2, blocks, event1, event2,
               frac1, frac2, sv_list, complex_types,
               event_lh, ref_lh, next_best_lh,
