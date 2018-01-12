@@ -76,9 +76,9 @@ def extract_approximate_library_stats(opts, bam, rough_insert_median):
                                    opts['read_len'], maximum_insert_size=rough_insert_max)
                 process_read_len(pair, read_len_shorter[lib_idx], read_len_longer[lib_idx])
                 reads_processed[lib_idx] += 1
-                if min(reads_processed) % 100000 == 0:
-                    print('processed >= {0} reads ({2} chunks) for each lib: {1}'.
-                          format(min(reads_processed), reads_processed, chunks_processed))
+                if min(reads_processed) % 200000 == 0 and opts['verbosity'] > 0:
+                    print('[library_stats] processed {0} reads ({1} chunks) for each lib'.
+                          format(min(reads_processed), chunks_processed))
         chunks_processed += 1
 
     insert_mean = [np.median(il) for il in insert_len]
@@ -97,7 +97,8 @@ def extract_approximate_library_stats(opts, bam, rough_insert_median):
 # parse a single bam file, extracting breakpoints,
 # insert size distribution, and/or visualization tracks in bed/bigwig format
 def parse_bam(opts, reference_files, bamfiles, do_bp, do_junction_align):
-    print('[parse_bam] extracting approximate library stats')
+    if opts['verbosity'] > 0:
+        print('\n[parse_bam] extracting approximate library stats')
     chrom_name = opts['chromosome']
     start, end = opts['region_start'], opts['region_end']
     outdir = opts['outdir']
@@ -113,8 +114,9 @@ def parse_bam(opts, reference_files, bamfiles, do_bp, do_junction_align):
     bam = BamGroup(bamfiles)
     opts['read_len'] = bam_read_len(bam)
     rough_insert_median = get_rough_insert_median(opts, bam)
-    print('read_len: {0}; rough_insert_median: {1}'.
-          format(opts['read_len'], rough_insert_median))
+    if opts['verbosity'] > 0:
+        print('[parse_bam] read_len: {0}; rough_insert_median: {1}'.
+              format(opts['read_len'], rough_insert_median))
 
     als = extract_approximate_library_stats(opts, bam, rough_insert_median)
     mean_approx, sd_approx, pmf_approx, qlower, qupper, rlen_medians = als
@@ -125,13 +127,12 @@ def parse_bam(opts, reference_files, bamfiles, do_bp, do_junction_align):
             for j in range(len(pmf_approx[i])):
                 f.write('{0}\t{1}\n'.format(j, pmf_approx[i][j]))
 
-    print('approximate stats:')
-    print(mean_approx)
-    print(sd_approx)
+    if opts['verbosity'] > 0:
+        print('[parse_bam] library stats:\n\tmu = {0}\n\tsigma = {1}'.format(mean_approx, sd_approx))
 
-    def get_lr_cutoff(pmf, cutoff_normal_equivalent, do_min=False):
+    def get_lr_cutoff(opts, pmf, do_min=False):
+        cutoff_normal_equivalent = opts['insert_cutoff']
         lr_cutoff = normpdf(0) - normpdf(cutoff_normal_equivalent)
-        print('[insert_cutoff] lr_cutoff is {0}'.format(lr_cutoff))
         mode = max(pmf)
         logmode = np.log(mode)
         which_mode = [i for i in range(len(pmf)) if pmf[i] == mode]
@@ -146,22 +147,22 @@ def parse_bam(opts, reference_files, bamfiles, do_bp, do_junction_align):
                 if pmf[i] != 0 and logmode - np.log(pmf[i]) < lr_cutoff:
                     cutoff = i + 1
                     break
-        print('[insert_cutoff] mode (log) {0} at {1}'.format(logmode, which_mode))
-        print('[insert_cutoff] cutoff ratio (log) {0} at {1}'.
-              format(logmode - np.log(pmf[i]), cutoff))
-
+        if opts['verbosity'] > 0:
+            print('[insert_cutoff] lr_cutoff is {0}'.format(lr_cutoff))
+            print('[insert_cutoff] mode (log) {0} at {1}'.format(logmode, which_mode))
+            print('[insert_cutoff] cutoff ratio (log) {0} at {1}'.
+                  format(logmode - np.log(pmf[i]), cutoff))
         return cutoff
 
-    min_concordant_insert = [get_lr_cutoff(pmf, opts['insert_cutoff'], do_min=True)
+    min_concordant_insert = [get_lr_cutoff(opts, pmf, do_min=True)
                              for pmf in pmf_approx]
-    max_concordant_insert = [get_lr_cutoff(pmf, opts['insert_cutoff']) for pmf in pmf_approx]
+    max_concordant_insert = [get_lr_cutoff(opts, pmf) for pmf in pmf_approx]
     if opts['verbosity'] > 0:
-        print('insert size ranges (+/- 3 sd):')
-        print('\n'.join(['{0}-{1}'.format(min_concordant_insert[i], max_concordant_insert[i])
-                         for i in range(len(mean_approx))]))
-        print('equivalent quantiles to normal:')
-        print(qlower)
-        print(qupper)
+        print('[parse_bam] insert size ranges (+/- 3 sd):')
+        print('[parse_bam]' + '\n'
+              .join(['{0}-{1}'.format(min_concordant_insert[i], max_concordant_insert[i])
+                     for i in range(len(mean_approx))]))
+        print('[parse_bam] equivalent quantiles to normal:\n\t{0}\n\t{1}\n'.format(qlower, qupper))
 
     if do_viz:
         ucsc_chrom = get_ucsc_name(chrom_name)
@@ -187,16 +188,18 @@ def parse_bam(opts, reference_files, bamfiles, do_bp, do_junction_align):
     splits = [[] for i in range(nlib)]
 
     bam_has_unmapped = has_unmapped_records(bam)
-    if bam_has_unmapped:
-        print('[parse_bam] bam file DOES contain unmapped records')
-    else:
-        print('[parse_bam] bam file DOES NOT contain unmapped records')
+    if opts['verbosity'] > 0:
+        if bam_has_unmapped:
+            print('[parse_bam] bam file DOES contain unmapped records')
+        else:
+            print('[parse_bam] bam file DOES NOT contain unmapped records')
 
     seen_aln = {}
     nreads = 0
     if opts['filter_read_through']:
         num_read_through = 0
-    print('[parse_bam] starting alignment parsing. . .')
+    if opts['verbosity'] > 0:
+        print('[parse_bam] starting alignment parsing. . .')
     alignments = bam.fetch_unsorted(chrom_name, start, end)
     for aln in alignments:
         if not_primary(aln):
@@ -208,8 +211,8 @@ def parse_bam(opts, reference_files, bamfiles, do_bp, do_junction_align):
             continue
 
         nreads += 1
-        if nreads % (1000000) == 0:
-            print('%d reads processed' % nreads)
+        if nreads % (1000000) == 0 and opts['verbosity'] > 0:
+            print('[parse_bam] %d reads processed' % nreads)
             # print('Memory usage: %s (kb)' % resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
             # gc.collect()
 
@@ -309,7 +312,8 @@ def parse_bam(opts, reference_files, bamfiles, do_bp, do_junction_align):
                     del splits[lib_idx][-1]
 
     # handle unpaired reads
-    print('handling unpaired reads')
+    if opts['verbosity'] > 0:
+        print('[parse_bam] handling unpaired reads')
     for aln in seen_aln.values():
         if do_viz:
             handle_unpaired_read(opts, aln, coverage,
@@ -329,34 +333,36 @@ def parse_bam(opts, reference_files, bamfiles, do_bp, do_junction_align):
         sys.exit(1)
 
     # report stats
-    print('processed {0} reads'.format(nreads))
-    if opts['filter_read_through']:
-        print('found {0} read-through pairs'.format(num_read_through))
+    if opts['verbosity'] > 0:
+        print('[parse_bam] processed a total of {0} reads'.format(nreads))
+        if opts['filter_read_through']:
+            print('[parse_bam] found {0} read-through pairs'.format(num_read_through))
 
     # compute insert length distributions and save plots
-    print('observed insert size min:')
-    print('\n'.join([str(min(insert_len[i])) for i in range(nlib)]))
     if opts['verbosity'] > 1:
+        print('[parse_bam] observed insert size min:')
+        print('\n'.join([str(min(insert_len[i])) for i in range(nlib)]))
         print('\n'.join([str(Counter(sorted(insert_len[i]))) for i in range(nlib)]))
-    print('[parse_bam] insert 25-50-75 percentiles by library:')
-    percentiles = [np.percentile(ins, (25, 50, 75)) for ins in insert_len]
-    print(''.join(['{0}: {1}\n'.
-                   format(opts['library_names'][l], tuple(percentiles[l]))
-                   for l in range(nlib)]))
-    print('computing insert length pmfs')
+        print('[parse_bam] insert 25-50-75 percentiles by library:')
+        percentiles = [np.percentile(ins, (25, 50, 75)) for ins in insert_len]
+        print(''.join(['{0}: {1}\n'.
+                       format(opts['library_names'][l], tuple(percentiles[l]))
+                       for l in range(nlib)]))
+    if opts['verbosity'] > 0:
+        print('[parse_bam] computing insert length pmfs')
     # CLEANUP just for il in insert_len?
-    insert_mean = [np.median(insert_len[i]) for i in range(nlib)]
-    insert_sd = [robust_sd(insert_len[i]) for i in range(nlib)]
+    insert_mean = [np.median(il) for il in insert_len]
+    insert_sd = [robust_sd(il) for il in insert_len]
     max_mult = opts['insert_max_mu_multiple']
     insert_len_dist = [pmf_kernel_smooth(insert_len[i], 0,
                                          max_mult * mu, opts['max_kde_samples'])
                        for (i, mu) in zip(range(nlib), insert_mean)]
 
-    for i in range(nlib):
-        print('lib {0} mu {1} sigma {2}'.format(i, insert_mean[i], insert_sd[i]))
+    if opts['verbosity'] > 1:
+        for i in range(nlib):
+            print('[parse_bam] lib {0} mu {1} sigma {2}'.format(i, insert_mean[i], insert_sd[i]))
 
     # insert dist plots
-    print('insert dist {0}'.format(len(insert_len_dist)))
     plot_insert_dist(opts, insert_len_dist, outdir)
 
     # find breakpoints via soft-clipped reads
@@ -367,10 +373,12 @@ def parse_bam(opts, reference_files, bamfiles, do_bp, do_junction_align):
         global junction_ref_offset
         for l in range(nlib):
             libname = opts['library_names'][l]
-            softclips_merged.append(merge_softclips(softclips[l], ref, chrom_name, outdir,
-                                                    name=libname,
-                                                    min_overlap=opts['min_junction_overlap'],
-                                                    indel_bp=indel_bp))
+            softclips_merged.append(merge_softclips(opts, softclips[l], ref, chrom_name,
+                                                    name=libname, indel_bp=indel_bp))
+            # softclips_merged.append(merge_softclips(softclips[l], ref, chrom_name, outdir,
+            #                                         name=libname,
+            #                                         min_overlap=opts['min_junction_overlap'],
+            #                                         indel_bp=indel_bp))
             write_softclip_merge_stats(softclips_merged[l],
                                        os.path.join(outdir, 'logging', libname + '-scmerge.txt'))
             junction_map = {i: softclips_merged[l][i] for i in range(len(softclips_merged[l]))}

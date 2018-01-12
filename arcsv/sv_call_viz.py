@@ -58,7 +58,6 @@ def get_arrow_patches(blocks, path, bottom_pos,
     # regular blocks
     nblocks = len(patches)
     scaled_block_seq = [round((b - start_block) / (end_block - start_block) * 255) for b in block_seq if not blocks[b].is_insertion()]
-    print(scaled_block_seq)
     fc = [jet(x) for x in scaled_block_seq]
     ec = ['black'] * nblocks
     p = PatchCollection(patches, facecolor=fc, edgecolor=ec)

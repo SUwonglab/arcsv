@@ -36,7 +36,8 @@ def run(args):
                          'reference_name\n')
         sys.exit(1)
     reference_files = {'reference': reference_file, 'gap': gap_file}
-    print('ref files {0}'.format(reference_files))
+    if opts['verbosity'] > 0:
+        print('[run] ref files {0}'.format(reference_files))
 
     # CLEANUP put all this argument parsing in arcsv script
     region_split = opts['region'].split(':')
@@ -72,20 +73,25 @@ def run(args):
         sys.stderr.write('\ninvalid format for allele_fraction_list -- '
                          'use a comma-separated list, e.g.: 0.5, 1\n')
         sys.exit(1)
-    print('allele_fractions: ' + str(opts['allele_fractions_symmetrized']))
+    # print('allele_fractions: ' + str(opts['allele_fractions_symmetrized']))
 
     # CLEANUP no tuple
     inputs = [(os.path.realpath(ip.strip()),)
               for ip in opts['input_list'].split(',')]
     opts['outdir'] = os.path.realpath(opts['outdir'])
 
+    if opts['verbosity'] > 1:
+        print('[run] all options:\n\n{0}\n\n'.format(opts))
+
     # call SVs
     if opts['verbosity'] > 0:
-        print('[run_sv] calling SVs on {chrom} {start} {end}'.
+        print('[run] calling SVs in {chrom}:{start}-{end}\n'.
               format(chrom=opts['chromosome'],
                      start=opts['region_start'],
                      end=opts['region_end']))
-        l = ('[run_sv] arguments\n\tinputs = {0}\n\toutdir = {1}\n'
+    if opts['verbosity'] > 1:
+        print('options:\n{0}\n'.format(opts))
+        l = ('[call_sv] arguments\n\tinputs = {0}\n\toutdir = {1}\n'
              '\treference_name = {2}\n\tinsert_cutoff = {6}\n'
              '\tdo_viz = {3}\n\tuse_indels = {4}\n\tdo_pecluster = {5}\n\t')
         l = l.format(inputs, opts['outdir'], opts['reference_name'], opts['do_viz'],
@@ -101,7 +107,8 @@ def run(args):
 def call_sv(opts, inputs, reference_files, do_bp, do_junction_align):
     # start timer
     call_sv_start_time = time.time()
-    print('[call_sv] start time: {0}'.format(call_sv_start_time))
+    if opts['verbosity'] > 0:
+        print('[call_sv] start time: {0}'.format(call_sv_start_time))
     # load some options for convenience
     outdir = opts['outdir']
     # create ouput directories if needed
@@ -143,7 +150,7 @@ def call_sv(opts, inputs, reference_files, do_bp, do_junction_align):
         opts['random_seed'] = int(call_sv_start_time)
     rnd.seed(opts['random_seed'])
     np.random.seed(opts['random_seed'] + 1)
-    if opts['verbosity'] > 0:
+    if opts['verbosity'] > 1:
         print('[call_sv] random seed: {0}'.format(opts['random_seed']))
 
     junctions = []
@@ -158,7 +165,7 @@ def call_sv(opts, inputs, reference_files, do_bp, do_junction_align):
     # lib_stats_all = []
     # lib_dict_all = []
     disc = []
-    print('[call_sv] working with {0} input files'.format(len(inputs)))
+    # print('[call_sv] working with {0} input files'.format(len(inputs)))
     # MULTILIB need to change to do multiple libraries with distinct stats
     bamfiles = [i[0] for i in inputs]
 
@@ -218,19 +225,18 @@ def call_sv(opts, inputs, reference_files, do_bp, do_junction_align):
             class_probs.append(mfm[1])
             rlen_stats.append(rl_med)
 
-    print('\nmappable_models:')
-    for m in mappable_models:
-        print('\t{0}'.format(m(30, 150, 10, 150)))
-        print('\t{0}'.format(m(50, 150, 50, 150)))
-    print('\n')
-    print('\nclass_probs:')
-    for cp in class_probs:
-        print('\t{0}'.format(cp))
-    print('\n')
-    print('\nrlen_stats:')
-    for rls in rlen_stats:
-        print('\t{0}'.format(rls))
-    print('\n')
+    if opts['verbosity'] > 1:
+        print('\n[call_sv] mappable_models:')
+        for m in mappable_models:
+            print('\t{0}'.format(m(30, 150, 10, 150)))
+            print('\t{0}'.format(m(50, 150, 50, 150)))
+            print('\nclass_probs:')
+        for cp in class_probs:
+            print('\t{0}'.format(cp))
+            print('\nrlen_stats:')
+        for rls in rlen_stats:
+            print('\t{0}'.format(rls))
+            print('\n')
 
     # compute insert distributions and related quantities
     def create_insert_pmf(ins):
@@ -242,7 +248,7 @@ def call_sv(opts, inputs, reference_files, do_bp, do_junction_align):
         return lambda x, cdf=cdf: 0 if x < 0 else 1 if x >= len(ins) else cdf[x]
     insert_cdfs = [create_insert_cdf(ins) for ins in insert]
     if opts['verbosity'] > 1:
-        print('insert_cdfs')
+        print('[call_sv] insert_cdfs')
         print('\n'.join([str([ic(i) for i in range(300)]) for ic in insert_cdfs]))
 
     def create_insert_cs(ins):
@@ -260,12 +266,13 @@ def call_sv(opts, inputs, reference_files, do_bp, do_junction_align):
         upper_range = min([i for i in range(len(ins)) if
                            insert_cdfs[l](i) >= opts['insert_qhigh']])
         insert_ranges.append((lower_range, upper_range))
-    print('insert_ranges:')
-    print('\n'.join(['\t{0}'.format(insert_ranges[l]) for l in range(len(insert_ranges))])
-          + '\n')
+    if opts['verbosity'] > 1:
+        print('insert_ranges:')
+        print('\n'.join(['\t{0}'.format(insert_ranges[l]) for l in range(len(insert_ranges))])
+              + '\n')
     call_sv_firstpass_time = time.time()
     time_string = time_to_str(call_sv_firstpass_time - call_sv_start_time)
-    print('[call_sv] first pass elapsed time: ' + time_string)
+    print('[call_sv] first pass elapsed time: {0}\n\n'.format(time_string))
 
     # call SVs
     bamfiles = [ip[0] for ip in inputs]
@@ -276,7 +283,7 @@ def call_sv(opts, inputs, reference_files, do_bp, do_junction_align):
     graph, blocks, gap_indices, left_bp, right_bp = pr_out
     call_sv_second_time = time.time()
     time_string = time_to_str(call_sv_second_time - call_sv_start_time)
-    print('[call_sv] second pass elapsed time: ' + time_string)
+    print('[call_sv] second pass elapsed time: {0}\n\n'.format(time_string))
 
     # TODO
     def compute_pi_robust(pmf, p=opts['robustness_parameter']):
@@ -288,7 +295,8 @@ def call_sv(opts, inputs, reference_files, do_bp, do_junction_align):
     pi_robust = np.median([compute_pi_robust(ins, opts['robustness_parameter'])
                            for ins in insert])
     opts['pi_robust'] = pi_robust
-    print('[call_sv] pi_robust: %f' % pi_robust)
+    if opts['verbosity'] > 0:
+        print('[call_sv] pi_robust: %f' % pi_robust)
 
     # DEPRECATED except for insertion search width = 1.1*max(insert_q99) ?
     insert_q01 = []
@@ -300,26 +308,21 @@ def call_sv(opts, inputs, reference_files, do_bp, do_junction_align):
         q99 = min([i for i in range(len(ins)) if cs[i] >= .99])
         insert_q01.append(q01)
         insert_q99.append(q99)
-    print('[parse_bam] insert ranges: .01-.99 quantiles')
-    print('\n'.join(['{0}: {1} - {2}'.
-                     format(opts['library_names'][l], insert_q01[i], insert_q99[i])
-                     for i in range(opts['nlib'])]))
 
-    do_inference_insertion_time = do_inference(opts, reference_files, graph, blocks,
-                                               gap_indices, left_bp, right_bp,
-                                               insert_dists, insert_cdfs, insert_cdf_sums,
-                                               class_probs, rlen_stats,
-                                               1.1*max(insert_q99),
-                                               insert_lower=insert_q01,
-                                               insert_upper=insert_q99)
+    inference_time = do_inference(opts, reference_files, graph, blocks,
+                                  gap_indices, left_bp, right_bp,
+                                  insert_dists, insert_cdfs, insert_cdf_sums,
+                                  class_probs, rlen_stats,
+                                  1.1*max(insert_q99))
 
     # end timer
-    print('[call_sv] first pass cumulative time: ' +
-          time_to_str(call_sv_firstpass_time - call_sv_start_time))
-    print('[call_sv] second pass cumulative time: ' +
-          time_to_str(call_sv_second_time - call_sv_start_time))
-    print('[call_sv] insertion testing cumulative time: ' +
-          time_to_str(do_inference_insertion_time - call_sv_start_time))
+    if opts['verbosity'] > 0:
+        print('[call_sv] first pass cumulative time: ' +
+              time_to_str(call_sv_firstpass_time - call_sv_start_time))
+        print('[call_sv] second pass cumulative time: ' +
+              time_to_str(call_sv_second_time - call_sv_start_time))
+        print('[call_sv] insertion testing cumulative time: ' +
+              time_to_str(inference_time - call_sv_start_time))
     call_sv_end_time = time.time()
     elapsed_time = call_sv_end_time - call_sv_start_time
     time_string = time_to_str(elapsed_time)

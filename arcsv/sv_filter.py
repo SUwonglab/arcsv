@@ -70,10 +70,10 @@ def apply_filters(sv_list, rmsk_track=None, segdup_track=None):
     sv_call_gap_ratio_cutoff = .25  # DEPRECATED
     for sv in sv_list:
         if sv.type == 'INS':
-            print('adding INS filter to {0}'.format(sv))
+            # print('adding INS filter to {0}'.format(sv))
             sv.filters.add('INSERTION')
         elif sv.type == 'BND' and sv.bnd_ins > 0:
-            print('adding BND_INS filter to {0}'.format(sv))
+            # print('adding BND_INS filter to {0}'.format(sv))
             sv.filters.add('INSERTION')
         # REMOVED to get rid of pybedtools dependency
         # do_overlap = rmsk_track is not None and segdup_track is not None
@@ -82,12 +82,12 @@ def apply_filters(sv_list, rmsk_track=None, segdup_track=None):
         #         sv.filters.add(ov)
         if sv.type == 'DUP:TANDEM':
             # check gap
-            print('[sv_filter] checking tandem dup')
-            print(sv)
+            # print('[sv_filter] checking tandem dup')
+            # print(sv)
             # total_gap = (sv.bp1[1] - sv.bp1[0] - 2) + (sv.bp2[1] - sv.bp2[0] - 2)
             total_gap = sv.gap  # sum of all gaps adjacent to/within duplicated sequence
             gap_ratio = total_gap / max(1e-8, (sv.bp2[0] - sv.bp1[1]))
-            print('gap ratio {0}'.format(gap_ratio))
+            # print('gap ratio {0}'.format(gap_ratio))
             if gap_ratio > sv_call_gap_ratio_cutoff:
                 sv.filters.add('BP_UNCERTAINTY')
 

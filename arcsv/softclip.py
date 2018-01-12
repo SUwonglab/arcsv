@@ -51,11 +51,13 @@ def add_to_softclips(sc_dict, pos, sc):
 
 # merge softclips and construct consensus sequences
 # indel_bp - output from parse_indels (optional). If given, we'll consider those breakpoints to be false
-def merge_softclips(softclips, reference, chrom, outdir = None, name = '', min_overlap = 10, indel_bp = None):
+def merge_softclips(opts, softclips, reference, chrom, name = '', indel_bp = None):
     # , required_perfect_mapq = 1):
     # if outdir is not None:
     #     prefix = (name + '-') if (name != '') else ''
     #     logfile = open(outdir + prefix + 'log_softclipmerge.txt', 'w')
+    outdir = opts['outdir']
+    min_overlap = opts['min_junction_overlap']
     num_leftclip = sum([len(sclist) for sclist in softclips[LEFT].values()]) 
     num_rightclip = sum([len(sclist) for sclist in softclips[RIGHT].values()])
     num_softclips = num_leftclip + num_rightclip
@@ -101,8 +103,9 @@ def merge_softclips(softclips, reference, chrom, outdir = None, name = '', min_o
             # else:
             #     logfile.write('SKIP because of indel\n')
 
-    print('total softclips before merging: {before}'.format(before = num_softclips))
-    print('after merging: {after}'.format(after = len(merged)))
+    if opts['verbosity'] > 0:
+        print('[merge_softclips] total softclips before merging: {before}'.format(before = num_softclips))
+        print('[merge_softclips] after merging: {after}'.format(after = len(merged)))
     # if outdir is not None:
     #     logfile.close()
     return merged

@@ -64,7 +64,7 @@ def process_aggregate_mapstats(pair, mapstats, min_mapq, max_distance):
 
 # add mirrored observations to enforce symmetry
 def add_dummy_obs_mapstats(mapstats):
-    print('[add dummy obs] before: {0}'.format(mapstats))
+    # print('[add dummy obs] before: {0}'.format(mapstats))
     num_label = len(mapstats)
     to_add = {}
     for cl in PAIR_CLASSES:       # (1,1), (1,0), etc.
@@ -74,7 +74,7 @@ def add_dummy_obs_mapstats(mapstats):
         to_add[label_mirrored] = mapstats[label]
     for label, amt in to_add.items():
         mapstats[label] += amt
-    print('[add dummy obs] after: {0}'.format(mapstats))
+    # print('[add dummy obs] after: {0}'.format(mapstats))
 
 # input: list of mappability stats objects [defaultdict(int)]
 # output: mappable_model, class_probs, rlen_stats

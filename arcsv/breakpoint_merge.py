@@ -255,7 +255,7 @@ def junction_end(junction):
 def merge_breakpoints(opts, junctions_out, splits, disc_bp):
     chrom_name = opts['chromosome']
     if opts['verbosity'] > 0:
-        print('Beginning breakpoint merge. . .')
+        print('[merge_breakpoints] Beginning breakpoint merge. . .')
     if opts['verbosity'] > 1:
         print('with the following junctions:')
         nlib = opts['nlib']

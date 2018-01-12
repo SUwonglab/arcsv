@@ -88,8 +88,9 @@ def parse_splits(aln, bam, min_mapq, mate, max_splits=1):
     elif aln.pos > supp.pos:
         left = supp
         right = aln
-    if aln.pos == supp.pos:
-        print('[parse_splits] aln and supp have same pos')
+    # MINOR
+    # if aln.pos == supp.pos:
+    #     print('[parse_splits] aln and supp have same pos')
 
     # build flag to classify split
     # 1-based coordinates from 5' end of read

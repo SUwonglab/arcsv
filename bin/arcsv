@@ -20,8 +20,6 @@ def main():
     else:
         args = parser.parse_args()
 
-    print(args)                 # MINOR print this in call_sv (updated args)
-
     command_name = args.command
 
     if command_name == 'call':

@@ -85,9 +85,9 @@ def apply_discordant_clustering(opts, discordant_pairs_list,
     null_dists = [{} for i in range(nlib)]
     for i in range(nlib):
         for (dtype, pairs) in discordant_pairs_list[i].items():
-            print('[pecluster] computing cutoff for {0} clusters'.format(dtype))
             insert_cutoff = insert_max[i] if dtype == 'Del' else insert_min[i]
-            print('insert cutoff %d' % insert_cutoff)
+            if opts['verbosity'] > 0:
+                print('[pecluster] computing null distribution for {0} clusters'.format(dtype))
             null_dists[i][dtype] = compute_null_dist(opts, pairs, dtype,
                                                      insert_mu[i], insert_sigma[i],
                                                      gap_file, lib_idx=i, lr_cond=lr_cond)
@@ -108,12 +108,11 @@ def apply_discordant_clustering(opts, discordant_pairs_list,
     for i in range(nlib):
         lib_name = opts['library_names'][i]
         for (dtype, pairs) in discordant_pairs_list[i].items():
-            print('[pecluster] clustering {0}'.format(dtype))
+            if opts['verbosity'] > 0:
+                print('[pecluster] clustering {0}'.format(dtype))
             clusters, excluded = cluster_pairs(opts, pairs, dtype,
                                                insert_mu[i], insert_sigma[i])
             insert_cutoff = insert_max[i] if dtype == 'Del' else insert_min[i]
-
-            print('insert cutoff %d' % insert_cutoff)
 
             null_dist = null_dists[i][dtype]
             fdc_out = fdr_discordant_clusters(clusters, null_dist, dtype,
@@ -127,9 +126,12 @@ def apply_discordant_clustering(opts, discordant_pairs_list,
                 # print(breakpoints[-2])
                 # print(breakpoints[-1])
                 # print('')
-            print('lib {0}: {1} discordant {2} reads'.format(i, len(pairs), dtype))
-            print('lib {0}: {1} clusters pass {2} fail {3} '
-                  .format(i, dtype, len(clusters_pass), len(clusters_fail)))
+            if opts['verbosity'] > 0:
+                print('[pecluster] {0}: {1} discordant {2} reads'
+                      .format(opts['library_names'][i], len(pairs), dtype))
+                print('[pecluster] {0}: {1} clusters, {2} passing {3} failing'
+                      .format(opts['library_names'][i], dtype,
+                              len(clusters_pass), len(clusters_fail)))
             outname = '{0}_{1}_cluster.txt'.format(lib_name, dtype)
             fname = os.path.join(opts['outdir'], 'logging', outname)
             write_clustering_results(fname, lr_pairs, first_reject)
@@ -189,7 +191,8 @@ compatibility_fun = {'Del': is_del_compatible,
 
 
 def cluster_pairs(opts, pairs, dtype, insert_mu, insert_sigma):
-    print('clustering {0} pairs'.format(dtype))
+    if opts['verbosity'] > 1:
+        print('clustering {0} pairs'.format(dtype))
     pairs.sort(key=attrgetter('pos1'))
     max_compatible_distance = insert_mu + opts['cluster_max_distance_sd'] * insert_sigma
     is_compatible = functools.partial(compatibility_fun[dtype],
@@ -388,8 +391,8 @@ def compute_null_dist(opts, discordant_pairs, dtype,
     # print(clusters)
     lr_clusters = [lr_fun[dtype](c, insert_mu, insert_sigma, opts['insert_cutoff'], lr_cond)
                    for c in clusters]
-    print('[compute_null_dist] {0}'.format(dtype))
     if opts['verbosity'] > 1:
+        print('[compute_null_dist] {0}'.format(dtype))
         print('shuffled lr:')
         print(lr_clusters)
         print('')

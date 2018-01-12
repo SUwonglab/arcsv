@@ -286,7 +286,8 @@ def parse_reads_with_blocks(opts, reference_files, bamgroups,
         cur_block = blocks[0]
 
         # parse reads from this chromosome
-        print('fetching alignments from chr{0}'.format(chrom_name))
+        if opts['verbosity'] > 0:
+            print('[parse_reads] fetching alignments from chr{0}'.format(chrom_name))
 
         alignments = bam.fetch_unsorted(chrom_name, start, end)
         # SPEEDUP handle hanging reads (mate unmapped or rname!=mrnm, but not distant) as we go to save memory. but, careful not to add them twice...
@@ -306,11 +307,12 @@ def parse_reads_with_blocks(opts, reference_files, bamgroups,
             else:
                 seen_aln[aln.qname] = (aln, cur_idx)
 
-        print('\nreads missing pairs are on these chromosomes:')
-        print(Counter([bam.getrname(a[0].rname) for a in seen_aln.values()]))
-        print('\nreads missing pairs have mates on these chromosomes:')
-        print(Counter([bam.getrname(a[0].mrnm) for a in seen_aln.values()]))
-        print('')
+        if opts['verbosity'] > 1:
+            print('\nreads missing pairs are on these chromosomes:')
+            print(Counter([bam.getrname(a[0].rname) for a in seen_aln.values()]))
+            print('\nreads missing pairs have mates on these chromosomes:')
+            print(Counter([bam.getrname(a[0].mrnm) for a in seen_aln.values()]))
+            print('')
         for (aln, block_idx) in seen_aln.values():
             block_parser_handle_hanging(opts, aln, bam, g, blocks,
                                         insert_ranges, cached_dist, map_models, block_idx)
