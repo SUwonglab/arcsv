@@ -90,8 +90,8 @@ arcsv call -h
 The folder `example/` in this repository contains files to test the ARC-SV installation:
 
 ```
-arcsv call -i example/input.bam -r 20:0-250000 -o example_output \
+arcsv call -i example/input.bam -r 20:0-250000 -o my_example_output \
   -R example/reference.fa -G example/gaps.bed
   
-diff example/sv_out2.bed example/expected_output.bed
+diff my_example_output/arcsv_out.bed example/expected_output.bed
 ```
