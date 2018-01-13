@@ -64,7 +64,7 @@ curl http://hgdownload.cse.ucsc.edu/goldenpath/hg38/database/gap.txt.gz | \
      cut -f2-4 > hg38_gap.bed
 ```
 
-or for the NCBI version, without "chr" in the chromosome names:
+or for the NCBI reference (with "2" instead of "chr2"):
 
 ```
 
@@ -76,7 +76,7 @@ curl http://hgdownload.cse.ucsc.edu/goldenpath/hg19/database/gap.txt.gz | \
 
 ```
 
-## Usage ##
+## Basic usage ##
 
 ```
 arcsv call -i reads.bam -r chrom[:start-end] -R reference.fasta -G reference_gaps.bed -o output_dir
@@ -84,8 +84,6 @@ arcsv call -i reads.bam -r chrom[:start-end] -R reference.fasta -G reference_gap
 # To see more detailed documentation on all possible arguments
 arcsv call -h
 ```
-
-
 
 ## Running the example ##
 
