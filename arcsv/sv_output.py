@@ -1,26 +1,27 @@
-import itertools
 import numpy as np
 import os
 import pickle
 import pysam
 from math import floor
 
-from arcsv.constants import *
+from arcsv.constants import ALTERED_QNAME_MAX_LEN
 from arcsv.helper import path_to_string, block_gap
 from arcsv.sv_classify import classify_paths
 from arcsv.sv_filter import get_filter_string
 from arcsv.sv_validate import altered_reference_sequence
 
+
 def sv_extra_lines(sv_ids, info_extra, format_extra):
-    info_tags = ('='.join((str(a), str(b))) for (a,b) in info_extra.items())
-    format_tags = ('='.join((str(a), str(b))) for (a,b) in format_extra.items())
+    info_tags = ('='.join((str(a), str(b))) for (a, b) in info_extra.items())
+    format_tags = ('='.join((str(a), str(b))) for (a, b) in format_extra.items())
     info_line = ';'.join(x for x in info_tags)
     format_line = ':'.join(x for x in format_tags)
     return '\n'.join('\t'.join((sv_id, info_line, format_line)) for sv_id in sv_ids) + '\n'
 
+
 # note: only used while converting other SV file formats
 def do_sv_processing(opts, data, outdir, reffile,
-                     log, verbosity, write_extra = False):
+                     log, verbosity, write_extra=False):
     ref = pysam.FastaFile(reffile)
 
     skipped_altered_size = 0
@@ -40,24 +41,23 @@ def do_sv_processing(opts, data, outdir, reffile,
     for datum in data:
         paths, blocks, left_bp, right_bp, score, filterstring, id_extra, info_extra, format_extra = datum
         path1, path2 = paths
-        start, end = 0, len(blocks) - 1
+        # start, end = 0, len(blocks) - 1
         graphsize = 2 * len(blocks)
-
 
         # classify sv
         cpout = classify_paths(path1, path2, blocks, graphsize, left_bp, right_bp, verbosity)
         (event1, event2), svs, complex_types = cpout
 
         # if only one simple SV is present and < 50 bp, skip it
-        if len(svs) == 1 and svs[0].type != 'BND' and svs[0].length < min_simplesv_size:
+        if len(svs) == 1 and svs[0].type != 'BND' and svs[0].length < opts['min_simplesv_size']:
             skipped_too_small += 1
             continue
 
         # write output
         outlines = sv_output(path1, path2, blocks, event1, event2,
                              svs, complex_types, score, 0, 0, '.', 0,
-                             False, [], filterstring_manual = filterstring,
-                             id_extra = id_extra)
+                             False, [], filterstring_manual=filterstring,
+                             id_extra=id_extra)
         sv_outfile.write(outlines)
 
         # write out extra info from VCF if necessary
@@ -67,13 +67,13 @@ def do_sv_processing(opts, data, outdir, reffile,
 
         # write altered reference to file
         # CLEANUP tons of stuff duplicated here from sv_inference.py
-        s1 = path_to_string(path1, blocks = blocks)
-        s2 = path_to_string(path2, blocks = blocks)
+        s1 = path_to_string(path1, blocks=blocks)
+        s2 = path_to_string(path2, blocks=blocks)
         sv1 = [sv for sv in svs if sv.genotype == '1/1' or sv.genotype == '1/0']
         sv2 = [sv for sv in svs if sv.genotype == '1/1' or sv.genotype == '0/1']
         compound_het = (path1 != path2) and (len(sv1) > 0) and (len(sv2) > 0)
-        for (k,path,ev,pathstring,svlist) in [(0,path1,event1,s1,sv1),
-                                              (1,path2,event2,s2,sv2)]:
+        for (k, path, ev, pathstring, svlist) in [(0, path1, event1, s1, sv1),
+                                                  (1, path2, event2, s2, sv2)]:
             if k == 1 and path1 == path2:
                 continue
             if len(svlist) == 0:
@@ -87,9 +87,9 @@ def do_sv_processing(opts, data, outdir, reffile,
             qname += ':{0}'.format(pathstring)
             for sv in svlist:
                 qname += ':{0}'.format(sv.type.split(':')[0])  # just write DUP, not DUP:TANDEM
-            ars_out = altered_reference_sequence(path, blocks, ref, flank_size = opts['altered_flank_size'])
+            ars_out = altered_reference_sequence(path, blocks, ref, flank_size=opts['altered_flank_size'])
             seqs, block_pos, insertion_size, del_size, svb, svp, hlf, hrf = ars_out
-            if sum(len(s) for s in seqs) > max_size_altered:
+            if sum(len(s) for s in seqs) > opts['max_size_altered']:
                 skipped_altered_size += 1
                 continue
             qnames.append(qname)
@@ -103,7 +103,7 @@ def do_sv_processing(opts, data, outdir, reffile,
             seqnum = 1
             qname = qname[:(ALTERED_QNAME_MAX_LEN-4)]
             for seq in seqs:
-                altered_reference_file.write('>{0}\n{1}\n'.\
+                altered_reference_file.write('>{0}\n{1}\n'.
                                              format(qname + ':' + str(seqnum), seq))
                 seqnum += 1
 
@@ -154,7 +154,7 @@ def sv_output(path1, path2, blocks, event1, event2,
                     bps.append(int(floor(np.median(bp))))
                     bps_uncertainty.append(bp[1] - bp[0] - 2)
         minbp, maxbp = min(bps), max(bps)
-        nbp = len(bps)
+        # nbp = len(bps)
         sv_bp = ','.join(str(bp) for bp in bps)
         sv_bp_uncertainty = ','.join(str(bpu) for bpu in bps_uncertainty)
 
@@ -164,7 +164,7 @@ def sv_output(path1, path2, blocks, event1, event2,
             id = id + ',' + str(k + 1)
         id += id_extra
 
-        svtypes = ','.join(sv.type.split(':')[0] for sv in svs) # use DUP not DUP:TANDEM
+        svtypes = ','.join(sv.type.split(':')[0] for sv in svs)  # use DUP not DUP:TANDEM
         nsv = len(svs)
         if filterstring_manual is None:
             filters = ','.join(get_filter_string(sv, event_filtered, filter_criteria) for sv in svs)
@@ -175,7 +175,7 @@ def sv_output(path1, path2, blocks, event1, event2,
         nonins_blocks = [b for b in blocks if not b.is_insertion()]
         nni = len(nonins_blocks)
         block_bp = [nonins_blocks[0].start] + \
-                   [int(floor(np.median((blocks[i-1].end,blocks[i].start)))) for i in range(1, nni)] + \
+                   [int(floor(np.median((blocks[i-1].end, blocks[i].start)))) for i in range(1, nni)] + \
                    [nonins_blocks[-1].end]
         block_bp = ','.join(str(x) for x in block_bp)
         block_bp_uncertainty = [0] + \
@@ -186,7 +186,7 @@ def sv_output(path1, path2, blocks, event1, event2,
         s = path_to_string(path, blocks=blocks)
         nblocks = len([b for b in blocks if not b.is_insertion()])
         refpath = list(range(2 * nblocks))
-        ref_string = path_to_string(refpath, blocks = blocks)
+        ref_string = path_to_string(refpath, blocks=blocks)
         gt = 'HET' if is_het else 'HOM'
 
         sv_ins = lambda sv: (sv.length if sv.type == 'INS' else sv.bnd_ins)

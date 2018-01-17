@@ -1,11 +1,12 @@
 import os
 import numpy as np
 
-from arcsv.constants import *
+from arcsv.constants import LEFT, RIGHT, SEQ, BPLOC, NCLIP, NUNIQ, NDUP, MAPQ
 from arcsv.helper import fetch_seq
 
 
-def process_softclip(pair, softclips, bam, do_splits, min_mapq, min_clipped_bases, min_clipped_qual):
+def process_softclip(pair, softclips, bam, do_splits, min_mapq,
+                     min_clipped_bases, min_clipped_qual):
     num_softclips = 0
     for aln in pair:
         if aln is None or aln.is_unmapped or aln.mapq < min_mapq:
@@ -46,24 +47,26 @@ def process_softclip(pair, softclips, bam, do_splits, min_mapq, min_clipped_base
             add_to_softclips(softclips[RIGHT], sc.pos_right, sc)
     return num_softclips
 
+
 def add_to_softclips(sc_dict, pos, sc):
     sc_dict[pos] = sc_dict.get(pos, []) + [sc]
 
+
 # merge softclips and construct consensus sequences
-# indel_bp - output from parse_indels (optional). If given, we'll consider those breakpoints to be false
-def merge_softclips(opts, softclips, reference, chrom, name = '', indel_bp = None):
+# indel_bp - output from parse_indels (optional). If given, we'll consider those
+#            breakpoints to be false
+def merge_softclips(opts, softclips, reference, chrom, name='', indel_bp=None):
     # , required_perfect_mapq = 1):
     # if outdir is not None:
     #     prefix = (name + '-') if (name != '') else ''
     #     logfile = open(outdir + prefix + 'log_softclipmerge.txt', 'w')
-    outdir = opts['outdir']
     min_overlap = opts['min_junction_overlap']
-    num_leftclip = sum([len(sclist) for sclist in softclips[LEFT].values()]) 
+    num_leftclip = sum([len(sclist) for sclist in softclips[LEFT].values()])
     num_rightclip = sum([len(sclist) for sclist in softclips[RIGHT].values()])
     num_softclips = num_leftclip + num_rightclip
     merged = []
     chrom_len = reference.get_reference_length(chrom)
-    for orientation in (LEFT,RIGHT):
+    for orientation in (LEFT, RIGHT):
         seen = {}
         sc_dict = softclips[orientation]
         for loc in sc_dict:
@@ -80,14 +83,14 @@ def merge_softclips(opts, softclips, reference, chrom, name = '', indel_bp = Non
             # if num_perfect_mapq < required_perfect_mapq:
             #     continue
             med_mapq = np.median([sc.mapq for sc in softclip_list])
-            consensus_seq, consensus_qual, ref_seq, consensus_bp, nclip = compute_softclip_consensus(softclip_list, orientation, reference, chrom, chrom_len)#, logfile)
+            consensus_seq, consensus_qual, ref_seq, consensus_bp, nclip = compute_softclip_consensus(softclip_list, orientation, reference, chrom, chrom_len)
             if consensus_seq is None:
                 continue
             consensus_noN_left = consensus_seq.lstrip('N')
             consensus_noN_right = consensus_seq.rstrip('N')
             consensus_numN = [len(consensus_seq) - len(consensus_noN_left),
                               len(consensus_seq) - len(consensus_noN_right)]
-            if nclip - consensus_numN[orientation] <= min_overlap: # less than min_overlap called bases on the clipped end
+            if nclip - consensus_numN[orientation] <= min_overlap:  # less than min_overlap called bases on the clipped end
                 continue
             if consensus_numN[LEFT] > 0:
                 consensus_seq = consensus_seq[consensus_numN[LEFT]:]
@@ -104,11 +107,12 @@ def merge_softclips(opts, softclips, reference, chrom, name = '', indel_bp = Non
             #     logfile.write('SKIP because of indel\n')
 
     if opts['verbosity'] > 0:
-        print('[merge_softclips] total softclips before merging: {before}'.format(before = num_softclips))
-        print('[merge_softclips] after merging: {after}'.format(after = len(merged)))
+        print('[merge_softclips] total softclips before merging: {before}'.format(before=num_softclips))
+        print('[merge_softclips] after merging: {after}'.format(after=len(merged)))
     # if outdir is not None:
     #     logfile.close()
     return merged
+
 
 def get_nearby_softclips(sc_dict, seen, loc, orientation):
     nearby = []
@@ -142,12 +146,13 @@ def get_nearby_softclips(sc_dict, seen, loc, orientation):
             seen[l] = True
     return nearby
 
+
 # We compute a consensus sequence by merely adding up the quality scores
 # of each base call at each position. This is a heuristic, but is almost
 # identical to interpreting the q scores as (independent) posterior probabilities
 # and doing the Bayes rule calculation
-def compute_softclip_consensus(sc_list, orientation, reference, chrom, chrom_len, logfile = None):
-    BASE = {'A':0, 'T':1, 'C':2, 'G':3, 'N':4}
+def compute_softclip_consensus(sc_list, orientation, reference, chrom, chrom_len, logfile=None):
+    BASE = {'A': 0, 'T': 1, 'C': 2, 'G': 3, 'N': 4}
     INDEX = 'ATCGN'
     if orientation == LEFT:
         pos_start = [sc.pos_left - sc.nclip_left for sc in sc_list]
@@ -163,18 +168,18 @@ def compute_softclip_consensus(sc_list, orientation, reference, chrom, chrom_len
         idx_start = 0 if orientation == LEFT else sc.nclip_left
         idx_end = (len(sc.seq) - sc.nclip_right) if orientation == LEFT else len(sc.seq)
         offset = pos_start[i] - pos_min
-        ### DEBUG
+        # DEBUG
         if logfile is not None and len(sc_list) > 1:
             logfile.write((' ' * offset) + sc.seq[idx_start:idx_end] + '\n')
             bp_offset = len(sc.seq) - sc.nclip_left - sc.nclip_right if orientation == RIGHT else sc.nclip_left
             arrow = '<==' if orientation == LEFT else '==>'
             dupstring = 'D' if sc.is_duplicate else ''
             logfile.write((' ' * (offset + bp_offset)) + '|' + arrow + '  ' + dupstring + ' ' + sc.qname + '\n')
-        ###
+        # DEBUG
         for j in range(idx_start, idx_end):
             base_idx = BASE[sc.seq[j]] if sc.qual[j] > 2 else BASE['N']
             voting[base_idx, offset + j - idx_start] += sc.qual[j]
-    consensus_idx = np.argmax(voting, 0) # WARNING ties are broken arbitrarily
+    consensus_idx = np.argmax(voting, 0)  # WARNING ties are broken arbitrarily
     consensus_qual = np.max(voting, 0)
     consensus_seq = ''.join([INDEX[i] for i in consensus_idx])
 
@@ -213,7 +218,7 @@ def compute_softclip_consensus(sc_list, orientation, reference, chrom, chrom_len
         pos_max = chrom_len
         if orientation == RIGHT:
             nclip -= overhang
-    consensus_seq = consensus_seq[idx_min_new:idx_max_new] 
+    consensus_seq = consensus_seq[idx_min_new:idx_max_new]
     consensus_qual = consensus_qual[idx_min_new:idx_max_new]
 
     # record reference sequence
@@ -231,18 +236,18 @@ def compute_softclip_consensus(sc_list, orientation, reference, chrom, chrom_len
 
     return consensus_seq, consensus_qual, ref_seq, pos_max_support, nclip
 
+
 def write_softclip_merge_stats(merged, filename):
     file = open(filename, 'w')
     file.write('bploc\tlen\tnclip\tnunique\tnduplicate\tmapq\n')
     for junction in merged:
-        line = '{bploc}\t{length}\t{nclip}\t{nunique}\t{nduplicate}\t{mapq}\n'.format(bploc = junction[BPLOC],
-                                                                              length = len(junction[SEQ]),
-                                                                              nclip = junction[NCLIP],
-                                                                              nunique = junction[NUNIQ],
-                                                                              nduplicate = junction[NDUP],
-                                                                              mapq = junction[MAPQ])
+        line = ('{bploc}\t{length}\t{nclip}\t{nunique}\t{nduplicate}\t{mapq}\n'.
+                format(bploc=junction[BPLOC], length=len(junction[SEQ]), nclip=junction[NCLIP],
+                       nunique=junction[NUNIQ], nduplicate=junction[NDUP],
+                       mapq=junction[MAPQ]))
         file.write(line)
     file.close()
+
 
 class SoftclippedAlignment:
     qname = ''
@@ -260,9 +265,10 @@ class SoftclippedAlignment:
     def __repr__(self):
         return '%s %s %s %s %s' % (self.qname, self.seq, self.qual, str([self.pos_left, self.pos_right]), str([self.nclip_left, self.nclip_right]))
 
+
 # softclips = [{}, {}] -- left softclips and right ones
 def write_softclips_bed(softclips, fileprefix, chrom_name):
-    fn = ['','']
+    fn = ['', '']
     fn[LEFT] = fileprefix + '_left.bed'
     fn[RIGHT] = fileprefix + '_right.bed'
     for orientation in (LEFT, RIGHT):
@@ -270,15 +276,15 @@ def write_softclips_bed(softclips, fileprefix, chrom_name):
         locs = list(softclips[orientation].keys())
         locs.sort()
         for loc in locs:
-            line = '{chrom}\t{start}\t{end}\t{val}\n'.format(chrom = chrom_name,
-                                                           start = loc,
-                                                           end = loc + 1,
-                                                           val = len(softclips[orientation][loc]))
+            line = ('{chrom}\t{start}\t{end}\t{val}\n'.
+                    format(chrom=chrom_name, start=loc,
+                           end=loc + 1, val=len(softclips[orientation][loc])))
             file.write(line)
         file.close()
     return fn
 
-def write_softclips_bigwig(softclips, fileprefix, chrom_name, delete_bed = False):
+
+def write_softclips_bigwig(softclips, fileprefix, chrom_name, delete_bed=False):
     bed_out = write_softclips_bed(softclips, fileprefix, chrom_name)
     for bedfile in bed_out:
         fn = bedfile.rstrip('.bed')
@@ -286,11 +292,12 @@ def write_softclips_bigwig(softclips, fileprefix, chrom_name, delete_bed = False
         if delete_bed:
             os.system('rm {bed}'.format(bedfile))
 
+
 def test_merge_softclips():
     softclips = [{}, {}]
     sc1 = SoftclippedAlignment()
     sc1.seq = 'ATTGGCA'
-    sc1.qual = [40,40,40,40,40,40,40]
+    sc1.qual = [40, 40, 40, 40, 40, 40, 40]
     sc1.pos_left = 11
     sc1.pos_right = 14
     sc1.nclip_left = 0
@@ -298,7 +305,7 @@ def test_merge_softclips():
     softclips[RIGHT][14] = [sc1]
     sc2 = SoftclippedAlignment()
     sc2.seq = 'CCATTGACA'
-    sc2.qual = [40,40,40,40,40,40,40,40,40]
+    sc2.qual = [40, 40, 40, 40, 40, 40, 40, 40, 40]
     sc2.pos_left = 9
     sc2.pos_right = 14
     sc2.nclip_left = 0
@@ -306,7 +313,7 @@ def test_merge_softclips():
     softclips[RIGHT][14].append(sc2)
     sc3 = SoftclippedAlignment()
     sc3.seq = 'CATTTACA'
-    sc3.qual = [40,40,40,40,40,40,40,40]
+    sc3.qual = [40, 40, 40, 40, 40, 40, 40, 40]
     sc3.pos_left = 10
     sc3.pos_right = 15
     sc3.nclip_left = 0
@@ -317,6 +324,7 @@ def test_merge_softclips():
     print(out)
     print(1)
     assert(out[0] == ('CCATTGACA', 9, 14, RIGHT))
+
 
 def test_merge_softclips_2():
     softclips = [{}, {}]

@@ -3,12 +3,12 @@ import numpy as np
 import pyinter
 from math import floor
 
-from arcsv.constants import *
 from arcsv.helper import block_gap, GenomeInterval
+
 
 # returns 0-indexed positions relative to (left end of first block - first block gap)
 # open intervals ??
-def get_gap_overlap_positions(path, blocks, read_len, min_mappable = 20):
+def get_gap_overlap_positions(path, blocks, read_len, min_mappable=20):
     blocks_gaps = genome_blocks_gaps(blocks, path)
     m = min_mappable
 
@@ -25,8 +25,8 @@ def get_gap_overlap_positions(path, blocks, read_len, min_mappable = 20):
         pos += len(b)
     # print('gap_ref: {0}\nref: {1}\n'.format(gap_ref, ref))
 
-    A1 = pyinter.IntervalSet()  # i: [i,i+m) contained in gap_ref
-    A2 = pyinter.IntervalSet()  # i: [i,i+m) overlaps ref
+    A1 = pyinter.IntervalSet()  # i: [i, i+m) contained in gap_ref
+    A2 = pyinter.IntervalSet()  # i: [i, i+m) overlaps ref
     for iv in gap_ref:
         if iv.lower_value <= iv.upper_value - m:
             A1.add(pyinter.closed(iv.lower_value, iv.upper_value - m))
@@ -61,8 +61,9 @@ def get_gap_overlap_positions(path, blocks, read_len, min_mappable = 20):
         #     print(iv)
         #     raise Warning('non-open interval in get_gap_positions')
         if a < b - 1:
-            out.add(pyinter.open(a,b))
+            out.add(pyinter.open(a, b))
     return out
+
 
 # returns 0-indexed positions relative to (left end of first block - first block gap)
 # --open intervals--
@@ -71,10 +72,10 @@ def get_gap_overlap_positions(path, blocks, read_len, min_mappable = 20):
 # output:
 #   invalid_read_start: open intervals indicating read start locations
 #     yielding < 20 bp overlapping blocks/gaps
-#   overlapping_t, overlapping_d:  
+#   overlapping_t, overlapping_d:
 # GAPS using distances here, need to adjust
 # GAPS can we just rewrite usig block distances??
-def get_insertion_overlap_positions(path, blocks, read_len, min_mappable = 20):
+def get_insertion_overlap_positions(path, blocks, read_len, min_mappable=20):
     invalid_read_start_d = pyinter.IntervalSet()
     invalid_read_start_t = pyinter.IntervalSet()
     invalid_window_start = pyinter.IntervalSet()
@@ -86,7 +87,7 @@ def get_insertion_overlap_positions(path, blocks, read_len, min_mappable = 20):
     for b in blocks_gaps:
         if b.is_de_novo and 0 < len(b) - R + 2*m:
             invalid_read_start_d.add(pyinter.open(pos - m, pos + len(b) - R + m))
-        elif b.is_translocation and 0 < len(b) -R + 2*m:
+        elif b.is_translocation and 0 < len(b) - R + 2*m:
             invalid_read_start_t.add(pyinter.open(pos - m, pos + len(b) - R + m))
         if b.is_insertion():
             invalid_window_start.add(pyinter.open(pos - m, pos + len(b)))
@@ -128,6 +129,7 @@ def get_insertion_overlap_positions(path, blocks, read_len, min_mappable = 20):
     # overlapping_pos = ins1.intersection(ins2)
     # return overlapping_pos
 
+
 # for each time anchored_block appears in path, return the probability (if insert size ~ insert_cdf)
 # of the hanging end overlapping insertion(s)
 def get_overlap_insertion_probabilities(path, blocks,
@@ -146,7 +148,7 @@ def get_overlap_insertion_probabilities(path, blocks,
         this_intervals = []
         # position of 5' end of block
         block_5_position = sum([len(blocks[floor(path[i] / 2)]) for i in range(0, idx - 1, 2)])
-        if idx % 2 != path[idx] % 2: # block is in negative orientation
+        if idx % 2 != path[idx] % 2:  # block is in negative orientation
             block_5_position += len(blocks[floor(path[idx] / 2)])
         if idx % 2 == 1:  # "plus strand" alignment
             overall_offsets = [-block_5_position + o + read_len for o in offsets]
@@ -154,13 +156,13 @@ def get_overlap_insertion_probabilities(path, blocks,
             for interval in overlapping_pos:
                 insert_intervals = [(interval.lower_value + o, interval.upper_value + o) for o in overall_offsets]
                 this_intervals.extend(insert_intervals)
-                p = [max(0, insert_cdfs[l](it[1] - 1) - insert_cdfs[l](it[0])) for (it,l) in zip(insert_intervals, lib_indices)]
+                p = [max(0, insert_cdfs[l](it[1] - 1) - insert_cdfs[l](it[0])) for (it, l) in zip(insert_intervals, lib_indices)]
                 if overlapping_de_novo[j] and overlapping_translocation[j]:
-                    probs_both[:,i] += p
+                    probs_both[:, i] += p
                 elif overlapping_de_novo[j]:
-                    probs_d[:,i] += p
+                    probs_d[:, i] += p
                 elif overlapping_translocation[j]:
-                    probs_t[:,i] += p
+                    probs_t[:, i] += p
                 else:
                     print('WARNING no annotation in get_overlap_insert_probabilities')
                     print('\tPath:')
@@ -174,13 +176,13 @@ def get_overlap_insertion_probabilities(path, blocks,
             for interval in overlapping_pos:
                 insert_intervals = [(-interval.upper_value + o, -interval.lower_value + o) for o in overall_offsets]
                 this_intervals.extend(insert_intervals)
-                p = [max(0, insert_cdfs[l](it[1] - 1) - insert_cdfs[l](it[0])) for (it,l) in zip(insert_intervals, lib_indices)]
+                p = [max(0, insert_cdfs[l](it[1] - 1) - insert_cdfs[l](it[0])) for (it, l) in zip(insert_intervals, lib_indices)]
                 if overlapping_de_novo[j] and overlapping_translocation[j]:
-                    probs_both[:,i] += p
+                    probs_both[:, i] += p
                 elif overlapping_de_novo[j]:
-                    probs_d[:,i] += p
+                    probs_d[:, i] += p
                 elif overlapping_translocation[j]:
-                    probs_t[:,i] += p
+                    probs_t[:, i] += p
                 else:
                     print('WARNING no annotation in get_overlap_insert_probabilities')
                     print('\tPath:')
@@ -191,8 +193,9 @@ def get_overlap_insertion_probabilities(path, blocks,
         intervals.append(tuple(this_intervals))
     return probs_both, probs_d, probs_t, intervals
 
+
 def compute_hanging_edge_likelihood(edge, path, blocks, insert_cdfs, adj_satisfied):
-    prob_hanging_type = (.5, .5) # probability of unmapped vs distant/translocation
+    prob_hanging_type = (.5, .5)  # probability of unmapped vs distant/translocation
 
     offsets = edge['offset']
     adj = edge['adj1']
@@ -238,7 +241,7 @@ def compute_hanging_edge_likelihood(edge, path, blocks, insert_cdfs, adj_satisfi
         pr_out_no_overlap_insert = 1 - pr_out_overlap_insert
         pr_out_overlap = [pr[0] * pa * prob_hanging_type[int(id)] for (pr, pa, id) in zip(pr_out_overlap_insert, panchored_out, is_distant_out)]
         pr_out_no_overlap = [pr[0] * pm[1 + 2*id] for (pr, pm, id) in zip(pr_out_no_overlap_insert, pmappable_out, is_distant_out)]
-        pr_out = [a + b for (a,b) in zip(pr_out_overlap, pr_out_no_overlap)]
+        pr_out = [a + b for (a, b) in zip(pr_out_overlap, pr_out_no_overlap)]
         if not all(adj_satisfied_out):
             failed = [i for i in range(len(adj_satisfied_out)) if not adj_satisfied_out[i]]
             for i in failed:
@@ -253,7 +256,7 @@ def compute_hanging_edge_likelihood(edge, path, blocks, insert_cdfs, adj_satisfi
         pr_in_no_overlap_insert = 1 - pr_in_overlap_insert
         pr_in_overlap = [pr[0] * pa * prob_hanging_type[int(id)] for (pr, pa, id) in zip(pr_in_overlap_insert, panchored_in, is_distant_in)]
         pr_in_no_overlap = [pr[0] * pm[1 + 2*id] for (pr, pm, id) in zip(pr_in_no_overlap_insert, pmappable_in, is_distant_in)]
-        pr_in = [a + b for (a,b) in zip(pr_in_overlap, pr_in_no_overlap)]
+        pr_in = [a + b for (a, b) in zip(pr_in_overlap, pr_in_no_overlap)]
         if not all(adj_satisfied_in):
             failed = [i for i in range(len(adj_satisfied_in)) if not adj_satisfied_in[i]]
             for i in failed:
@@ -262,6 +265,7 @@ def compute_hanging_edge_likelihood(edge, path, blocks, insert_cdfs, adj_satisfi
         likelihood.extend(pr_out + pr_in)
 
     return likelihood
+
 
 def compute_normalizing_constant(path, blocks,
                                  insert_cdf, insert_cdf_sum, class_prob,
@@ -274,7 +278,7 @@ def compute_normalizing_constant(path, blocks,
     # print('bg: {0}'.format(blocks_gaps))
     R = sum(len(b) for b in blocks_gaps)
 
-    dbl_int = functools.partial(double_int, xmin = 0, xmax = R-1, ymin = 0, ymax = R-1)
+    dbl_int = functools.partial(double_int, xmin=0, xmax=R-1, ymin=0, ymax=R-1)
 
     # factor in the normalizing constant for
     # 0 -- neither end within insertion
@@ -295,10 +299,10 @@ def compute_normalizing_constant(path, blocks,
     # g[0] + g[1] + g[3] + g[5] = pm[5]
     g = [p_mapped[0],
          p_mapped[1] - p_mapped[0],                 # subtract pm[0]
-         p_mapped[2] - 2*p_mapped[1] + p_mapped[0], # subtract 2 * pm[1] - pm[0]
+         p_mapped[2] - 2*p_mapped[1] + p_mapped[0],  # subtract 2 * pm[1] - pm[0]
          p_mapped[3] - p_mapped[0],                 # subtract pm[0]
-         p_mapped[4] - 2*p_mapped[3] + p_mapped[0], # subtract 2 * pm[3] - pm[0]
-         p_mapped[5] - p_mapped[1] - p_mapped[3] + p_mapped[0]] # subtract pm[1] + pm[3] - pm[0]
+         p_mapped[4] - 2*p_mapped[3] + p_mapped[0],  # subtract 2 * pm[3] - pm[0]
+         p_mapped[5] - p_mapped[1] - p_mapped[3] + p_mapped[0]]  # subtract pm[1] + pm[3] - pm[0]
 
     ins_ov1, _, _ = get_insertion_overlap_positions(path, blocks, rlen1)
     ins_ov2, _, _ = get_insertion_overlap_positions(path, blocks, rlen2)
@@ -352,25 +356,27 @@ def compute_normalizing_constant(path, blocks,
 
     return const
 
+
 def genome_blocks_gaps(blocks, path):
     chrom = blocks[0].chrom
     blocks_gaps = []
     start_gap = block_gap(blocks, path[0])
-    blocks_gaps.append(GenomeInterval(chrom, 0, start_gap, is_gap = True))
+    blocks_gaps.append(GenomeInterval(chrom, 0, start_gap, is_gap=True))
     blocks_gaps.append(blocks[int(floor(path[0]/2))])
     for i in range(1, len(path) - 1, 2):
         gap_size = int(floor((block_gap(blocks, path[i]) + block_gap(blocks, path[i+1])) / 2))
-        blocks_gaps.append(GenomeInterval(chrom, 0, gap_size, is_gap = True))
+        blocks_gaps.append(GenomeInterval(chrom, 0, gap_size, is_gap=True))
         blocks_gaps.append(blocks[int(floor(path[i+1]/2))])
     end_gap = block_gap(blocks, path[-1])
-    blocks_gaps.append(GenomeInterval(chrom, 0, end_gap, is_gap = True))
+    blocks_gaps.append(GenomeInterval(chrom, 0, end_gap, is_gap=True))
     return blocks_gaps
+
 
 # sum_x=a1^b1 sum_y=a2^b2 f(y - x)
 # where cdf_sum is the double cumsum of f
 def double_int(cdf_sum, a1, b1, a2, b2,
-               xmin = -np.Inf, xmax = np.Inf,
-               ymin = -np.Inf, ymax = np.Inf):
+               xmin=-np.Inf, xmax=np.Inf,
+               ymin=-np.Inf, ymax=np.Inf):
     if a1 > xmax or a2 > ymax:
         return 0
     if b1 < xmin or b2 < ymin:
@@ -381,6 +387,7 @@ def double_int(cdf_sum, a1, b1, a2, b2,
         return 0
     else:
         return cdf_sum(b2-a1+1) + cdf_sum(a2-b1-1) - cdf_sum(b2-b1) - cdf_sum(a2-a1)
+
 
 def test_compute_normalizing_constant():
     def create_insert_cs(ins):
@@ -393,24 +400,24 @@ def test_compute_normalizing_constant():
     blocks = [GenomeInterval(1, 0, 1000),
               GenomeInterval(1, 1000, 2000)]
     nc1 = compute_normalizing_constant(list(range(4)), blocks,
-                                      1, cdf_sum,
-                                      [1,0,0,0], 100, 100)
+                                       1, cdf_sum,
+                                       [1, 0, 0, 0], 100, 100)
     print(blocks)
     print(nc1)
     print('')
 
     blocks = [GenomeInterval(1, 0, 1000), GenomeInterval(1, 1099, 2000)]
     nc2 = compute_normalizing_constant(list(range(4)), blocks,
-                                      1, cdf_sum,
-                                      [1,0,0,0], 100, 100)
+                                       1, cdf_sum,
+                                       [1, 0, 0, 0], 100, 100)
     print(blocks)
     print(nc2)
     print('')
 
     blocks = [GenomeInterval(1, 0, 1000), GenomeInterval(1, 1100, 2000)]
     nc3 = compute_normalizing_constant(list(range(4)), blocks,
-                                      1, cdf_sum,
-                                      [1,0,0,0], 100, 100)
+                                       1, cdf_sum,
+                                       [1, 0, 0, 0], 100, 100)
     print(blocks)
     print(nc3)
     print('')
@@ -419,10 +426,10 @@ def test_compute_normalizing_constant():
     blocks = [GenomeInterval(1, 0, 1000),
               GenomeInterval(1, 1000, 1940),
               GenomeInterval(1, 0, 60, True)]
-    path = [0,1,4,5,2,3]
+    path = [0, 1, 4, 5, 2, 3]
     nc4 = compute_normalizing_constant(path, blocks,
                                        1, cdf_sum,
-                                       [1,0,0,0], 100, 100)
+                                       [1, 0, 0, 0], 100, 100)
     print(blocks)
     print(nc4)
     print('')
@@ -431,10 +438,10 @@ def test_compute_normalizing_constant():
     blocks = [GenomeInterval(1, 0, 1000),
               GenomeInterval(1, 1000, 1938),
               GenomeInterval(1, 0, 62, True)]
-    path = [0,1,4,5,2,3]
+    path = [0, 1, 4, 5, 2, 3]
     nc4 = compute_normalizing_constant(path, blocks,
                                        1, cdf_sum,
-                                       [1,0,0,0], 100, 100)
+                                       [1, 0, 0, 0], 100, 100)
     print(blocks)
     print(nc4)
     print('')
@@ -445,21 +452,22 @@ def test_compute_normalizing_constant():
     cdf_sum = create_insert_cs(ins)
 
     blocks = [GenomeInterval(1, 45024, 64579),
-	      GenomeInterval(1, 65306, 65307),
+              GenomeInterval(1, 65306, 65307),
               GenomeInterval(1, 66018, 79509),
               GenomeInterval(1, 0, 1000, True)]
-    path = [0,1,2,3,4,5]
+    path = [0, 1, 2, 3, 4, 5]
     pm = [.97, .01, .01, .01]
     nc = compute_normalizing_constant(path, blocks, 1, cdf_sum,
                                       pm, 100, 100)
     print(blocks)
     print(nc)
 
-    path = [2,3,6,7]
+    path = [2, 3, 6, 7]
     nc2 = compute_normalizing_constant(path, blocks, 1, cdf_sum,
                                        pm, 100, 100)
     print(path)
     print(nc2)
+
 
 def test_get_gap_overlap_positions():
     rlen = 50
@@ -469,8 +477,8 @@ def test_get_gap_overlap_positions():
               GenomeInterval(1, 350, 400),
               GenomeInterval(1, 500, 600)]
 
-    paths = ([0,1,2,3,4,5,6,7,8,9],
-             [0,1,2,3,4,5,7,6,8,9])
+    paths = ([0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+             [0, 1, 2, 3, 4, 5, 7, 6, 8, 9])
     truth = ([(299, 301), (399, 451)],
              [(299, 326), (424, 451)])
 
@@ -488,8 +496,8 @@ def test_get_gap_overlap_positions():
               GenomeInterval(1, 0, 50, True),
               GenomeInterval(1, 0, 50, True)]
 
-    path = [0,1,6,7,2,3,8,9,4,5]
-    truth = [(99,131), (169,201), (349,356), (394,401)]
+    path = [0, 1, 6, 7, 2, 3, 8, 9, 4, 5]
+    truth = [(99, 131), (169, 201), (349, 356), (394, 401)]
     out = get_gap_overlap_positions(path, blocks, rlen)
     inter = pyinter.IntervalSet()
     for interval in truth:
@@ -497,20 +505,21 @@ def test_get_gap_overlap_positions():
     print('truth: {0}\nresult: {1}\n'.format(inter, out))
     assert(out == inter)
 
+
 def test_get_insertion_overlap_positions():
-    blocks = [GenomeInterval(1, 0, 100), # 01
-              GenomeInterval(1, 100, 200), # 23
-              GenomeInterval(1, 210, 300), # 45
-              GenomeInterval(1, 350, 360), # 67
-              GenomeInterval(1, 370, 400),    # 89
-              GenomeInterval(1, 0, 100, True), # 10,11
-              GenomeInterval(1, 0, 10, True)]  # 12,13
+    blocks = [GenomeInterval(1, 0, 100),       # 01
+              GenomeInterval(1, 100, 200),     # 23
+              GenomeInterval(1, 210, 300),     # 45
+              GenomeInterval(1, 350, 360),     # 67
+              GenomeInterval(1, 370, 400),     # 89
+              GenomeInterval(1, 0, 100, True),  # 10, 11
+              GenomeInterval(1, 0, 10, True)]  # 12, 13
     paths = (list(range(10)),
-             [0,1,10,11,2,3],
-             [0,1,2,3,10,11,2,3],
-             [0,1,2,3,12,13,2,3],
-             [0,1,2,3,4,5,10,11,6,7],
-             [0,1,2,3,4,5,12,13,6,7])
+             [0, 1, 10, 11, 2, 3],
+             [0, 1, 2, 3, 10, 11, 2, 3],
+             [0, 1, 2, 3, 12, 13, 2, 3],
+             [0, 1, 2, 3, 4, 5, 10, 11, 6, 7],
+             [0, 1, 2, 3, 4, 5, 12, 13, 6, 7])
     truth = [tuple(),
              ((80, 170),),
              ((185, 275),),
@@ -533,14 +542,15 @@ def test_get_insertion_overlap_positions():
               GenomeInterval(0, 350, 400),
               GenomeInterval(1, 0, 50, True),
               GenomeInterval(1, 0, 50, True)]
-    path = [0,1,6,7,2,3,8,9,4,5]
-    truth = [(130,170), (355,395)]
+    path = [0, 1, 6, 7, 2, 3, 8, 9, 4, 5]
+    truth = [(130, 170), (355, 395)]
     out, _, _ = get_insertion_overlap_positions(path, blocks, rlen, m)
     inter = pyinter.IntervalSet()
     for interval in truth:
         inter.add(pyinter.open(interval[0], interval[1]))
     print('truth: {0}\nresult: {1}\n'.format(inter, out))
     assert(out == inter)
+
 
 def test_genome_blocks_gaps():
     blocks = [GenomeInterval(1, 0, 100),
@@ -556,8 +566,7 @@ def test_genome_blocks_gaps():
     print(genome_blocks_gaps(blocks, path))
     print('')
 
-    path = [0,1,4,5,8,9]
+    path = [0, 1, 4, 5, 8, 9]
     print(path)
     print(genome_blocks_gaps(blocks, path))
     print('')
-

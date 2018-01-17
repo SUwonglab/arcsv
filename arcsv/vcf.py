@@ -8,8 +8,9 @@ from arcsv.helper import fetch_seq
 from arcsv.sv_filter import get_filter_string
 from arcsv._version import __version__
 
-def sv_to_vcf(sv, reference, event_filtered = False, filter_criteria = None,
-              event_lh = None, ref_lh = None):
+
+def sv_to_vcf(sv, reference, event_filtered=False, filter_criteria=None,
+              event_lh=None, ref_lh=None):
     if sv.type == 'BND':
         return bnd_to_vcf(sv, reference, event_filtered, filter_criteria,
                           event_lh, ref_lh)
@@ -39,15 +40,14 @@ def sv_to_vcf(sv, reference, event_filtered = False, filter_criteria = None,
     # LATER add pathstring tag e.g. ABCD/ACBCD
     svtype = sv.type.split(':')[0]
     info_list.append(('SVTYPE', svtype))
-    end = bp2_pos + 1           # note insertion bp1=bp2 so ok
-                                # also note updating to be 1-indexed
+    end = bp2_pos + 1           # note insertion bp1=bp2 so ok; note updating to be 1-indexed
     info_list.append(('END', end))
     if svtype == 'DEL':
         svlen = -(end-pos)
     elif svtype == 'INS':
         svlen = sv.length
     elif svtype == 'DUP':
-        svlen = (end - pos) * (sv.copynumber - 1) # len. sequence added to reference
+        svlen = (end - pos) * (sv.copynumber - 1)  # len. sequence added to reference
     elif svtype == 'INV':
         svlen = None
     if svlen:
@@ -71,10 +71,10 @@ def sv_to_vcf(sv, reference, event_filtered = False, filter_criteria = None,
         gt = '{0}:{1}'.format(sv.genotype, sv.copynumber)
     # write line
     info = ';'.join(['{0}={1}'.format(el[0], el[1]) for el in info_list])
-    line = template.format(chr = chrom, pos = pos, id = id,
-                           ref = ref, alt = alt, qual = qual,
-                           filter = filter, info = info,
-                           format = format, gt = gt)
+    line = template.format(chr=chrom, pos=pos, id=id,
+                           ref=ref, alt=alt, qual=qual,
+                           filter=filter, info=info,
+                           format=format, gt=gt)
     return line
 
 
@@ -135,13 +135,14 @@ def bnd_to_vcf(sv, reference, event_filtered, filter_criteria,
         info = ';'.join(['{0}={1}'.format(el[0], el[1]) for el in info_list])
         format = 'GT'
         gt = sv.genotype
-        line += template.format(chr = chrom, pos = pos, id = id,
-                                ref = ref, alt = alt_string, qual = qual,
-                                filter = filter, info = info,
-                                format = format, gt = gt)
+        line += template.format(chr=chrom, pos=pos, id=id,
+                                ref=ref, alt=alt_string, qual=qual,
+                                filter=filter, info=info,
+                                format=format, gt=gt)
     return line
 
-def get_vcf_header(reference_name, sample_name = 'sample1'):
+
+def get_vcf_header(reference_name, sample_name='sample1'):
     header = """##fileformat=VCFv4.2
 ##fileDate={0}
 ##source=arcsv-{1}
