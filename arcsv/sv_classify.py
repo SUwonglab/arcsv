@@ -97,7 +97,7 @@ def classify_paths(path1, path2, blocks, num_genome_blocks, left_bp, right_bp, v
     chrom = blocks[0].chrom
     start_pos = blocks[floor(path1[0] / 2)].start
     end_pos = blocks[floor(path1[-1] / 2)].end
-    ev_id = '{0},{1}-{2},@'.format(chrom, start_pos + 1, end_pos) # 1-indexed, inclusive interval for VCF
+    ev_id = '{0},{1}-{2},@'.format(chrom, start_pos + 1, end_pos)  # 1-indexed, inclusive interval for VCF
     ev1, sv1 = classify_svs(path1, blocks, num_genome_blocks, left_bp, right_bp, verbosity)
     ev2, sv2 = classify_svs(path2, blocks, num_genome_blocks, left_bp, right_bp, verbosity)
     sv_final = []
@@ -170,11 +170,11 @@ def path_to_bp(path, num_genome_blocks):
     last_inverted = False
     i = 0
     breakpoints = []
-    events = []
-    svs = []
+    # events = []
+    # svs = []
     for b, inv in zip(block_sequence, inverted):
-        if ((b == last_block + 1 and inv == False)
-                or (b == last_block - 1 and inv == True)) \
+        if ((b == last_block + 1 and inv is False)
+                or (b == last_block - 1 and inv is True)) \
                 and (inv == last_inverted) \
                 and b < num_genome_blocks and last_block < num_genome_blocks:
             last_block = b
@@ -201,8 +201,8 @@ def classify_svs(path, blocks, num_genome_blocks, left_bp, right_bp, verbosity):
     block_sequence = [floor(path[i] / 2) for i in range(0, len(path), 2)]
     block_counts = Counter(block_sequence)
     inverted = [(path[i] % 2 == 1) for i in range(0, len(path), 2)]
-    last_block = block_sequence[0] - 1
-    last_inverted = False
+    # last_block = block_sequence[0] - 1
+    # last_inverted = False
     i = 0
     breakpoints = []
     events = []
@@ -378,7 +378,7 @@ def classify_svs(path, blocks, num_genome_blocks, left_bp, right_bp, verbosity):
                     block_beforedup_ok = True
                     has_block_before = False
                 # find block after duplicated segment
-                has_block_after = True
+                # has_block_after = True
                 idx_afterdup = j + dup_count * dup_len
                 last_dup_block = block_sequence[bp]
                 if idx_afterdup < len(block_sequence):
@@ -390,7 +390,7 @@ def classify_svs(path, blocks, num_genome_blocks, left_bp, right_bp, verbosity):
                         not inverted_afterdup
                 else:
                     block_afterdup_ok = True
-                    has_block_after = False
+                    # has_block_after = False
                 dup_sequence = block_sequence[j:min(len(block_sequence), idx_afterdup)]
                 is_duplicated = (dup_sequence == list(range(first_dup_block,
                                                             last_dup_block + 1)) * dup_count)

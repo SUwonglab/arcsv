@@ -2,17 +2,20 @@ import argparse
 import os
 
 from arcsv.arcsv_call_options import DEFAULT_OPTS
+from arcsv.conditional_mappable_model import create_mappable_model
+
 
 # parse arguments
 def get_args():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('-d', '--install_dir', type = str, default = '/home/jgarthur/sv/src')
-    parser.add_argument('-i', '--input_name', type = str, default = 'venter_short')
-    parser.add_argument('-r', '--sampling_rate', type = float, default = 1)
+    parser.add_argument('-d', '--install_dir', type=str, default='/home/jgarthur/sv/src')
+    parser.add_argument('-i', '--input_name', type=str, default='venter_short')
+    parser.add_argument('-r', '--sampling_rate', type=float, default=1)
     args = parser.parse_args()
     return args.install_dir, args.input_name, args.sampling_rate
 
-install_dir, input_name, sampling_rate = get_args()    
+
+install_dir, input_name, sampling_rate = get_args()
 
 # source files
 mm_path = os.path.join(install_dir, 'conditional_mappable_model.py')

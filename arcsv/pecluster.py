@@ -151,6 +151,7 @@ def is_ins_compatible(opts, pair1, pair2, max_distance, insert_mu, insert_sigma,
         est_insertion_size = insert_mu - (pair1.insert + pair2.insert)/2
         overlap = max(0, max(pair1.pos1, pair2.pos1) - min(pair1.pos2, pair2.pos2))
         adjustment = max(0, est_insertion_size - overlap - 3/sqrt(2)*insert_sigma)
+        # TODO use this
         adjusted_max_distance = max_distance - adjustment
         # if adjustment > 0:
         #     print('ins_compatible adjust mu={0} est={1} adjusted={2}'

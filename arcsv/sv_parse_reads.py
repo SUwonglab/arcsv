@@ -6,13 +6,14 @@ from collections import Counter
 from math import floor
 
 from arcsv.breakpoint_merge import Breakpoint
-from arcsv.constants import *
+# from arcsv.constants import *
 from arcsv.helper import not_primary, is_read_through, block_distance, flip_parity, GenomeInterval
+
 
 class GenomeGraph:
     def __init__(self, size):
         self.size = size
-        self.graph = igraph.Graph.Bipartite([0,1] * size, [])
+        self.graph = igraph.Graph.Bipartite([0, 1] * size, [])
 
     def out_vertex(self, i):
         return 2*i + 1
@@ -87,7 +88,7 @@ class GenomeGraph:
             # print('dist {0}\talt_dist {1}\tdist - block_len {2}'.format(dist, alt_dist, dist - len(blocks[int(floor(ii/2))])))
         for i in range(0, len(combined), 2):
             if i == len(badj1) - 1 and between_edge:
-                block_len = len(blocks[int(floor(combined[i] / 2))])
+                # block_len = len(blocks[int(floor(combined[i] / 2))])
                 # CLEANUP c1 and c2 for combined[i], combined[i+1]
                 # CLEANUP b1 for floor(bc1/2)
                 # skip if duplication-type and don't need dup to explain read
@@ -105,17 +106,17 @@ class GenomeGraph:
                     self.add_support(combined[i], combined[i+1])
                     # print('adding b/t support {0}-{1}'.format(combined[i], combined[i+1]))
                     # if floor(combined[i] / 2) == floor(combined[i+1] / 2):
-                        # if abs(combined[i] - combined[i+1]) == 1:
-                        #     print('adding b/t DUP support at block {0}'.format(floor(combined[i]/2)))
-                        #     print('length {0}'.format(len(blocks[int(floor(combined[i]/2))])))
-                        # else:
-                        #     print('adding b/t INV support at block {0}'.format(floor(combined[i]/2)))
-                        # print('combined path: {0}'.format(combined_full_path))
-                        # print('distance: {0}\n'.format(dist))
+                    # if abs(combined[i] - combined[i+1]) == 1:
+                    #     print('adding b/t DUP support at block {0}'.format(floor(combined[i]/2)))
+                    #     print('length {0}'.format(len(blocks[int(floor(combined[i]/2))])))
+                    # else:
+                    #     print('adding b/t INV support at block {0}'.format(floor(combined[i]/2)))
+                    # print('combined path: {0}'.format(combined_full_path))
+                    # print('distance: {0}\n'.format(dist))
             elif i != len(badj1) - 1:
                 self.add_support(combined[i], combined[i+1])
 
-    def add_hanging_pair(self, r, offset, read_len, pmappable, hanging_type, lib_idx, distant_loc = None):
+    def add_hanging_pair(self, r, offset, read_len, pmappable, hanging_type, lib_idx, distant_loc=None):
         v = r[0] if (r[0] % 2 == 0) else (r[0] - 1)
         orientation = r[0] % 2
         if len(r) == 1:
@@ -165,7 +166,7 @@ class GenomeGraph:
             edge['hanging_distant_loc'] = []
         return edge
 
-    def add_support(self, v1, v2, amt = 1):
+    def add_support(self, v1, v2, amt=1):
         edge = self.get_edge(v1, v2)
         edge['support'] += amt
 
@@ -173,7 +174,7 @@ class GenomeGraph:
         for i in range(0, 2*self.size - 2, 2):
             a, b = i + 1, i + 2
             # print('adding support between {0} and {1}'.format(a, b))
-            self.add_support(a, b, amt = min_support)
+            self.add_support(a, b, amt=min_support)
 
     def supported_neighbors(self, v, min_support):
             supported = []
@@ -204,9 +205,11 @@ class GenomeGraph:
                     if max(num_un, num_dist) > 0:
                         print('unmapped: {0}\tdistant: {1}'.format(num_un, num_dist))
 
+
 def is_block_edge(e):
     t = e.tuple
     return abs(t[0] - t[1]) == 1 and floor(t[0]/2) == floor(t[1]/2)
+
 
 def is_insertion_edge(e, blocks):
     if is_block_edge(e):
@@ -214,6 +217,7 @@ def is_insertion_edge(e, blocks):
         return blocks[bid].is_insertion()
     else:
         return False
+
 
 def get_edge_color(e, blocks, min_edge_support):
     edge_color_dict = {(True, False, False): 'black',
@@ -227,6 +231,7 @@ def get_edge_color(e, blocks, min_edge_support):
     tup = (is_block_edge(e), e['support'] >= min_edge_support, is_insertion_edge(e, blocks))
     return edge_color_dict[tup]
 
+
 def block_seq_to_path(seq):
     path = [seq[0]]
     for i in range(1, len(seq) - 1):
@@ -236,6 +241,7 @@ def block_seq_to_path(seq):
         flipped = seq[-1] + 1 if (seq[-1] % 2 == 0) else seq[-1] - 1
         path.append(flipped)
     return tuple(path)
+
 
 def parse_reads_with_blocks(opts, reference_files, bamgroups,
                             breakpoints, insert_ranges, map_models):
@@ -302,7 +308,7 @@ def parse_reads_with_blocks(opts, reference_files, bamgroups,
                 del seen_aln[aln.qname]
                 block_parser_handle_pair(opts, aln, mate, bam, g, blocks,
                                          insert_ranges, cached_dist, map_models,
-                                         block_idx1 = cur_idx, block_idx2 = mate_block_idx)
+                                         block_idx1=cur_idx, block_idx2=mate_block_idx)
                 npairs += 1
             else:
                 seen_aln[aln.qname] = (aln, cur_idx)
@@ -370,7 +376,7 @@ def create_blocks(breakpoints, gaps, chrom_name, start, end, verbosity):
             print('adjusted {0}'.format(adjusted_blocks))
 
         for ab in adjusted_blocks:
-            if ab.lower_value == ab.upper_value: # block completely within a gap
+            if ab.lower_value == ab.upper_value:  # block completely within a gap
                 gap_indices.add(len(blocks))
                 break
             else:
@@ -404,6 +410,7 @@ def create_blocks(breakpoints, gaps, chrom_name, start, end, verbosity):
         print(right_breakpoints)
     return blocks, gap_indices, left_breakpoints, right_breakpoints
 
+
 def block_parser_handle_hanging(opts, aln, bam, g, blocks, insert_ranges,
                                 cached_dist, map_models, block_idx):
     mate = pysam.AlignedSegment()
@@ -419,12 +426,13 @@ def block_parser_handle_hanging(opts, aln, bam, g, blocks, insert_ranges,
     mate.query_sequence = 'A' * mate_rlen
     block_parser_handle_pair(opts, aln, mate, bam, g, blocks,
                              insert_ranges, cached_dist, map_models,
-                             block_idx1 = block_idx, qmean2 = mate_qmean)
+                             block_idx1=block_idx, qmean2=mate_qmean)
+
 
 def block_parser_handle_pair(opts, aln1, aln2, bam, g, blocks,
                              insert_ranges, cached_dist, map_models,
-                             block_idx1 = None, block_idx2 = None,
-                             qmean1 = None, qmean2 = None):
+                             block_idx1=None, block_idx2=None,
+                             qmean1=None, qmean2=None):
     chrom_name = opts['chromosome']
     start, end = opts['region_start'], opts['region_end']
     aln1_chrom, aln2_chrom = bam.getrname(aln1.rname), bam.getrname(aln2.rname)
@@ -496,8 +504,9 @@ def block_parser_handle_pair(opts, aln1, aln2, bam, g, blocks,
             loc = (aln1_chrom, aln1.pos)
             g.add_hanging_pair(ba2[0], ba2[1], rlen1, pmappable, 'distant', lib_idx, loc)
 
+
 # (see above) we are guaranteed aln.pos < blocks[block_idx].end
-def get_blocked_alignment(opts, aln, blocks, block_idx, bam, is_rf = False, true_rlen = 0, max_splits = 1):
+def get_blocked_alignment(opts, aln, blocks, block_idx, bam, is_rf=False, true_rlen=0, max_splits=1):
     if not aln.has_tag('SA'):   # Check for split alignment
         aln_blocks, aln_gaps = get_blocks_gaps(aln)
         if is_rf:
@@ -505,7 +514,7 @@ def get_blocked_alignment(opts, aln, blocks, block_idx, bam, is_rf = False, true
         else:
             is_reverse = aln.is_reverse
         overlapping_blocks, offset = get_overlapping_blocks(blocks, aln_blocks, aln_gaps, block_idx, is_reverse,
-                                                            true_read_length = true_rlen, aln_read_length = aln.query_length)
+                                                            true_read_length=true_rlen, aln_read_length=aln.query_length)
     else:
         # currently only support 1 split
         if aln.is_reverse:
@@ -527,14 +536,14 @@ def get_blocked_alignment(opts, aln, blocks, block_idx, bam, is_rf = False, true
             # print('\nsplit blocks None: interchromosomal')
             # print(aln)
             # print('')
-            return (None, None) # interchromosomal alignment
+            return (None, None)  # interchromosomal alignment
         if abs(int(SA_split[1]) - aln.pos) > opts['max_pair_distance']:
             # print('\nsplit blocks None: distant')
             # print(aln)
             # print('')
             return (None, None)
         supp.seq = aln.seq              # necessary for query_alignment_start to function
-        supp.pos = int(SA_split[1]) - 1 # make 0-based for pysam
+        supp.pos = int(SA_split[1]) - 1  # make 0-based for pysam
         supp.is_reverse = True if SA_split[2] == '-' else False
         supp.cigarstring = SA_split[3]
         if supp.is_reverse:
@@ -570,8 +579,8 @@ def get_blocked_alignment(opts, aln, blocks, block_idx, bam, is_rf = False, true
         first_overlapping_blocks, first_offset = get_overlapping_blocks(blocks,
                                                                         first_blocks, first_gaps,
                                                                         block_idx_first, first.is_reverse,
-                                                                        find_offset = True, true_read_length = true_rlen,
-                                                                        aln_read_length = first.query_length)
+                                                                        find_offset=True, true_read_length=true_rlen,
+                                                                        aln_read_length=first.query_length)
         if opts['verbosity'] > 1:
             print('qname {0}, first {1} is_rev={2}'.format(first.qname, first_overlapping_blocks, first.is_reverse))
         # DEBUG
@@ -596,13 +605,13 @@ def get_blocked_alignment(opts, aln, blocks, block_idx, bam, is_rf = False, true
         #     print(blocks)
         #     print('')
         # #
-        first_noverlap = len(first_overlapping_blocks)
+        # first_noverlap = len(first_overlapping_blocks)
         second_blocks, second_gaps = get_blocks_gaps(second)
         second_overlapping_blocks, second_offset = get_overlapping_blocks(blocks,
                                                                           second_blocks, second_gaps,
                                                                           block_idx_second, second.is_reverse,
-                                                                          find_offset = True, true_read_length = true_rlen,
-                                                                          aln_read_length = second.query_length)
+                                                                          find_offset=True, true_read_length=true_rlen,
+                                                                          aln_read_length=second.query_length)
         overlapping_blocks = first_overlapping_blocks + second_overlapping_blocks
         if opts['verbosity'] > 1:
             print('qname {0}, second {1} is_rev={2}'.format(second.qname, second_overlapping_blocks, second.is_reverse))
@@ -659,9 +668,10 @@ def get_blocked_alignment(opts, aln, blocks, block_idx, bam, is_rf = False, true
         return (None, None)
     return overlapping_blocks, offset
 
+
 # true_read_length = 0 ==> ignore it
-def get_overlapping_blocks(blocks, aln_blocks, aln_gaps, block_idx, aln_is_reverse, find_offset = True,
-                           true_read_length = None, aln_read_length = None):
+def get_overlapping_blocks(blocks, aln_blocks, aln_gaps, block_idx, aln_is_reverse, find_offset=True,
+                           true_read_length=None, aln_read_length=None):
     overlapping_blocks = []
     offset = None
     i = block_idx
@@ -669,7 +679,7 @@ def get_overlapping_blocks(blocks, aln_blocks, aln_gaps, block_idx, aln_is_rever
     last_match = None
     for j in range(len(aln_blocks)):
         ab = aln_blocks[j]
-        if ab[1] <= blocks[i].start:        
+        if ab[1] <= blocks[i].start:
             continue
         while i < len(blocks) and (not blocks[i].intersects(ab)):
             i += 1
@@ -713,17 +723,19 @@ def get_overlapping_blocks(blocks, aln_blocks, aln_gaps, block_idx, aln_is_rever
     else:
         return overlapping_blocks
 
+
 # find the smallest i such that position < blocks[i].end
 def find_block_idx(position, blocks):
     i = 0
     cur_block = blocks[0]
-    while position >= cur_block.end: # FINISH
+    while position >= cur_block.end:  # FINISH
         i += 1
         if i == len(blocks):
             return None
         else:
             cur_block = blocks[i]
     return i
+
 
 def get_blocks_gaps(aln):
     # pysam flags:
@@ -755,6 +767,7 @@ def get_blocks_gaps(aln):
     gaps.append(gap)
     return blocks, gaps
 
+
 def load_genome_gaps(gapsfile, chrom_name):
     gaps = pyinter.IntervalSet()
     with open(gapsfile, 'r') as file:
@@ -764,6 +777,7 @@ def load_genome_gaps(gapsfile, chrom_name):
             a, b = int(toks[1]), int(toks[2])
             gaps.add(pyinter.closedopen(a, b))
     return gaps
+
 
 def test_intersects():
     i = GenomeInterval('20', 10, 20)
@@ -786,11 +800,11 @@ def test_get_blocked_alignment():
     aln.is_reverse = False
     print(get_blocked_alignment(aln, blocks, 0, bam))
     assert(get_blocked_alignment(aln, blocks, 0, bam) == ([1], 0))
-    assert(get_blocked_alignment(aln, blocks, 0, bam, is_rf = True) == ([0], 50))
+    assert(get_blocked_alignment(aln, blocks, 0, bam, is_rf=True) == ([0], 50))
     aln.is_reverse = True
     print(get_blocked_alignment(aln, blocks, 0, bam))
     assert(get_blocked_alignment(aln, blocks, 0, bam) == ([0], 50))
-    assert(get_blocked_alignment(aln, blocks, 0, bam, is_rf = True) == ([1], 0))
+    assert(get_blocked_alignment(aln, blocks, 0, bam, is_rf=True) == ([1], 0))
 
     aln = pysam.AlignedSegment()
     aln.rname = 0
@@ -799,52 +813,53 @@ def test_get_blocked_alignment():
     aln.cigarstring = '20M20S'
     aln.set_tag('SA', '1,191,-,20M20S,60,0;', 'Z')
     print(get_blocked_alignment(aln, blocks, 0, bam))
-    assert(get_blocked_alignment(aln, blocks, 0, bam) == ([1,2], -90))
-    assert(get_blocked_alignment(aln, blocks, 0, bam, is_rf = True) == ([3, 0], -80))
+    assert(get_blocked_alignment(aln, blocks, 0, bam) == ([1, 2], -90))
+    assert(get_blocked_alignment(aln, blocks, 0, bam, is_rf=True) == ([3, 0], -80))
+
 
 def test_get_overlapping_blocks():
     blocks = [GenomeInterval('1', 0, 100), GenomeInterval('1', 100, 200)]
 
     aln_blocks = [(-10, 0)]
-    aln_gaps = [0,0]
-    ov, offset = get_overlapping_blocks(blocks, aln_blocks, aln_gaps, 0, False, find_offset = True)
+    aln_gaps = [0, 0]
+    ov, offset = get_overlapping_blocks(blocks, aln_blocks, aln_gaps, 0, False, find_offset=True)
     assert(ov == [])
 
     aln_blocks = [(10, 20)]
-    aln_gaps = [0,0]
-    ov, offset = get_overlapping_blocks(blocks, aln_blocks, aln_gaps, 0, False, find_offset = True)
+    aln_gaps = [0, 0]
+    ov, offset = get_overlapping_blocks(blocks, aln_blocks, aln_gaps, 0, False, find_offset=True)
     assert(ov == [1])
     assert(offset == -10)
-    aln_gaps = [10,10]
-
+    aln_gaps = [10, 10]
 
     aln_blocks = [(10, 20), (110, 120), (200, 250)]
-    aln_gaps = [0,0,0,0]
-    ov, offset = get_overlapping_blocks(blocks, aln_blocks, aln_gaps, 0, False, find_offset = True)
+    aln_gaps = [0, 0, 0, 0]
+    ov, offset = get_overlapping_blocks(blocks, aln_blocks, aln_gaps, 0, False, find_offset=True)
     assert(ov == [1, 3])
     assert(offset == -10)
-    ov, offset = get_overlapping_blocks(blocks, aln_blocks, aln_gaps, 0, True, find_offset = True)
+    ov, offset = get_overlapping_blocks(blocks, aln_blocks, aln_gaps, 0, True, find_offset=True)
     assert(ov == [2, 0])
     assert(offset == 70)
 
-    aln_gaps = [10,10,0,0]
-    ov, offset = get_overlapping_blocks(blocks, aln_blocks, aln_gaps, 0, False, find_offset = True)
+    aln_gaps = [10, 10, 0, 0]
+    ov, offset = get_overlapping_blocks(blocks, aln_blocks, aln_gaps, 0, False, find_offset=True)
     assert(ov == [1, 3])
     assert(offset == 0)
-    ov, offset = get_overlapping_blocks(blocks, aln_blocks, aln_gaps, 0, True, find_offset = True)
+    ov, offset = get_overlapping_blocks(blocks, aln_blocks, aln_gaps, 0, True, find_offset=True)
     assert(ov == [2, 0])
     assert(offset == 70)
 
     aln_blocks = [(-10, 0), (90, 110)]
-    aln_gaps = [0,0,0]
-    ov, offset = get_overlapping_blocks(blocks, aln_blocks, aln_gaps, 0, False, find_offset = True)
+    aln_gaps = [0, 0, 0]
+    ov, offset = get_overlapping_blocks(blocks, aln_blocks, aln_gaps, 0, False, find_offset=True)
     assert(ov == [1, 3])
     assert(offset == -(90 - 0) + 10)
 
     blocks = [GenomeInterval('1', 0, 100), GenomeInterval('1', 110, 200)]
     aln_blocks = [(0, 111)]
-    aln_gaps = [0,0]
-    ov, offset = get_overlapping_blocks(blocks, aln_blocks, aln_gaps, 0, False, find_offset = True)
+    aln_gaps = [0, 0]
+    ov, offset = get_overlapping_blocks(blocks, aln_blocks, aln_gaps, 0, False, find_offset=True)
+
 
 def test_get_blocks_gaps():
     aln = pysam.AlignedSegment()
