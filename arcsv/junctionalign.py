@@ -4,7 +4,8 @@ import numpy as np
 import pysam
 import re
 
-from arcsv.constants import *
+from arcsv.constants import LEFT, SEQ, BPLOC, NCLIP, NUNIQ, NDUP, ORIENT, REFSEQ, NSUPP
+
 
 # CLEANUP move to constants
 max_output_alignments = 25

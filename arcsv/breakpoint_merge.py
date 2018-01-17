@@ -1,6 +1,7 @@
 import numpy as np
 
-from arcsv.constants import *
+from arcsv.constants import LEFT, RIGHT, SEQ, BPLOC, NCLIP, NUNIQ, NDUP, MAPQ, QUAL, ORIENT, \
+    NSUPP, LIBS
 from arcsv.helper import merge_nearby
 
 

@@ -1,20 +1,15 @@
 from collections import Counter, defaultdict, OrderedDict
 from sklearn.neighbors.kde import KernelDensity
-import gc
 import itertools
 import numpy as np
 import os
 import pysam
 import random as rnd
-import resource
 import sys
 
-
 import matplotlib
-matplotlib.use('Agg')           # required if X11 display is not present
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
-
 
 from arcsv.conditional_mappable_model import process_aggregate_mapstats
 from arcsv.helper import valid_hanging_anchor, valid_hanging_pair, \
@@ -26,6 +21,8 @@ from arcsv.read_viz import write_trackdb, write_array_bigwig, SparseSignalTrack
 from arcsv.softclip import (process_softclip, merge_softclips,
                             write_softclip_merge_stats, write_softclips_bigwig)
 from arcsv.splitreads import parse_splits, splits_are_mirrored, write_splits_bigbed
+
+matplotlib.use('Agg')           # required if X11 display is not present
 
 
 def extract_approximate_library_stats(opts, bam, rough_insert_median):

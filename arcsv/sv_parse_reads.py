@@ -6,7 +6,6 @@ from collections import Counter
 from math import floor
 
 from arcsv.breakpoint_merge import Breakpoint
-# from arcsv.constants import *
 from arcsv.helper import not_primary, is_read_through, block_distance, flip_parity, GenomeInterval
 
 

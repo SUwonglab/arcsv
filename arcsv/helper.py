@@ -2,7 +2,7 @@ import numpy as np
 import pysam
 from math import sqrt, floor, log, erf
 
-from arcsv.constants import *
+from arcsv.constants import LEFT, RIGHT
 
 
 # preliminary checks on reads
