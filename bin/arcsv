@@ -27,7 +27,7 @@ def main():
         run(args)
     elif command_name == 'validate':
         pass
-    elif command_name == 'filter':
+    elif command_name == 'filter-merge':
         from arcsv.filter_output import filter_arcsv_output
         filter_arcsv_output(args)
 
@@ -103,12 +103,12 @@ def add_validate_parser(subparsers):
 
 def add_filter_parser(subparsers):
     # TODO argument groups
-    parser_filter = subparsers.add_parser('filter',
-                                        help='Filter SVs from alignment data',
-                                        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser_filter.add_argument('--minsize', required=False, type=int, default=50,
+    parser_filter = subparsers.add_parser('filter-merge',
+                                          help='Filter and/or merge ARC-SV output',
+                                          formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser_filter.add_argument('--minsize', required=False, type=int, default=0,
                                help='minimum SV size (span from first to last breakpoint)'
-                                    'to output')
+                                    ' to output')
     parser_filter.add_argument('--outdir', required=False, type=str, default='.',
                                help='directory to output filtered SVs')
     parser_filter.add_argument('--outname', required=False, type=str,
@@ -127,8 +127,8 @@ def add_filter_parser(subparsers):
     parser_filter.add_argument('--noinversions', action='store_true')
     parser_filter.add_argument('basedir', nargs='*',
                                help='base directory containing the ARC-SV output. Multiple'
-                                    'directories may be specified with wildcards'
-                                    '(e.g. /home/user/arcsv_chr*/ or ./arcsv_chr*/)')
+                                    ' directories may be specified with wildcards'
+                                    ' (e.g. /home/user/arcsv_chr*/ or ./arcsv_chr*/)')
 
 
     # required.add_argument('-i', '--input_list', required=True, type=str,

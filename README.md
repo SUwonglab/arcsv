@@ -76,7 +76,9 @@ curl http://hgdownload.cse.ucsc.edu/goldenpath/hg19/database/gap.txt.gz | \
 
 ```
 
-## Basic usage ##
+## SV calling ##
+
+To call SVs:
 
 ```
 arcsv call -i reads.bam -r chrom[:start-end] -R reference.fasta -G reference_gaps.bed -o output_dir
@@ -95,3 +97,19 @@ arcsv call -i example/input.bam -r 20:0-250000 -o my_example_output \
   
 diff my_example_output/arcsv_out.bed example/expected_output.bed
 ```
+
+## Filtering and merging the output ##
+
+ARC-SV works on a single chromosome at a time. Supposing your output folders are named "arcsv_chr#", you can merge and/or filter the results as follows:
+
+```
+
+# Recommended settings
+arcsv filter-merge --minsize 50 --noinsertions arcsv_chr*
+
+# If no filtering is desired
+arcsv filter-merge arcsv_chr*
+
+```
+
+

@@ -29,12 +29,21 @@ def filter_arcsv_output(args):
     header = None
     arcsv_records = []
     for d in opts['basedir']:
-        tmp = read_arcsv_output(d, opts['inputname'], arcsv_records)
-        if tmp is not None and header is None:
-            header = tmp
+        out = read_arcsv_output(d, opts['inputname'], arcsv_records)
+        if out is not None and header is None:
+            header = out
+
+    if header is None:
+        sys.stderr.write('\nNo input files named {0} found in the directories specified (check --inputname)\n'.format(opts['inputname']))
+        sys.exit(1)
+
+    if len(arcsv_records) == 0:
+        sys.stderr.write('\nNo SV calls found in the input files\n')
+        sys.exit(1)
 
     filtered_records = apply_filters(opts, arcsv_records, header)
-    filtered_records.sort(key=lambda x: (x[0], x[1]))
+    filtered_records.sort(key=lambda x: (int(x[0]), int(x[1])))
+    print('sorted')
     write_arcsv_output(opts, filtered_records, header)
     # if opts.get('reference_name') is not None:  # NOT IMPLEMENTED
     #     reference_file = os.path.join(this_dir, 'resources', opts['reference_name']+'.fa')
