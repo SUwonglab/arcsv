@@ -2,7 +2,7 @@ import os
 import sys
 
 
-sv_type_dict = {'DEL': 'deletions', 'INV': 'inversions', 'DUP': 'duplications',
+sv_type_dict = {'DEL': 'deletions', 'INV': 'inversions', 'DUP': 'tandemdups',
                 'INS': 'insertions', 'BND': 'complex'}
 
 
@@ -14,17 +14,22 @@ def filter_arcsv_output(args):
     # print('opts\n\t{0}'.format(opts))
 
     if len(opts['basedir']) == 0:
-        sys.stderr.write('\nError: No directories found matching basedir argument\n')
+        sys.stderr.write('\nError: No directories found matching basedir argument (use -h for help)\n')
         sys.exit(1)
 
     # print(opts['basedir'])
 
     opts['outdir'] = os.path.realpath(opts['outdir'])
 
+    outfile = os.path.join(opts['outdir'], opts['outname'])
+    if not opts['overwrite'] and os.path.exists(outfile):
+        sys.stderr.write('\nError: Output file {0} exists but --overwrite was not set\n')
+        sys.exit(1)
+
     header = None
     arcsv_records = []
     for d in opts['basedir']:
-        tmp = read_arcsv_output(d, arcsv_records)
+        tmp = read_arcsv_output(d, opts['inputname'], arcsv_records)
         if tmp is not None and header is None:
             header = tmp
 
@@ -44,8 +49,8 @@ def filter_arcsv_output(args):
     #     print('[run] ref files {0}'.format(reference_files))
 
 
-def read_arcsv_output(directory, records):
-    arcsv_out = os.path.join(directory, 'arcsv_out.bed')
+def read_arcsv_output(directory, filename, records):
+    arcsv_out = os.path.join(directory, filename)
     if not os.path.exists(arcsv_out):
         return None
     else:
@@ -62,7 +67,7 @@ def read_arcsv_output(directory, records):
 
 def write_arcsv_output(opts, records, header):
     outdir = opts['outdir']
-    outname = 'arcsv_out_filtered.bed'
+    outname = opts['outname']
     outfile = os.path.join(outdir, outname)
 
     if not opts['overwrite'] and os.path.exists(outfile):
@@ -83,7 +88,7 @@ def apply_filters(opts, records, header):
     filtered_types = set(k.lstrip('no') for k, v in opts.items()
                          if k.startswith('no') and v is True)
     if 'simple' in filtered_types:
-        filtered_types = filtered_types.union(set(['deletions', 'duplications',
+        filtered_types = filtered_types.union(set(['deletions', 'tandemdups',
                                                    'inversions', 'insertions']))
         filtered_types.remove('simple')
 

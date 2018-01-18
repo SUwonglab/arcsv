@@ -111,21 +111,24 @@ def add_filter_parser(subparsers):
                                     'to output')
     parser_filter.add_argument('--outdir', required=False, type=str, default='.',
                                help='directory to output filtered SVs')
-    parser_filter.add_argument('--outfile', required=False, type=str,
+    parser_filter.add_argument('--outname', required=False, type=str,
                                default='arcsv_out_filtered.bed',
-                               help='directory to output filtered SVs')
+                               help='file name for filtered SV output')
+    parser_filter.add_argument('--inputname', required=False, type=str,
+                               default='arcsv_out.bed',
+                               help='name of files with SV calls')
     parser_filter.add_argument('--overwrite', action='store_true',
                                help='overwrite existing files')
     parser_filter.add_argument('--nocomplex', action='store_true')
     parser_filter.add_argument('--nosimple', action='store_true')
     parser_filter.add_argument('--nodeletions', action='store_true')
-    parser_filter.add_argument('--nodups', action='store_true')
+    parser_filter.add_argument('--notandemdups', action='store_true')
     parser_filter.add_argument('--noinsertions', action='store_true')
     parser_filter.add_argument('--noinversions', action='store_true')
     parser_filter.add_argument('basedir', nargs='*',
                                help='base directory containing the ARC-SV output. Multiple'
-                                    'directories may be specified with bash-style wildcards'
-                                    '(e.g. /home/alice/arcsv_chr*/ or ./arcsv_chr*/)')
+                                    'directories may be specified with wildcards'
+                                    '(e.g. /home/user/arcsv_chr*/ or ./arcsv_chr*/)')
 
 
     # required.add_argument('-i', '--input_list', required=True, type=str,
