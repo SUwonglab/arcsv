@@ -27,6 +27,9 @@ def main():
         run(args)
     elif command_name == 'validate':
         pass
+    elif command_name == 'filter':
+        from arcsv.filter_output import filter_arcsv_output
+        filter_arcsv_output(args)
 
 
 def prepare_argparser():
@@ -35,6 +38,7 @@ def prepare_argparser():
 
     add_call_parser(subparsers)
     # add_validate_parser(subparsers)
+    add_filter_parser(subparsers)
 
     return parser
 
@@ -95,6 +99,77 @@ def add_validate_parser(subparsers):
                                         help='Validate SVs using ground truth sequences')
     pass
     return parser_call
+
+
+def add_filter_parser(subparsers):
+    # TODO argument groups
+    parser_filter = subparsers.add_parser('filter',
+                                        help='Filter SVs from alignment data',
+                                        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser_filter.add_argument('--minsize', required=False, type=int, default=50,
+                               help='minimum SV size (span from first to last breakpoint)'
+                                    'to output')
+    parser_filter.add_argument('--outdir', required=False, type=str, default='.',
+                               help='directory to output filtered SVs')
+    parser_filter.add_argument('--outfile', required=False, type=str,
+                               default='arcsv_out_filtered.bed',
+                               help='directory to output filtered SVs')
+    parser_filter.add_argument('--overwrite', action='store_true',
+                               help='overwrite existing files')
+    parser_filter.add_argument('--nocomplex', action='store_true')
+    parser_filter.add_argument('--nosimple', action='store_true')
+    parser_filter.add_argument('--nodeletions', action='store_true')
+    parser_filter.add_argument('--nodups', action='store_true')
+    parser_filter.add_argument('--noinsertions', action='store_true')
+    parser_filter.add_argument('--noinversions', action='store_true')
+    parser_filter.add_argument('basedir', nargs='*',
+                               help='base directory containing the ARC-SV output. Multiple'
+                                    'directories may be specified with bash-style wildcards'
+                                    '(e.g. /home/alice/arcsv_chr*/ or ./arcsv_chr*/)')
+
+
+    # required.add_argument('-i', '--input_list', required=True, type=str,
+    #                       help='bam file to use for SV filtering '
+    #                            '(for multiple files use a comma-separated list')
+    # required.add_argument('-r', '--region', required=True, type=str,
+    #                       help='chromosome[:start-end]')
+    # required.add_argument('-R', '--reference_file', type=str,
+    #                       help='path to referece genome file')
+    # required.add_argument('-G', '--gap_file', type=str,
+    #                       help='path to referece genome gaps file (BED format)')
+    # optional = parser_filter.add_argument_group('optional arguments')
+    # optional.add_argument('--overwrite', dest='overwrite_outdir', action='store_true',
+    #                       help='overwrite existing files in the output directory,'
+    #                            ' if it exists')
+    # optional.add_argument('-D', '--reference_dir', type=str,
+    # default='/home/jgarthur/sv/reference')
+    # optional.add_argument('-R', '--reference_name', type=str,
+    #                       help='reference genome name. [name].fa, [name].fa.fai, and '
+    #                            '[name]_gaps.bed will be expected in arcsv/resources')
+    # BEFORE SUBMIT CHANGE DEFAULT LOWER
+    # optional.add_argument('-v', '--verbosity', type=int,
+    #                       help='how much output? (0-10)')
+    # optional.add_argument('-C', '--insert_cutoff', type=float,
+    #                       help='determines likelihood ratio cutoff for discordant reads '
+    #                            'which is equivalent to phi(0)/phi(C).')
+    # optional.add_argument('-t', '--cutoff_type', type=str,
+    #                       help='low/high -- affects all breakpoint support thresholds')
+    # optional.add_argument('--nondeterministic_seed', action='store_true',
+    #                       help='set random seed based on the current system time'
+    #                            ' (breaks determinism/reproducibility)')
+    # optional.add_argument('--do_viz', action='store_true')
+    # optional.add_argument('--use_mate_tags', action='store_true')
+    # optional.add_argument('--use_indels', action='store_true')
+    # optional.add_argument('--no_pecluster', dest='do_pecluster', action='store_false')
+    # optional.add_argument('-f', '--allele_fraction_list', type=str,
+    #                       help='(EXPERIMENTAL) comma-separated list of alternate allele'
+    #                            'fractions to check when calling heterozygotes')
+
+    # other = parser_filter.add_argument_group('other arguments')
+    # other.add_argument('--version', action='version', version='%(prog)s ' + __version__)
+
+    # parser_filter.set_defaults(**DEFAULT_OPTS)
+    return parser_filter
 
 
 if __name__ == '__main__':
