@@ -18,7 +18,7 @@ def sv_extra_lines(sv_ids, info_extra, format_extra):
     format_line = ':'.join(x for x in format_tags)
     return '\n'.join('\t'.join((sv_id, info_line, format_line)) for sv_id in sv_ids) + '\n'
 
-
+# VALID need to update this, at least the reference to sv_output
 # note: only used while converting other SV file formats
 def do_sv_processing(opts, data, outdir, reffile,
                      log, verbosity, write_extra=False):
@@ -54,6 +54,7 @@ def do_sv_processing(opts, data, outdir, reffile,
             continue
 
         # write output
+        # VALID args have changed -- frac1/2, no event_filtered
         outlines = sv_output(path1, path2, blocks, event1, event2,
                              svs, complex_types, score, 0, 0, '.', 0,
                              False, [], filterstring_manual=filterstring,
@@ -126,7 +127,7 @@ def sv_output(path1, path2, blocks, event1, event2,
               frac1, frac2, sv_list, complex_types,
               event_lh, ref_lh, next_best_lh,
               next_best_pathstring, npaths,
-              event_filtered, filter_criteria,
+              filter_criteria,
               filterstring_manual=None, id_extra='',
               output_split_support=False):
     lines = ''
@@ -167,10 +168,13 @@ def sv_output(path1, path2, blocks, event1, event2,
         svtypes = ','.join(sv.type.split(':')[0] for sv in svs)  # use DUP not DUP:TANDEM
         nsv = len(svs)
         if filterstring_manual is None:
-            filters = ','.join(get_filter_string(sv, event_filtered, filter_criteria) for sv in svs)
+            fs = sorted(set((get_filter_string(sv, filter_criteria) for sv in svs)))
+            if all(x == 'PASS' for x in fs):
+                filters = 'PASS'
+            else:
+                filters = ','.join(x for x in fs if x != 'PASS')
         else:
             filters = filterstring_manual
-        event_filter = 'PASS' if not event_filtered else 'FAIL'
 
         nonins_blocks = [b for b in blocks if not b.is_insertion()]
         nni = len(nonins_blocks)
@@ -200,7 +204,7 @@ def sv_output(path1, path2, blocks, event1, event2,
         line = '\t'.join((chrom, str(minbp), str(maxbp), id,
                           svtypes, ct, str(nsv),
                           block_bp, block_bp_uncertainty, ref_string, s,
-                          filters, event_filter,
+                          filters,
                           sv_bp, sv_bp_uncertainty,
                           gt, frac, inslen, sr, pe, lhr, lhr_next,
                           next_best_pathstring, str(npaths))) + '\n'
@@ -250,8 +254,7 @@ def svout_header_line():
     return '\t'.join(('chrom', 'minbp', 'maxbp', 'id',
                       'svtype', 'complextype', 'num_sv',
                       'bp', 'bp_uncertainty', 'reference', 'rearrangement',
-                      'filter', 'eventfilter',
-                      'sv_bp', 'sv_bp_uncertainty',
+                      'filter', 'sv_bp', 'sv_bp_uncertainty',
                       'gt', 'af', 'inslen', 'sr_support', 'pe_support',
                       'score', 'score_next', 'rearrangement_next', 'num_paths')) + \
                       '\n'
