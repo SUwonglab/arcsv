@@ -48,6 +48,9 @@ git clone https://github.com/jgarthur/arcsv.git
 cd arcsv
 pip3 install --user .
 
+# add this to your .bash_profile
+export PATH="~/.local/bin/:$PATH"
+
 ```
 
 #### Getting reference resources ####
