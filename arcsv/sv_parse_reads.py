@@ -292,7 +292,7 @@ def parse_reads_with_blocks(opts, reference_files, bamgroups,
 
         # parse reads from this chromosome
         if opts['verbosity'] > 0:
-            print('[parse_reads] fetching alignments from chr{0}'.format(chrom_name))
+            print('[parse_reads] fetching alignments from chromosome {0}'.format(chrom_name))
 
         alignments = bam.fetch_unsorted(chrom_name, start, end)
         # SPEEDUP handle hanging reads (mate unmapped or rname!=mrnm, but not distant) as we go to save memory. but, careful not to add them twice...
