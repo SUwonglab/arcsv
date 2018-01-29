@@ -33,7 +33,7 @@ def do_sv_processing(opts, data, outdir, reffile,
     simplified_blocks, simplified_paths = [], []
     has_left_flank, has_right_flank = [], []
 
-    sv_outfile = open(os.path.join(outdir, 'arcsv_out.bed'), 'w')
+    sv_outfile = open(os.path.join(outdir, 'arcsv_out.tab'), 'w')
     sv_outfile.write(svout_header_line())
     if write_extra:
         sv_extra = open(os.path.join(outdir, 'sv_vcf_extra.bed'), 'w')
@@ -147,17 +147,28 @@ def sv_output(path1, path2, blocks, event1, event2,
 
         chrom = blocks[int(floor(path1[0]/2))].chrom
 
-        bps = []
-        bps_uncertainty = []
-        for sv in svs:
-            for bp in (sv.bp1, sv.bp2):
-                if bp is not None:
-                    bps.append(int(floor(np.median(bp))))
-                    bps_uncertainty.append(bp[1] - bp[0] - 2)
-        minbp, maxbp = min(bps), max(bps)
-        # nbp = len(bps)
-        sv_bp = ','.join(str(bp) for bp in bps)
-        sv_bp_uncertainty = ','.join(str(bpu) for bpu in bps_uncertainty)
+        all_sv_bp = [int(floor(np.median(sv.bp1))) for sv in svs] + \
+                    [int(floor(np.median(sv.bp2))) for sv in svs]
+        minbp, maxbp = min(all_sv_bp), max(all_sv_bp)
+
+        def bp_string(sv):
+            if sv.type == 'INS':
+                bp = int(floor(np.median(sv.bp1)))
+                return str(bp)
+            else:
+                bp1 = int(floor(np.median(sv.bp1)))
+                bp2 = int(floor(np.median(sv.bp2)))
+                return '{0},{1}'.format(bp1, bp2)
+        def bp_uncertainty_string(sv):
+            if sv.type == 'INS':
+                bpu = sv.bp1[1] - sv.bp1[0] - 2
+                return str(bpu)
+            else:
+                bp1u = sv.bp1[1] - sv.bp1[0] - 2
+                bp2u = sv.bp2[1] - sv.bp2[0] - 2
+                return '{0},{1}'.format(bp1u, bp2u)
+        sv_bp = ';'.join(bp_string(sv) for sv in svs)
+        sv_bp_uncertainty = ';'.join(bp_uncertainty_string(sv) for sv in svs)
 
         # CLEANUP note this code is duplicated up above -- should be merged
         id = ','.join(svs[0].event_id.split(',')[0:2])
@@ -193,8 +204,18 @@ def sv_output(path1, path2, blocks, event1, event2,
         ref_string = path_to_string(refpath, blocks=blocks)
         gt = 'HET' if is_het else 'HOM'
 
-        sv_ins = lambda sv: (sv.length if sv.type == 'INS' else sv.bnd_ins)
-        inslen = ','.join(str(sv_ins(sv)) for sv in svs)
+        def sv_ins(sv):
+            if sv.type == 'INS':
+                return sv.length
+            elif sv.type == 'BND':
+                return sv.bnd_ins
+            else:
+                return 0
+        insertion_lengths = [sv_ins(sv) for sv in svs if sv_ins(sv) > 0]
+        if len(insertion_lengths) == 0:
+            inslen = 'NA'
+        else:
+            inslen = ','.join(str(l) for l in insertion_lengths)
         sr = ','.join(str(sv.split_support) for sv in svs)
         pe = ','.join(str(sv.pe_support) for sv in svs)
         lhr = '%.2f' % (event_lh - ref_lh)
@@ -256,7 +277,7 @@ def svout_header_line():
                       'bp', 'bp_uncertainty', 'reference', 'rearrangement',
                       'filter', 'sv_bp', 'sv_bp_uncertainty',
                       'gt', 'af', 'inslen', 'sr_support', 'pe_support',
-                      'score', 'score_next', 'rearrangement_next', 'num_paths')) + \
+                      'score_vs_ref', 'score_vs_next', 'rearrangement_next', 'num_paths')) + \
                       '\n'
 
 

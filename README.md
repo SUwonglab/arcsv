@@ -1,5 +1,7 @@
 # ARC-SV: Automated Reconstruction of Complex Structural Variants #
 
+ARC-SV is a structural variant caller for WGS paired-end sequencing data. For methodological details, please see our preprint: [https://doi.org/10.1101/200170]
+
 ## Requirements ##
 
 - python 3 (tested with 3.3.2 and 3.5.0)
@@ -95,7 +97,7 @@ The folder `example/` in this repository contains files to test the ARC-SV insta
 arcsv call -i example/input.bam -r 20:0-250000 -o my_example_output \
   -R example/reference.fa -G example/gaps.bed
   
-diff my_example_output/arcsv_out.bed example/expected_output.bed
+diff my_example_output/arcsv_out.tab example/expected_output.tab
 ```
 
 ## Filtering and merging the output ##
@@ -112,4 +114,36 @@ arcsv filter-merge arcsv_chr*
 
 ```
 
+## arcsv_out.tab format ##
 
+For each cluster of candidate breakpoints, ARC-SV attempts to resolve the local structure of both haplotypes. The output file `arcsv_out.tab` contains one line for each non-reference haploype called. A call typically consists of a single SV (simple or complex), but some contain multiple variants that were called together. 
+
+Where multiple values are given, as in svtype, the order is left to right in the alternate haplotype (i.e., the "rearrangement" column). 
+
+All genomic positions are 0-indexed for compatibility with BED files. (arcsv_out.vcf is still 1-indexed as required.)
+
+Output field | Description
+------------ | -----------
+chrom | chromosome name
+minbp | position of first novel adjacency
+maxbp | position of last novel adjacency
+id | identifier consisting of the region in which the event was called
+svtype | classification of each simple SV/complex breakpoint in this event
+complextype | complex SV classification
+num_sv | number of simple SVs + complex SV breakpoints in this call
+bp | all breakpoints, i.e. boundaries of the blocks in the "reference" column (including the flanking blocks)
+bp_uncertainty | width of the uncertainty interval around each breakpoint in "bp". For odd numbers, there is 1 bp more uncertainty on the right side of the breakpoint
+reference | configuration of genomic blocks in the reference
+rearrangement | predicted configuration of genomic blocks in the sample; inverted blocks are followed by a tick mark, e.g., A', and insertions are represented by underscores _
+filter | currently, this is INSERTION if there is an insertion present, otherwise PASS
+sv_bp | breakpoint positions for each simple SV/complex breakpoint in the event (pairs of positions separated by ';', # of pairs = num_sv)
+sv_bp_uncertainties | breakpoint uncertainties for each simple SV/complex breakpoint in the event
+gt | genotype [HET, HOM]
+af | allele fraction for the called variant [only takes values in 0.5 or 1.0 by default]
+inslen | length of each insertion in the call
+sr_support | number of supporting split reads for each simple SV and complex breakpoint (length = num_sv)
+pe_support | number of supporting discordant pairs for each simple SV and complex breakpoint (length = num_sv)
+score_vs_ref | log-likelihood ratio score for the call: log( p(data | called genotype) / p(data | reference genotype) )
+score_vs_next | log-likelihood ratio score for the call vs the next best call: log( p(data | called genotype) / p(data | next best genotype) )
+rearrangement_next | configuration of genomic blocks for the next best call (may contain more blocks than the "reference" and "rearrangement" columns
+num_paths | number of paths through this portion of the adjacency graph; the called haplotype corresponds to one such path

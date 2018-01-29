@@ -98,6 +98,7 @@ def classify_paths(path1, path2, blocks, num_genome_blocks, left_bp, right_bp, v
     chrom = blocks[0].chrom
     start_pos = blocks[floor(path1[0] / 2)].start
     end_pos = blocks[floor(path1[-1] / 2)].end
+    # CLEANUP @ here is modified below for compound het events
     ev_id = '{0},{1}-{2},@'.format(chrom, start_pos + 1, end_pos)  # 1-indexed, inclusive interval for VCF
     ev1, sv1 = classify_svs(path1, blocks, num_genome_blocks, left_bp, right_bp, verbosity)
     ev2, sv2 = classify_svs(path2, blocks, num_genome_blocks, left_bp, right_bp, verbosity)

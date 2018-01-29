@@ -42,7 +42,7 @@ def do_inference(opts, reference_files, g, blocks,
     simplified_blocks, simplified_paths = [], []
     has_left_flank, has_right_flank = [], []
     sv_logfile = open(os.path.join(outdir, 'logging', 'graph_log.txt'), 'w')
-    sv_outfile = open(os.path.join(outdir, 'arcsv_out.bed'), 'w')
+    sv_outfile = open(os.path.join(outdir, 'arcsv_out.tab'), 'w')
     sv_outfile.write(svout_header_line())
     split_outfile = open(os.path.join(outdir, 'split_support.txt'), 'w')
     split_outfile.write(splitout_header_line())
@@ -413,7 +413,7 @@ def do_inference(opts, reference_files, g, blocks,
         s1 = path_to_string(path1, start, blocks)
         s2 = path_to_string(path2, start, blocks)
         if opts['verbosity'] > 0:
-            print('\n[inference] Genotype with highest likelihood likelihood:\t%.3f' % best_lh)
+            print('\n[inference] Genotype with highest likelihood:\t%.3f' % best_lh)
             print('\t{0}\n\t{1}'.format(s1, s2))
         if next_best is not None:
             s1next = path_to_string(paths[next_best[0]], start, blocks)

@@ -44,7 +44,6 @@ def prepare_argparser():
 
 
 def add_call_parser(subparsers):
-    # TODO argument groups
     parser_call = subparsers.add_parser('call',
                                         help='Call SVs from alignment data',
                                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -102,7 +101,6 @@ def add_validate_parser(subparsers):
 
 
 def add_filter_parser(subparsers):
-    # TODO argument groups
     parser_filter = subparsers.add_parser('filter-merge',
                                           help='Filter and/or merge ARC-SV output',
                                           formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -112,10 +110,10 @@ def add_filter_parser(subparsers):
     parser_filter.add_argument('--outdir', required=False, type=str, default='.',
                                help='directory to output filtered SVs')
     parser_filter.add_argument('--outname', required=False, type=str,
-                               default='arcsv_out_filtered.bed',
+                               default='arcsv_out_filtered.tab',
                                help='file name for filtered SV output')
     parser_filter.add_argument('--inputname', required=False, type=str,
-                               default='arcsv_out.bed',
+                               default='arcsv_out.tab',
                                help='name of files with SV calls')
     parser_filter.add_argument('--overwrite', action='store_true',
                                help='overwrite existing files')
@@ -129,47 +127,6 @@ def add_filter_parser(subparsers):
                                help='base directory containing the ARC-SV output. Multiple'
                                     ' directories may be specified with wildcards'
                                     ' (e.g. /home/user/arcsv_chr*/ or ./arcsv_chr*/)')
-
-
-    # required.add_argument('-i', '--input_list', required=True, type=str,
-    #                       help='bam file to use for SV filtering '
-    #                            '(for multiple files use a comma-separated list')
-    # required.add_argument('-r', '--region', required=True, type=str,
-    #                       help='chromosome[:start-end]')
-    # required.add_argument('-R', '--reference_file', type=str,
-    #                       help='path to referece genome file')
-    # required.add_argument('-G', '--gap_file', type=str,
-    #                       help='path to referece genome gaps file (BED format)')
-    # optional = parser_filter.add_argument_group('optional arguments')
-    # optional.add_argument('--overwrite', dest='overwrite_outdir', action='store_true',
-    #                       help='overwrite existing files in the output directory,'
-    #                            ' if it exists')
-    # optional.add_argument('-D', '--reference_dir', type=str,
-    # default='/home/jgarthur/sv/reference')
-    # optional.add_argument('-R', '--reference_name', type=str,
-    #                       help='reference genome name. [name].fa, [name].fa.fai, and '
-    #                            '[name]_gaps.bed will be expected in arcsv/resources')
-    # BEFORE SUBMIT CHANGE DEFAULT LOWER
-    # optional.add_argument('-v', '--verbosity', type=int,
-    #                       help='how much output? (0-10)')
-    # optional.add_argument('-C', '--insert_cutoff', type=float,
-    #                       help='determines likelihood ratio cutoff for discordant reads '
-    #                            'which is equivalent to phi(0)/phi(C).')
-    # optional.add_argument('-t', '--cutoff_type', type=str,
-    #                       help='low/high -- affects all breakpoint support thresholds')
-    # optional.add_argument('--nondeterministic_seed', action='store_true',
-    #                       help='set random seed based on the current system time'
-    #                            ' (breaks determinism/reproducibility)')
-    # optional.add_argument('--do_viz', action='store_true')
-    # optional.add_argument('--use_mate_tags', action='store_true')
-    # optional.add_argument('--use_indels', action='store_true')
-    # optional.add_argument('--no_pecluster', dest='do_pecluster', action='store_false')
-    # optional.add_argument('-f', '--allele_fraction_list', type=str,
-    #                       help='(EXPERIMENTAL) comma-separated list of alternate allele'
-    #                            'fractions to check when calling heterozygotes')
-
-    # other = parser_filter.add_argument_group('other arguments')
-    # other.add_argument('--version', action='version', version='%(prog)s ' + __version__)
 
     # parser_filter.set_defaults(**DEFAULT_OPTS)
     return parser_filter
