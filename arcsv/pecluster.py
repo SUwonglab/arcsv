@@ -4,6 +4,7 @@ import functools
 import numpy as np
 import os
 import pyinter
+import sys
 from operator import attrgetter
 from math import sqrt
 
@@ -91,18 +92,6 @@ def apply_discordant_clustering(opts, discordant_pairs_list,
             null_dists[i][dtype] = compute_null_dist(opts, pairs, dtype,
                                                      insert_mu[i], insert_sigma[i],
                                                      gap_file, lib_idx=i, lr_cond=lr_cond)
-
-            # DEBUG
-            # if dtype == 'Del':
-            #     fname = '{0}lib{1}_{2}_disc_insert.txt'.format(outdir, i, dtype)
-            #     write_del_reads(fname, pairs)
-
-            # DEBUG
-
-    # print('cutoffs:')
-    # print(cutoffs)
-    # print('')
-
     # cluster
     breakpoints = []
     for i in range(nlib):
@@ -323,11 +312,9 @@ def lr_del(cluster, insert_mu, insert_sigma, cutoff, conditioning=False):
         - sum([(p.insert - insert_mu - del_size_mle)**2 for p in cluster])
     lr = lr / (2 * insert_sigma**2)
 
-    # DEBUG
     if lr == -np.inf:
-        print('[lr_del] DEL likelihood ratio = -inf')
-        print(cluster)
-    # DEBUG
+        sys.stderr.write('[lr_del] DEL likelihood ratio = -inf\n')
+        sys.stderr.write('{0}\n'.format(cluster))
 
     if conditioning:
         n = len(cluster)

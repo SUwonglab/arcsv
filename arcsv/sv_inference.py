@@ -132,7 +132,7 @@ def do_inference(opts, reference_files, g, blocks,
                                  class_probs, rlen_stats,
                                  start=0)
         ref_lhr, ref_nc, ref_lnc, ref_lc = tmp
-        ref_likelihood = haploid_likelihood2(ref_lhr, ref_lnc, ref_lc, pi_robust)
+        ref_likelihood = haploid_likelihood(ref_lhr, ref_lnc, ref_lc, pi_robust)
         test_homozygous_likelihoods = []
         test_heterozygous_likelihoods = []
         for insertion_size in insertion_test_sizes:
@@ -142,9 +142,9 @@ def do_inference(opts, reference_files, g, blocks,
                                      class_probs, rlen_stats,
                                      start=0)
             test_lhr, test_nc, test_lnc, test_lc = tmp
-            test_homozygous_likelihoods.append(haploid_likelihood2(test_lhr, test_lnc,
+            test_homozygous_likelihoods.append(haploid_likelihood(test_lhr, test_lnc,
                                                                    test_lc, pi_robust))
-            test_heterozygous_likelihoods.append(diploid_likelihood2(ref_lhr, test_lhr,
+            test_heterozygous_likelihoods.append(diploid_likelihood(ref_lhr, test_lhr,
                                                                      ref_lnc, test_lnc,
                                                                      ref_lc, pi_robust))
         max_hom = max(test_homozygous_likelihoods)
@@ -217,7 +217,6 @@ def do_inference(opts, reference_files, g, blocks,
 
     # call SVs
     sv_calls = []
-    # CLEANUP move to some handle_subgraph?
     if opts['verbosity'] > 0:
         print('')
     for sub in subgraphs:
@@ -236,7 +235,6 @@ def do_inference(opts, reference_files, g, blocks,
         get_paths_finished = False
         mes_extra = 0
         while not get_paths_finished:
-            # CLEANUP list()
             paths = [p for p in
                      get_paths_iterative(g, opts['max_back_edges'],
                                          opts['min_edge_support'] + mes_extra,
@@ -282,11 +280,10 @@ def do_inference(opts, reference_files, g, blocks,
         if opts['verbosity'] > 1:
             print('reference path:')
             print(ref_path)
-        # CLEANUP nicer output from compute_likelihood
         ref_read_likelihoods = compute_likelihood(edges, ref_path, blocks,
                                                   insert_dists, insert_cdfs, insert_cdf_sums,
                                                   class_probs, rlen_stats, start)
-        ref_lhr, ref_nc, ref_lnc, ref_lc = ref_read_likelihoods  # CLEANUP
+        ref_lhr, ref_nc, ref_lnc, ref_lc = ref_read_likelihoods
 
         lh_out = []
         homozygous_likelihood = []
@@ -306,9 +303,9 @@ def do_inference(opts, reference_files, g, blocks,
                 print('\n{0} discordant reads < pi_robust'
                       .format(len([l for l in lhr if l < pi_robust])))
                 print('\n{0} discordant reads lh = 0'.format(len([l for l in lhr if l == 0])))
-            homozygous_likelihood.append(haploid_likelihood2(lhr, lnc, lc, pi_robust))
+            homozygous_likelihood.append(haploid_likelihood(lhr, lnc, lc, pi_robust))
             heterozygous_likelihood \
-                .append(diploid_likelihood2_new(ref_lhr, lhr, ref_lnc, lnc,
+                .append(diploid_likelihood_frac(ref_lhr, lhr, ref_lnc, lnc,
                                                 lc, allele_fraction=0.5,
                                                 pi_robust=pi_robust))
 
@@ -318,8 +315,8 @@ def do_inference(opts, reference_files, g, blocks,
                      if not all([lh_out[j][0][i] == lh_out[0][0][i]
                                  for j in range(npaths)])]
         # SPEEDUP don't need to recompute this -- already have lh for all paths
-        ref_likelihood = haploid_likelihood2(ref_lhr, ref_lnc, ref_lc, pi_robust, inf_reads)
-        # ref_likelihood3 = diploid_likelihood2(lhr, lhr, lnc, lnc, lc, pi_robust, inf_reads)
+        ref_likelihood = haploid_likelihood(ref_lhr, ref_lnc, ref_lc, pi_robust, inf_reads)
+        # ref_likelihood3 = diploid_likelihood(lhr, lhr, lnc, lnc, lc, pi_robust, inf_reads)
         # print('ref_likelihood: {0}\nref_likelihoodalt: {3}\nref_likelihood2: {1}\nref_likelihood2alt: {2}'.format(ref_likelihood, ref_likelihood2, ref_likelihood3, ref_likelihood_alt))
         if opts['verbosity'] > 1:
             print('[inference] total paths: {0}'.format(npaths))
@@ -342,7 +339,7 @@ def do_inference(opts, reference_files, g, blocks,
         all_lh = itertools.chain(zip(homozygous_likelihood, range(npaths), ['HOM'] * npaths),
                                  zip(heterozygous_likelihood, range(npaths), ['HET'] * npaths))
         all_lh_sorted = sorted(all_lh, key=lambda pair: -pair[0])
-        # CLEANUP do this better
+
         idx_ref = [i for i in range(npaths) if is_path_ref(paths[i], blocks)][0]
         all_lh_sorted = [x for x in all_lh_sorted if
                          not (x[1] == idx_ref and x[2] == 'HET')]
@@ -380,7 +377,7 @@ def do_inference(opts, reference_files, g, blocks,
             # everything as HOM and HET variants
             for allele_fraction in allele_fractions:
                 heterozygous_likelihood = \
-                    diploid_likelihood2_new(lhr_i, lhr_j,
+                    diploid_likelihood_frac(lhr_i, lhr_j,
                                             lnc_i, lnc_j,
                                             ref_lc, allele_fraction,
                                             pi_robust, inf_reads)
@@ -389,7 +386,7 @@ def do_inference(opts, reference_files, g, blocks,
                 if opts['verbosity'] > 1:
                     print('{0}\t{1}\t{2}'.format(s1, s2, heterozygous_likelihood))
                 # old_output = \
-                #     diploid_likelihood2(lhr_i, lhr_j,
+                #     diploid_likelihood(lhr_i, lhr_j,
                 #                         lnc_i, lnc_j,
                 #                         lc, pi_robust, inf_reads)
                 # print('current: {0}, old: {1}'.format(heterozygous_likelihood, old_output))
@@ -404,12 +401,12 @@ def do_inference(opts, reference_files, g, blocks,
                     next_lh = heterozygous_likelihood
                     next_best = (i, j)
         path1, path2 = paths[best[0]], paths[best[1]]
-        # CLEANUP sloppy
 
         if best[0] != best[1]:  # heterozygous
             frac1, frac2 = 1 - best_af, best_af
         else:
             frac1, frac2 = 1, None
+
         s1 = path_to_string(path1, start, blocks)
         s2 = path_to_string(path2, start, blocks)
         if opts['verbosity'] > 0:
@@ -721,12 +718,7 @@ def get_hanging_edges_within_distance(graph, blocks, block_idx, lower_idx, upper
     return hanging_left, hanging_right
 
 
-def haploid_likelihood(likelihood, norm_consts, total_reads, pi_robust, epsilon=1e-10):
-    return sum([-log(n+epsilon) + log(pi_robust + (1-pi_robust)*l) for (l, n) in
-                zip(likelihood, norm_consts)])
-
-
-def haploid_likelihood2(likelihood, lib_norm_consts, lib_counts, pi_robust, which_reads=None, epsilon=1e-10):
+def haploid_likelihood(likelihood, lib_norm_consts, lib_counts, pi_robust, which_reads=None, epsilon=1e-10):
     lh_nc = sum([-count * log(n + epsilon) for (count, n) in zip(lib_counts,
                                                                  lib_norm_consts)])
     if which_reads is None:
@@ -738,16 +730,8 @@ def haploid_likelihood2(likelihood, lib_norm_consts, lib_counts, pi_robust, whic
     return lh_nc + lh_rest
 
 
-# likelihood[12] inputs are not scaled by length
-def diploid_likelihood(likelihood1, likelihood2, norm_consts1, norm_consts2,
-                       total_reads, pi_robust, epsilon=2e-10):
-    return sum([-log(n1+n2+epsilon) +
-                log(2*pi_robust + (1-pi_robust)*(l1 + l2))
-                for (l1, l2, n1, n2) in
-                zip(likelihood1, likelihood2, norm_consts1, norm_consts2)])
-
-
-def diploid_likelihood2(likelihood1, likelihood2, lib_norm_consts1,
+# LATER change the one reference to this
+def diploid_likelihood(likelihood1, likelihood2, lib_norm_consts1,
                         lib_norm_consts2, lib_counts,
                         pi_robust, which_reads=None, epsilon=2e-10):
     lh_nc = sum([-count * log(n1 + n2 + epsilon) for (count, n1, n2) in zip(lib_counts,
@@ -767,7 +751,7 @@ def diploid_likelihood2(likelihood1, likelihood2, lib_norm_consts1,
     return lh_nc + lh_rest
 
 
-def diploid_likelihood2_new(likelihood1, likelihood2, lib_norm_consts1, lib_norm_consts2,
+def diploid_likelihood_frac(likelihood1, likelihood2, lib_norm_consts1, lib_norm_consts2,
                             lib_counts, allele_fraction, pi_robust,
                             which_reads=None, epsilon=2e-10):
     # CLEANUP combine this with haploid_likelihood2 for the allele_fraction = 0 or 1 case

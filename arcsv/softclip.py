@@ -53,7 +53,7 @@ def add_to_softclips(sc_dict, pos, sc):
 
 
 # merge softclips and construct consensus sequences
-# indel_bp - output from parse_indels (optional). If given, we'll consider those
+# indel_bp - output from parse_indels (deprecated). If given, we'll consider those
 #            breakpoints to be false
 def merge_softclips(opts, softclips, reference, chrom, name='', indel_bp=None):
     # , required_perfect_mapq = 1):

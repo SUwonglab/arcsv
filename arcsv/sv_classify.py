@@ -13,7 +13,6 @@ BND_SPLIT_TYPES = {('-', '+'): 'Del',
 
 
 class SV:
-    # CLEANUP don't need this do we?
     type = None
     ref_chrom, ref_start, ref_end = None, None, None
     bp1, bp2 = None, None       # breakpoint intervals
@@ -90,7 +89,6 @@ class SV:
                                            self.genotype)])
 
 
-# CLEANUP just remove event output
 # returns (ev1, ev2), sv_final
 # ev1, ev2 -- lists of event types for path1, path2
 # sv_final: list of svs
@@ -98,7 +96,7 @@ def classify_paths(path1, path2, blocks, num_genome_blocks, left_bp, right_bp, v
     chrom = blocks[0].chrom
     start_pos = blocks[floor(path1[0] / 2)].start
     end_pos = blocks[floor(path1[-1] / 2)].end
-    # CLEANUP @ here is modified below for compound het events
+    # @ here is the ASCII character before A,B,C,... (see below)
     ev_id = '{0},{1}-{2},@'.format(chrom, start_pos + 1, end_pos)  # 1-indexed, inclusive interval for VCF
     ev1, sv1 = classify_svs(path1, blocks, num_genome_blocks, left_bp, right_bp, verbosity)
     ev2, sv2 = classify_svs(path2, blocks, num_genome_blocks, left_bp, right_bp, verbosity)
@@ -621,7 +619,6 @@ def sv_classify_test():
     print(classify_svs(path, blocks, num_genome_blocks))
 
 
-# DEPRECATED
 def path_classify_test():
     blocks = [GenomeInterval('1', 100*i, 100*i + 100) for i in range(10)]
     num_genome_blocks = 10

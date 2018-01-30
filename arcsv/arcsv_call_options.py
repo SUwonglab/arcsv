@@ -44,7 +44,6 @@ DEFAULT_OPTS = {
     'min_clipped_qual': 15,
     'min_junction_overlap': 5,
     'max_insertion_inversion_mh': 25,
-    'parse_indels_slop_amt': 100,  # DEPRECATED
     # (discordant pairs)
     'do_pecluster': True,
     'insert_cutoff': 3,

@@ -39,7 +39,6 @@ def run(args):
     if opts['verbosity'] > 0:
         print('[run] ref files {0}'.format(reference_files))
 
-    # CLEANUP put all this argument parsing in arcsv script
     region_split = opts['region'].split(':')
     if len(region_split) > 1:
         opts['chromosome'] = region_split[0]
@@ -298,22 +297,20 @@ def call_sv(opts, inputs, reference_files, do_bp, do_junction_align):
     if opts['verbosity'] > 0:
         print('[call_sv] pi_robust: %f' % pi_robust)
 
-    # DEPRECATED except for insertion search width = 1.1*max(insert_q99) ?
     insert_q01 = []
     insert_q99 = []
     for ins in insert:
-        # LATER just change to np.quantile
         cs = np.cumsum(ins)
         q01 = min([i for i in range(len(ins)) if cs[i] >= .01])
         q99 = min([i for i in range(len(ins)) if cs[i] >= .99])
         insert_q01.append(q01)
         insert_q99.append(q99)
+    insertion_search_width = 1.1 * max(insert_q99)
 
     inference_time = do_inference(opts, reference_files, graph, blocks,
                                   gap_indices, left_bp, right_bp,
                                   insert_dists, insert_cdfs, insert_cdf_sums,
-                                  class_probs, rlen_stats,
-                                  1.1*max(insert_q99))
+                                  class_probs, rlen_stats, insertion_search_width)
 
     # end timer
     if opts['verbosity'] > 0:

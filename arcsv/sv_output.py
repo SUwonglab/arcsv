@@ -137,7 +137,7 @@ def sv_output(path1, path2, blocks, event1, event2,
     sv2 = [sv for sv in sv_list if sv.genotype == '1/1' or sv.genotype == '0/1']
     compound_het = (path1 != path2) and (len(sv1) > 0) and (len(sv2) > 0)
     is_het = (path1 != path2)
-    # CLEANUP this duplicated above... merge sometime
+    # CLEANUP lots of duplicated code
     for (k, path, event, svs, ct, frac) in [(0, path1, event1, sv1, complex_types[0], frac1),
                                             (1, path2, event2, sv2, complex_types[1], frac2)]:
         if k == 1 and path1 == path2:
@@ -170,7 +170,7 @@ def sv_output(path1, path2, blocks, event1, event2,
         sv_bp = ';'.join(bp_string(sv) for sv in svs)
         sv_bp_uncertainty = ';'.join(bp_uncertainty_string(sv) for sv in svs)
 
-        # CLEANUP note this code is duplicated up above -- should be merged
+        # CLEANUP this code is duplicated up above -- should be merged
         id = ','.join(svs[0].event_id.split(',')[0:2])
         if compound_het:
             id = id + ',' + str(k + 1)
