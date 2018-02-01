@@ -9,10 +9,10 @@ from arcsv.sv_filter import get_filter_string
 from arcsv._version import __version__
 
 
-def sv_to_vcf(sv, reference, event_filtered=False, filter_criteria=None,
+def sv_to_vcf(sv, reference, filterstring=None,
               event_lh=None, ref_lh=None):
     if sv.type == 'BND':
-        return bnd_to_vcf(sv, reference, event_filtered, filter_criteria,
+        return bnd_to_vcf(sv, reference, filterstring,
                           event_lh, ref_lh)
     template = '{chr}\t{pos}\t{id}\t{ref}\t{alt}\t{qual}\t{filter}\t{info}\t{format}\t{gt}\n'
     info_list = []
@@ -35,7 +35,7 @@ def sv_to_vcf(sv, reference, event_filtered=False, filter_criteria=None,
     # QUAL
     qual = '.'
     # FILTER
-    filter = get_filter_string(sv, event_filtered, filter_criteria)
+    filter = filterstring
     # INFO: svtype, end, svlen, cipos, ciend
     # LATER add pathstring tag e.g. ABCD/ACBCD
     svtype = sv.type.split(':')[0]
@@ -78,7 +78,7 @@ def sv_to_vcf(sv, reference, event_filtered=False, filter_criteria=None,
     return line
 
 
-def bnd_to_vcf(sv, reference, event_filtered, filter_criteria,
+def bnd_to_vcf(sv, reference, filterstring,
                event_lh, ref_lh):
     template = '{chr}\t{pos}\t{id}\t{ref}\t{alt}\t{qual}\t{filter}\t{info}\t{format}\t{gt}\n'
     chrom = sv.ref_chrom
@@ -117,7 +117,7 @@ def bnd_to_vcf(sv, reference, event_filtered, filter_criteria,
         alt_location = alt_location_template.format(str(chrom) + ':' + str(other_pos))
         alt_string = (ref + alt_location) if alt_after else (alt_location + ref)
         qual = '.'
-        filter = get_filter_string(sv, event_filtered, filter_criteria)
+        filter = filterstring
         info_list = [('SVTYPE', 'BND'),
                      ('MATEID', id[:-1] + str(2-i))]
         if pos_cilen > 0:
@@ -164,13 +164,7 @@ def get_vcf_header(reference_name, sample_name='sample1'):
 ##INFO=<ID=SVLEN,Number=1,Type=Integer,Description="Difference in length between REF and ALT alleles">
 ##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">
 ##INFO=<ID=EVENTTYPE,Number=1,Type=String,Description="Type of rearrangement on this allele (simple/complex)">
-##FILTER=<ID=BP_UNCERTAINTY,Description="Tandem duplication possibly miscalled due to breakpoint uncertainty">
-##FILTER=<ID=EVENT,Description="Nearby variants (same event id) were filtered">
-##FILTER=<ID=LOW_COMPLEXITY,Description="Breakpoint overlaps low complexity region annotation">
-##FILTER=<ID=INSERTION,Description="Event contains inserted sequence (not yet supported)">
-##FILTER=<ID=SATELLITE,Description="Breakpoint overlaps satellite repeat annotation">
-##FILTER=<ID=SEG_DUP,Description="Breakpoint overlaps segmental duplication annotation">
-##FILTER=<ID=SIMPLE_REPEAT,Description="Breakpoint overlaps simple repeat annotation">
+##FILTER=<ID=INSERTION,Description="Event contains an insertion call">
 ##FORMAT=<ID=HCN,Number=1,Type=Integer,Description="Haploid copy number for duplications">
 ##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
 #CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t{4}\n"""

@@ -27,7 +27,6 @@ def valid_split(aln, bam, min_mapq, max_splits=1):
 
 
 # LATER move this to helper.py and use for pe support as well
-# CLEANUP probably should use GenomeInterval for bp
 class SupportingSplit:
     def __init__(self, aln,
                  bp1_chrom, bp1, bp2_chrom, bp2,

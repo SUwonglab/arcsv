@@ -18,7 +18,7 @@ def sv_extra_lines(sv_ids, info_extra, format_extra):
     format_line = ':'.join(x for x in format_tags)
     return '\n'.join('\t'.join((sv_id, info_line, format_line)) for sv_id in sv_ids) + '\n'
 
-
+# VALID need to update this, at least the reference to sv_output
 # note: only used while converting other SV file formats
 def do_sv_processing(opts, data, outdir, reffile,
                      log, verbosity, write_extra=False):
@@ -33,7 +33,7 @@ def do_sv_processing(opts, data, outdir, reffile,
     simplified_blocks, simplified_paths = [], []
     has_left_flank, has_right_flank = [], []
 
-    sv_outfile = open(os.path.join(outdir, 'arcsv_out.bed'), 'w')
+    sv_outfile = open(os.path.join(outdir, 'arcsv_out.tab'), 'w')
     sv_outfile.write(svout_header_line())
     if write_extra:
         sv_extra = open(os.path.join(outdir, 'sv_vcf_extra.bed'), 'w')
@@ -54,6 +54,7 @@ def do_sv_processing(opts, data, outdir, reffile,
             continue
 
         # write output
+        # VALID args have changed -- frac1/2, no event_filtered
         outlines = sv_output(path1, path2, blocks, event1, event2,
                              svs, complex_types, score, 0, 0, '.', 0,
                              False, [], filterstring_manual=filterstring,
@@ -126,7 +127,7 @@ def sv_output(path1, path2, blocks, event1, event2,
               frac1, frac2, sv_list, complex_types,
               event_lh, ref_lh, next_best_lh,
               next_best_pathstring, npaths,
-              event_filtered, filter_criteria,
+              filter_criteria,
               filterstring_manual=None, id_extra='',
               output_split_support=False):
     lines = ''
@@ -136,7 +137,7 @@ def sv_output(path1, path2, blocks, event1, event2,
     sv2 = [sv for sv in sv_list if sv.genotype == '1/1' or sv.genotype == '0/1']
     compound_het = (path1 != path2) and (len(sv1) > 0) and (len(sv2) > 0)
     is_het = (path1 != path2)
-    # CLEANUP this duplicated above... merge sometime
+    # CLEANUP lots of duplicated code
     for (k, path, event, svs, ct, frac) in [(0, path1, event1, sv1, complex_types[0], frac1),
                                             (1, path2, event2, sv2, complex_types[1], frac2)]:
         if k == 1 and path1 == path2:
@@ -146,19 +147,30 @@ def sv_output(path1, path2, blocks, event1, event2,
 
         chrom = blocks[int(floor(path1[0]/2))].chrom
 
-        bps = []
-        bps_uncertainty = []
-        for sv in svs:
-            for bp in (sv.bp1, sv.bp2):
-                if bp is not None:
-                    bps.append(int(floor(np.median(bp))))
-                    bps_uncertainty.append(bp[1] - bp[0] - 2)
-        minbp, maxbp = min(bps), max(bps)
-        # nbp = len(bps)
-        sv_bp = ','.join(str(bp) for bp in bps)
-        sv_bp_uncertainty = ','.join(str(bpu) for bpu in bps_uncertainty)
+        all_sv_bp = [int(floor(np.median(sv.bp1))) for sv in svs] + \
+                    [int(floor(np.median(sv.bp2))) for sv in svs]
+        minbp, maxbp = min(all_sv_bp), max(all_sv_bp)
 
-        # CLEANUP note this code is duplicated up above -- should be merged
+        def bp_string(sv):
+            if sv.type == 'INS':
+                bp = int(floor(np.median(sv.bp1)))
+                return str(bp)
+            else:
+                bp1 = int(floor(np.median(sv.bp1)))
+                bp2 = int(floor(np.median(sv.bp2)))
+                return '{0},{1}'.format(bp1, bp2)
+        def bp_uncertainty_string(sv):
+            if sv.type == 'INS':
+                bpu = sv.bp1[1] - sv.bp1[0] - 2
+                return str(bpu)
+            else:
+                bp1u = sv.bp1[1] - sv.bp1[0] - 2
+                bp2u = sv.bp2[1] - sv.bp2[0] - 2
+                return '{0},{1}'.format(bp1u, bp2u)
+        sv_bp = ';'.join(bp_string(sv) for sv in svs)
+        sv_bp_uncertainty = ';'.join(bp_uncertainty_string(sv) for sv in svs)
+
+        # CLEANUP this code is duplicated up above -- should be merged
         id = ','.join(svs[0].event_id.split(',')[0:2])
         if compound_het:
             id = id + ',' + str(k + 1)
@@ -167,10 +179,13 @@ def sv_output(path1, path2, blocks, event1, event2,
         svtypes = ','.join(sv.type.split(':')[0] for sv in svs)  # use DUP not DUP:TANDEM
         nsv = len(svs)
         if filterstring_manual is None:
-            filters = ','.join(get_filter_string(sv, event_filtered, filter_criteria) for sv in svs)
+            fs = sorted(set((get_filter_string(sv, filter_criteria) for sv in svs)))
+            if all(x == 'PASS' for x in fs):
+                filters = 'PASS'
+            else:
+                filters = ','.join(x for x in fs if x != 'PASS')
         else:
             filters = filterstring_manual
-        event_filter = 'PASS' if not event_filtered else 'FAIL'
 
         nonins_blocks = [b for b in blocks if not b.is_insertion()]
         nni = len(nonins_blocks)
@@ -189,8 +204,18 @@ def sv_output(path1, path2, blocks, event1, event2,
         ref_string = path_to_string(refpath, blocks=blocks)
         gt = 'HET' if is_het else 'HOM'
 
-        sv_ins = lambda sv: (sv.length if sv.type == 'INS' else sv.bnd_ins)
-        inslen = ','.join(str(sv_ins(sv)) for sv in svs)
+        def sv_ins(sv):
+            if sv.type == 'INS':
+                return sv.length
+            elif sv.type == 'BND':
+                return sv.bnd_ins
+            else:
+                return 0
+        insertion_lengths = [sv_ins(sv) for sv in svs if sv_ins(sv) > 0]
+        if len(insertion_lengths) == 0:
+            inslen = 'NA'
+        else:
+            inslen = ','.join(str(l) for l in insertion_lengths)
         sr = ','.join(str(sv.split_support) for sv in svs)
         pe = ','.join(str(sv.pe_support) for sv in svs)
         lhr = '%.2f' % (event_lh - ref_lh)
@@ -200,7 +225,7 @@ def sv_output(path1, path2, blocks, event1, event2,
         line = '\t'.join((chrom, str(minbp), str(maxbp), id,
                           svtypes, ct, str(nsv),
                           block_bp, block_bp_uncertainty, ref_string, s,
-                          filters, event_filter,
+                          filters,
                           sv_bp, sv_bp_uncertainty,
                           gt, frac, inslen, sr, pe, lhr, lhr_next,
                           next_best_pathstring, str(npaths))) + '\n'
@@ -250,10 +275,9 @@ def svout_header_line():
     return '\t'.join(('chrom', 'minbp', 'maxbp', 'id',
                       'svtype', 'complextype', 'num_sv',
                       'bp', 'bp_uncertainty', 'reference', 'rearrangement',
-                      'filter', 'eventfilter',
-                      'sv_bp', 'sv_bp_uncertainty',
+                      'filter', 'sv_bp', 'sv_bp_uncertainty',
                       'gt', 'af', 'inslen', 'sr_support', 'pe_support',
-                      'score', 'score_next', 'rearrangement_next', 'num_paths')) + \
+                      'score_vs_ref', 'score_vs_next', 'rearrangement_next', 'num_paths')) + \
                       '\n'
 
 

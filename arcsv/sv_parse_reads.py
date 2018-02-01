@@ -9,6 +9,7 @@ from arcsv.breakpoint_merge import Breakpoint
 from arcsv.helper import not_primary, is_read_through, block_distance, flip_parity, GenomeInterval
 
 
+# CLEANUP this is a pretty messy data structure
 class GenomeGraph:
     def __init__(self, size):
         self.size = size
@@ -88,8 +89,6 @@ class GenomeGraph:
         for i in range(0, len(combined), 2):
             if i == len(badj1) - 1 and between_edge:
                 # block_len = len(blocks[int(floor(combined[i] / 2))])
-                # CLEANUP c1 and c2 for combined[i], combined[i+1]
-                # CLEANUP b1 for floor(bc1/2)
                 # skip if duplication-type and don't need dup to explain read
                 if floor(combined[i] / 2) == floor(combined[i + 1] / 2) and \
                         abs(combined[i] - combined[i+1]) == 1 and \
@@ -282,9 +281,7 @@ def parse_reads_with_blocks(opts, reference_files, bamgroups,
 
     npairs = 0
 
-    for bamgroup in bamgroups:
-        bam = bamgroup          # CLEANUP
-
+    for bam in bamgroups:
         seen_aln = {}
         # rejected_aln = set()
         cur_idx = 0
@@ -292,7 +289,7 @@ def parse_reads_with_blocks(opts, reference_files, bamgroups,
 
         # parse reads from this chromosome
         if opts['verbosity'] > 0:
-            print('[parse_reads] fetching alignments from chr{0}'.format(chrom_name))
+            print('[parse_reads] fetching alignments from chromosome {0}'.format(chrom_name))
 
         alignments = bam.fetch_unsorted(chrom_name, start, end)
         # SPEEDUP handle hanging reads (mate unmapped or rname!=mrnm, but not distant) as we go to save memory. but, careful not to add them twice...

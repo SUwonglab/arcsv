@@ -137,6 +137,7 @@ class Junction:
             return self.bploc + (len(self.seq) - self.nclip)
 
 
+# LATER can use this lots more places
 class GenomeInterval:
     def __init__(self, chrom, start, end, is_de_novo=False, is_translocation=False,
                  is_gap=False):

@@ -1,3 +1,5 @@
+# Modify at your own risk! Options meant to be changed on a per-run basis
+# are included as command-line arguments.
 DEFAULT_OPTS = {
     # MISC
     'verbosity': 1,
@@ -16,7 +18,7 @@ DEFAULT_OPTS = {
     'region_start': None,
     'region_end': None,
     'reference_name': None,
-    'random_seed': 204178949,   # chosen in R: sample(1e9, 1)
+    'random_seed': 204178949,
 
     # LIBRARY PARAMETERS (put this somewhere else eventually)
     'nlib': 1,
@@ -42,7 +44,6 @@ DEFAULT_OPTS = {
     'min_clipped_qual': 15,
     'min_junction_overlap': 5,
     'max_insertion_inversion_mh': 25,
-    'parse_indels_slop_amt': 100,  # DEPRECATED
     # (discordant pairs)
     'do_pecluster': True,
     'insert_cutoff': 3,

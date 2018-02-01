@@ -261,10 +261,7 @@ def parse_bam(opts, reference_files, bamfiles, do_bp, do_junction_align):
                         elif hanging_type == 'dist_same_chrom':
                             process_hanging(a, hanging_same_chrom_plus[lib_idx],
                                             hanging_same_chrom_minus[lib_idx])
-                        # elif hanging_type == 'dist_other_chrom':
-                        #     DEPRECATED? undefined function
-                        #     process_hanging_other_chrom(a, hanging_other_chrom_plus[lib_idx],
-                        #                                 hanging_other_chrom_minus[lib_idx])
+                        # hanging_type == 'dist_other_chrom' ignored
             elif min(aln.mapq, mate.mapq) >= min_mapq_reads and not (aln.is_duplicate or
                                                                      mate.is_duplicate):
                 if not aln.has_tag('SA') or mate.has_tag('SA'):
@@ -347,7 +344,6 @@ def parse_bam(opts, reference_files, bamfiles, do_bp, do_junction_align):
                        for l in range(nlib)]))
     if opts['verbosity'] > 0:
         print('[parse_bam] computing insert length pmfs')
-    # CLEANUP just for il in insert_len?
     insert_mean = [np.median(il) for il in insert_len]
     insert_sd = [robust_sd(il) for il in insert_len]
     max_mult = opts['insert_max_mu_multiple']

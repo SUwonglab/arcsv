@@ -238,7 +238,7 @@ def generic_vcf_convert(vcffile, outdir, reffile, filter_gaps=False, refgapfile=
             continue
 
         # check ref gap overlap
-        if filter_gaps and end > pos:  # CLEANUP check needed?
+        if filter_gaps and end > pos:
             sv_interval = pyinter.closedopen(pos, end)
             sv_gap_intersection = chrom_gaps[chrom].intersection([sv_interval])
             if len(sv_gap_intersection) > 0:
