@@ -34,15 +34,15 @@ DEFAULT_OPTS = {
     'insert_max_mu_multiple': 3,  # median * multiple is the assumed maximum insert size
 
     # BREAKPOINT DETECTION
-    'max_junction_merge_distance': 5,
+    'max_softclip_merge_distance': 5,
+    'min_softclip_support': 2,
     'min_bp_support': 2,
-    'min_junction_support': 2,
     # (softclips)
     'use_indels': False,
     'min_mapq_softclip': 10,
-    'min_clipped_bases': 1,
+    'min_clipped_bases': 5,     # must be at least 1
     'min_clipped_qual': 15,
-    'min_junction_overlap': 5,
+
     'max_insertion_inversion_mh': 25,
     # (discordant pairs)
     'do_pecluster': True,

@@ -37,7 +37,8 @@ def valid_hanging_anchor(aln, max_dist):
         return None
 
 
-def is_read_through(pair, read_through_slop):
+def is_read_through(opts, pair):
+    read_through_slop = opts['read_through_slop']
     if pair[0].is_reverse == pair[1].is_reverse:
         return False
     elif pair[0].rname != pair[1].rname or \
@@ -435,6 +436,13 @@ def is_path_ref(path, blocks):
 
 def flip_parity(i):
     return 2 * floor(i / 2) + (1 - i % 2)
+
+
+def count_lowqual_bases(aln):
+    seqlen = len(aln.qual)
+    lowqual_left = seqlen - len(aln.qual.lstrip('#!"'))
+    lowqual_right = seqlen - len(aln.qual.rstrip('#!"'))
+    return (lowqual_left, lowqual_right)
 
 
 def test_merge_nearby():
