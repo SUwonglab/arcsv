@@ -391,6 +391,7 @@ def bp_mergefun_precedence_test():
 #                          ...==========  left clipped
 # where = is aligned and ... is clipped
 def valid_insertion_inversion_microhomology(softclip_left, softclip_right):
+    print('[mh check]\n\tleft {0}\n\tright {1}'.format(softclip_left, softclip_right))
     diff = softclip_right.pos - softclip_left.pos
     leftover_left = softclip_left.bases_mapped - abs(diff)
     leftover_right = softclip_right.bases_mapped - abs(diff)

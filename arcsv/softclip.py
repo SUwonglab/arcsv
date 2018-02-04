@@ -58,7 +58,7 @@ def process_softclip(opts, pair, softclips, bam, lib_idx):
         lowqual_left, lowqual_right = count_lowqual_bases(aln)
         nclip = [0, 0]
         nclip[LEFT] = max(0, aln.query_alignment_start - lowqual_left)
-        nclip[RIGHT] = max(0, len(aln.seq) - aln.query_alignment_end)
+        nclip[RIGHT] = max(0, len(aln.seq) - lowqual_right - aln.query_alignment_end)
         if nclip == [0, 0]:     # no clipped bases
             continue
         clipped_basequal = ['', '']
@@ -87,25 +87,23 @@ def process_softclip(opts, pair, softclips, bam, lib_idx):
                                  num_plus=1-int(aln.is_reverse),
                                  which_libs=(1 << lib_idx))
             softclips[orientation][this_pos].append(sc)
+            print('[process_softclip]\n{0}\n\t{1}'.format(aln, sc))
 
 
 # for merging SoftclipCluster objects with the same orientation
 # see helper.merge_nearby
 def softclip_cluster_mergefun(locs, softclips, min_support_filter=None):
+    print('[softclip_cluster_mergefun] merging:\n' + '\n'.join(str(sc) for sc in softclips))
     is_right = softclips[0].is_right
     assert(all(s.is_right == is_right) for s in softclips)
     num_reads = sum(s.num_reads for s in softclips)
 
-    pos_sum_mapq = defaultdict(int)
-    pos_count = defaultdict(int)
+    pos_mapq = defaultdict(list)
     for s in softclips:
-        pos_sum_mapq[s.pos] += s.sum_mapq
-        pos_count[s.pos] += s.num_reads
-
-    i = int(np.argmax(pos_sum_mapq.values()))
-    sum_mapq = next(itertools.islice(pos_sum_mapq.values(), i, i + 1))
-    consensus_pos = next(itertools.islice(pos_sum_mapq.keys(), i, i + 1))
-    num_reads_exact = next(itertools.islice(pos_count.values(), i, i + 1))
+        pos_mapq[s.pos].append(s.sum_mapq)
+    count_sum_mapq = [(x, len(y), sum(y)) for x, y in pos_mapq.items()]
+    count_sum_mapq.sort(key=lambda x: -x[1])  # sort on number of supporting
+    consensus_pos, num_reads_exact, sum_mapq = count_sum_mapq[0]
 
     if is_right:
         furthest_clipped_end = max(s.pos + s.bases_clipped for s in softclips)
@@ -129,6 +127,7 @@ def softclip_cluster_mergefun(locs, softclips, min_support_filter=None):
                                 bases_clipped, bases_mapped,
                                 num_reads, num_reads_exact,
                                 sum_mapq, num_minus, num_plus, which_libs)
+    print('[softclip_cluster_mergefun] merged:\n' + str(sc_merged))
     if min_support_filter is None or num_reads >= min_support_filter:
         return ((consensus_pos, sc_merged), )
     else:
