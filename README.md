@@ -1,6 +1,6 @@
 # ARC-SV: Automated Reconstruction of Complex Structural Variants #
 
-ARC-SV is a structural variant caller for WGS paired-end sequencing data. For methodological details, please see our preprint: [https://doi.org/10.1101/200170].
+ARC-SV is a structural variant caller for paired-end, whole-genome sequencing data. For methodological details, please see our preprint: [https://doi.org/10.1101/200170].
 
 This software was developed in the [Wong Lab](https://web.stanford.edu/group/wonglab/) at Stanford University with funding from the NSF Grant DGE-114747 and NIH grants T32-GM096982, P50-HG007735, and R01-HG007834.
 
