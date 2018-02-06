@@ -90,7 +90,6 @@ def process_softclip(opts, pair, softclips, bam, lib_idx):
                                  num_plus=1-int(aln.is_reverse),
                                  which_libs=(1 << lib_idx))
             softclips[orientation][this_pos].append(sc)
-            print('[process_softclip]\n{0}\n\t{1}'.format(aln, sc))
 
 
 # for merging SoftclipCluster objects with the same orientation

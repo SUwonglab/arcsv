@@ -145,13 +145,12 @@ def merge_breakpoints(opts, softclips, splits, disc_bp):
                                max(softclip_left.pos, softclip_right.pos))
                 supp_left = softclip_left.num_reads
                 supp_right = softclip_right.num_reads
-                # TMP
+                # MULTILIB change this
                 libs_bitstring = softclip_left.which_libs | softclip_right.which_libs
                 libs_list = []
                 for l in range(opts['nlib']):
                     if (1 << l) & libs_bitstring:
                         libs_list.append(l)
-                # TMP
                 if opts['verbosity'] > 1:
                     print('\nmerged b/c MH:')
                     print('left: {0}\nright: {1}'.format(softclip_left, softclip_right))
@@ -175,13 +174,12 @@ def merge_breakpoints(opts, softclips, splits, disc_bp):
             else:
                 supp_right = sc.num_reads
                 supp_left = 0
-            # TMP
+            # MULTILIB change this
             libs_bitstring = sc.which_libs
             libs_list = []
             for l in range(opts['nlib']):
                 if (1 << l) & libs_bitstring:
                     libs_list.append(l)
-            # TMP
             bp = Breakpoint(interval=bp_interval, libs=libs_list,
                             supp_clip_left=supp_left, supp_clip_right=supp_right)
             all_bp[bp_interval].append(bp)
