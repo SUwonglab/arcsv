@@ -15,17 +15,6 @@ SPLIT_TYPES = {(SPLIT_FIRST_PLUS | SPLIT_SECOND_PLUS): 'Del+',
                (SPLIT_SECOND_PLUS | SPLIT_LEFT_FIRST): 'InvR+',
                SPLIT_SECOND_PLUS: 'InvR-'}
 
-# Junction structure constants
+# softclip orientation constants
 LEFT = 0
 RIGHT = 1
-SEQ = 0
-QUAL = 1
-REFSEQ = 2
-ORIENT = 3
-BPLOC = 4
-NCLIP = 5
-NUNIQ = 6
-NDUP = 7
-MAPQ = 8
-NSUPP = 9
-LIBS = 10

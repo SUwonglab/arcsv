@@ -18,8 +18,7 @@ from arcsv.helper import valid_hanging_anchor, valid_hanging_pair, \
 from arcsv.invertedreads import get_inverted_pair, write_inverted_pairs_bigbed
 from arcsv.pecluster import process_discordant_pair
 from arcsv.read_viz import write_trackdb, write_array_bigwig, SparseSignalTrack
-from arcsv.softclip import (process_softclip, merge_softclips,
-                            write_softclip_merge_stats, write_softclips_bigwig)
+from arcsv.softclip import process_softclip, write_softclips_bigwig
 from arcsv.splitreads import parse_splits, splits_are_mirrored, write_splits_bigbed
 
 matplotlib.use('Agg')           # required if X11 display is not present
@@ -93,7 +92,7 @@ def extract_approximate_library_stats(opts, bam, rough_insert_median):
 
 # parse a single bam file, extracting breakpoints,
 # insert size distribution, and/or visualization tracks in bed/bigwig format
-def parse_bam(opts, reference_files, bamfiles, do_bp, do_junction_align):
+def parse_bam(opts, reference_files, bamfiles):
     if opts['verbosity'] > 0:
         print('\n[parse_bam] extracting approximate library stats')
     chrom_name = opts['chromosome']
@@ -102,7 +101,6 @@ def parse_bam(opts, reference_files, bamfiles, do_bp, do_junction_align):
     min_mapq_reads = opts['min_mapq_reads']
     do_viz = opts['do_viz']
 
-    ref = pysam.FastaFile(reference_files['reference'])
     # maps read groups matching lib_patterns to indices in lib_stats
     # lib_patterns, lib_stats = parse_library_stats(meta)
     # lib_dict = {}
@@ -119,8 +117,8 @@ def parse_bam(opts, reference_files, bamfiles, do_bp, do_junction_align):
     mean_approx, sd_approx, pmf_approx, qlower, qupper, rlen_medians = als
 
     for i in range(len(pmf_approx)):
-        with open(os.path.join(outdir, 'logging',
-                               '{0}_insert_pmf.txt'.format(opts['library_names'][i])), 'w') as f:
+        with open(os.path.join(outdir, 'logging', '{0}_insert_pmf.txt'
+                               .format(opts['library_names'][i])), 'w') as f:
             for j in range(len(pmf_approx[i])):
                 f.write('{0}\t{1}\n'.format(j, pmf_approx[i][j]))
 
@@ -181,7 +179,7 @@ def parse_bam(opts, reference_files, bamfiles, do_bp, do_junction_align):
     else:
         mapstats = None
     insert_len = [[] for i in range(nlib)]
-    softclips = [[{}, {}] for i in range(nlib)]
+    softclips = [(defaultdict(list), defaultdict(list)) for i in range(nlib)]
     splits = [[] for i in range(nlib)]
 
     bam_has_unmapped = has_unmapped_records(bam)
@@ -238,7 +236,7 @@ def parse_bam(opts, reference_files, bamfiles, do_bp, do_junction_align):
         pair = (aln, mate)
         del seen_aln[aln.qname]
 
-        if opts['filter_read_through'] and is_read_through(pair, opts['read_through_slop']):
+        if opts['filter_read_through'] and is_read_through(opts, pair):
             # print('\nread-through:')
             # print('{0}\t{1}\t{2}'.format(aln.rname, aln.pos, aln.cigarstring))
             # print('{0}\t{1}\t{2}\n'.format(mate.rname, mate.pos, mate.cigarstring))
@@ -271,13 +269,9 @@ def parse_bam(opts, reference_files, bamfiles, do_bp, do_junction_align):
                     if a.mapq >= min_mapq_reads and not a.is_duplicate:
                         process_coverage(a, coverage[lib_idx])
 
-        # handle non viz track stuff
-        # (duplicates OK for softclips, but not read-throughs)
-        if not (opts['filter_read_through'] and is_read_through(opts, pair)):
-            process_softclip(pair, softclips[lib_idx], bam,
-                             opts['do_splits'], opts['min_mapq_softclip'],
-                             opts['min_clipped_bases'], opts['min_clipped_qual'])
+        # handle softclip information, insert len, mapping stats, splits/discordants
         if not (aln.is_duplicate or mate.is_duplicate):
+            process_softclip(opts, pair, softclips[lib_idx], bam, lib_idx)
             ilen = process_insert_len(pair, insert_len[lib_idx],
                                       opts['min_mapq_reads'], opts['read_len'])
             if not opts['use_mate_tags']:
@@ -357,25 +351,6 @@ def parse_bam(opts, reference_files, bamfiles, do_bp, do_junction_align):
 
     # insert dist plots
     plot_insert_dist(opts, insert_len_dist, outdir)
-
-    # find breakpoints via soft-clipped reads
-    if do_bp:
-        indel_bp = None
-        softclips_merged = []
-        junction_ref_out = []
-        global junction_ref_offset
-        for l in range(nlib):
-            libname = opts['library_names'][l]
-            softclips_merged.append(merge_softclips(opts, softclips[l], ref, chrom_name,
-                                                    name=libname, indel_bp=indel_bp))
-            # softclips_merged.append(merge_softclips(softclips[l], ref, chrom_name, outdir,
-            #                                         name=libname,
-            #                                         min_overlap=opts['min_junction_overlap'],
-            #                                         indel_bp=indel_bp))
-            write_softclip_merge_stats(softclips_merged[l],
-                                       os.path.join(outdir, 'logging', libname + '-scmerge.txt'))
-            junction_map = {i: softclips_merged[l][i] for i in range(len(softclips_merged[l]))}
-            junction_ref_out.append((junction_map, None))
 
     if do_viz:
         # combine signal tracks by group
@@ -499,19 +474,14 @@ def parse_bam(opts, reference_files, bamfiles, do_bp, do_junction_align):
                           itemRgb=True, visibility='squish')
             print('Done.')
         trackdbfile.close()
-    if do_bp:
-        if opts['do_pecluster']:
-            return (junction_ref_out, splits, mapstats, rlen_medians, insert_len_dist,
-                    insert_mean, insert_sd,
-                    discordant_pairs, min_concordant_insert, max_concordant_insert)
-        else:
-            return (junction_ref_out, splits, mapstats, rlen_medians, insert_len_dist,
-                    insert_mean, insert_sd,
-                    None, None, None)
+    if opts['do_pecluster']:
+        return (softclips, splits, mapstats, rlen_medians, insert_len_dist,
+                insert_mean, insert_sd,
+                discordant_pairs, min_concordant_insert, max_concordant_insert)
     else:
-        return (None, None, None, None, None, None, None,
-                None, None, None,
-                None, None)
+        return (softclips, splits, mapstats, rlen_medians, insert_len_dist,
+                insert_mean, insert_sd,
+                None, None, None)
 
 
 def process_coverage(aln, coverage):
@@ -621,10 +591,9 @@ def handle_unpaired_read(opts, aln, coverage,
                             hanging_other_chrom_minus[lib_idx])
 
     pair = (aln, None)
-    process_softclip(pair, softclips[lib_idx], bam,
-                     opts['do_splits'], opts['min_mapq_softclip'],
-                     opts['min_clipped_bases'], opts['min_clipped_qual'])
+
     if not aln.is_duplicate:
+        process_softclip(opts, pair, softclips[lib_idx], bam, lib_idx)
         if opts['do_splits']:
             process_splits(aln, splits[lib_idx], bam, min_mapq=opts['min_mapq_reads'],
                            mate=None)

@@ -97,13 +97,12 @@ def run(args):
                      opts['use_indels'], opts['do_pecluster'], opts['insert_cutoff'])
         print(l)
 
-    call_sv(opts, inputs, reference_files,
-            do_bp=True, do_junction_align=False)  # these two opts DEPRECATED
+    call_sv(opts, inputs, reference_files)
 
 
 # e.g. chrom_name = '1' for chr1
 # NOTE: lib names in metainfo contained in inputs need to be all unique
-def call_sv(opts, inputs, reference_files, do_bp, do_junction_align):
+def call_sv(opts, inputs, reference_files):
     # start timer
     call_sv_start_time = time.time()
     if opts['verbosity'] > 0:
@@ -152,7 +151,7 @@ def call_sv(opts, inputs, reference_files, do_bp, do_junction_align):
     if opts['verbosity'] > 1:
         print('[call_sv] random seed: {0}'.format(opts['random_seed']))
 
-    junctions = []
+    softclips = []
     splits = []
     mapstats = []
     readlen_medians = []
@@ -168,10 +167,10 @@ def call_sv(opts, inputs, reference_files, do_bp, do_junction_align):
     # MULTILIB need to change to do multiple libraries with distinct stats
     bamfiles = [i[0] for i in inputs]
 
-    pb_out = parse_bam(opts, reference_files, bamfiles, do_bp, do_junction_align)
-    jout, sout, mout, rlout, iout, imean, isd, dout, imin, imax = pb_out
+    pb_out = parse_bam(opts, reference_files, bamfiles)
+    scout, sout, mout, rlout, iout, imean, isd, dout, imin, imax = pb_out
 
-    junctions.extend(jout)
+    softclips.extend(scout)
     splits.extend(sout)
     if not opts['use_mate_tags']:
         mapstats.extend(mout)
@@ -195,7 +194,7 @@ def call_sv(opts, inputs, reference_files, do_bp, do_junction_align):
         bp_disc = []
 
     # merge breakpoints
-    bp_merged = merge_breakpoints(opts, junctions, splits, bp_disc)
+    bp_merged = merge_breakpoints(opts, softclips, splits, bp_disc)
 
     # load mappability models from disk
     mappable_models = []
