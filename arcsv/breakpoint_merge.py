@@ -193,14 +193,14 @@ def merge_breakpoints(opts, softclips, splits, disc_bp):
         for split in split_list:
             if split.bp1_chrom == chrom_name:
                 bp1 = Breakpoint(split.bp1, splits=[split], libs=[bptype])
-                all_bp[split.bp1] = all_bp.get(split.bp1, []) + [bp1]
+                all_bp[split.bp1].append(bp1)
             if split.bp2_chrom == chrom_name:
                 bp2 = Breakpoint(split.bp2, splits=[split], libs=[bptype])
-                all_bp[split.bp2] = all_bp.get(split.bp2, []) + [bp2]
+                all_bp[split.bp2].append(bp2)
 
     # add PE clusters to all_bp
     for pe_bp in disc_bp:
-        all_bp[pe_bp.interval] = all_bp.get(pe_bp.interval, []) + [pe_bp]
+        all_bp[pe_bp.interval].append(pe_bp)
 
     # merge junctions and splits
     all_bploc = list(all_bp.keys())
@@ -269,10 +269,10 @@ def bp_mergefun_precedence(locs, bps, max_distance=0):
         p = prec_list[i]
         # from highest to lowest precedence level
         # merge BPs of that level
-        p_dict = {}
+        p_dict = defaultdict(list)
         for bp in bps:
             if bp.precedence == p and bp not in merged_above:
-                p_dict[bp.interval] = p_dict.get(bp.interval, []) + [bp]
+                p_dict[bp.interval].append(bp)
         p_mrg = merge_nearby(p_dict, bp_mergefun, type='interval', max_distance=max_distance)
         if any([k in merged for k in p_mrg.keys()]):
             print('key(s) {0} found in merged:'
