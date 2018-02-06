@@ -113,31 +113,6 @@ def print_softclips(sc_list, filename):
             file.write(str(sc) + '\n')
 
 
-class Junction:
-    def __init__(self, seq, qual, orientation, bploc, nclip, nunique, ndup, mapq, nsupp=0):
-        self.seq = seq
-        self.qual = qual
-        self.orientation = orientation
-        self.bploc = bploc
-        self.nclip = nclip
-        self.nunique = nunique
-        self.ndup = ndup
-        self.mapq = mapq
-        self.nsupp = nsupp
-
-    def start(self):
-        if self.orientation == LEFT:
-            return self.bploc - self.nclip
-        else:
-            return self.bploc - (len(self.seq) - self.nclip)
-
-    def end(self):
-        if self.orientation == RIGHT:
-            return self.bploc + self.nclip
-        else:
-            return self.bploc + (len(self.seq) - self.nclip)
-
-
 # LATER can use this lots more places
 class GenomeInterval:
     def __init__(self, chrom, start, end, is_de_novo=False, is_translocation=False,

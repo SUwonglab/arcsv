@@ -72,7 +72,6 @@ class Breakpoint:
             return 0
 
 
-# 1. softclips (i.e. junctions) are filtered
 def merge_breakpoints(opts, softclips, splits, disc_bp):
     all_bp = defaultdict(list)
     softclips_merged = [None, None]
@@ -202,7 +201,7 @@ def merge_breakpoints(opts, softclips, splits, disc_bp):
     for pe_bp in disc_bp:
         all_bp[pe_bp.interval].append(pe_bp)
 
-    # merge junctions and splits
+    # merge all breakpoints
     all_bploc = list(all_bp.keys())
     all_bploc.sort()
     if opts['verbosity'] > 1:

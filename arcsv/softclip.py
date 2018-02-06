@@ -137,18 +137,6 @@ def softclip_cluster_mergefun(locs, softclips, min_support_filter=None):
         return tuple()
 
 
-# def write_softclip_merge_stats(merged, filename):
-#     file = open(filename, 'w')
-#     file.write('bploc\tlen\tnclip\tnunique\tnduplicate\tmapq\n')
-#     for junction in merged:
-#         line = ('{bploc}\t{length}\t{nclip}\t{nunique}\t{nduplicate}\t{mapq}\n'.
-#                 format(bploc=junction[BPLOC], length=len(junction[SEQ]), nclip=junction[NCLIP],
-#                        nunique=junction[NUNIQ], nduplicate=junction[NDUP],
-#                        mapq=junction[MAPQ]))
-#         file.write(line)
-#     file.close()
-
-
 # softclips = [{}, {}] -- left softclips and right ones
 def write_softclips_bed(softclips, fileprefix, chrom_name):
     fn = ['', '']

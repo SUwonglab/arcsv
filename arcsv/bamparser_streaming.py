@@ -352,26 +352,6 @@ def parse_bam(opts, reference_files, bamfiles):
     # insert dist plots
     plot_insert_dist(opts, insert_len_dist, outdir)
 
-    # find breakpoints via soft-clipped reads
-    # DEPRECATED and moved to merge_breakpoints
-    # if do_bp:
-    #     indel_bp = None
-    #     softclips_merged = []
-    #     junction_ref_out = []
-    #     global junction_ref_offset
-    #     for l in range(nlib):
-    #         libname = opts['library_names'][l]
-    #         softclips_merged.append(merge_softclips(opts, softclips[l], ref, chrom_name,
-    #                                                 name=libname, indel_bp=indel_bp))
-    #         # softclips_merged.append(merge_softclips(softclips[l], ref, chrom_name, outdir,
-    #         #                                         name=libname,
-    #         #                                         min_overlap=opts['min_junction_overlap'],
-    #         #                                         indel_bp=indel_bp))
-    #         write_softclip_merge_stats(softclips_merged[l],
-    #                                    os.path.join(outdir, 'logging', libname + '-scmerge.txt'))
-    #         junction_map = {i: softclips_merged[l][i] for i in range(len(softclips_merged[l]))}
-    #         junction_ref_out.append((junction_map, None))
-
     if do_viz:
         # combine signal tracks by group
         # groups = set(lib_stats[i]['group'] for i in range(len(lib_stats)))
