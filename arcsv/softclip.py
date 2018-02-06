@@ -41,6 +41,7 @@ def process_softclip(opts, pair, softclips, bam, lib_idx):
     min_mapq = opts['min_mapq_softclip']
     min_clipped_bases = opts['min_clipped_bases']
     min_clipped_qual = opts['min_clipped_qual']
+    lowqual_trim_extra = opts['lowqual_trim_extra']
     for aln in pair:
         if aln is None or aln.is_unmapped or \
            aln.mapq < min_mapq or not_primary(aln):
@@ -56,6 +57,8 @@ def process_softclip(opts, pair, softclips, bam, lib_idx):
 
         # count number of phred qual > 2 clipped bases
         lowqual_left, lowqual_right = count_lowqual_bases(aln)
+        lowqual_left += lowqual_trim_extra * (lowqual_left > 0)
+        lowqual_right += lowqual_trim_extra * (lowqual_right > 0)
         nclip = [0, 0]
         nclip[LEFT] = max(0, aln.query_alignment_start - lowqual_left)
         nclip[RIGHT] = max(0, len(aln.seq) - lowqual_right - aln.query_alignment_end)

@@ -42,7 +42,7 @@ DEFAULT_OPTS = {
     'min_mapq_softclip': 10,
     'min_clipped_bases': 5,     # must be at least 1
     'min_clipped_qual': 15,
-
+    'lowqual_trim_extra': 5,
     'max_insertion_inversion_mh': 25,
     # (discordant pairs)
     'do_pecluster': True,
