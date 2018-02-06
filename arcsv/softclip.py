@@ -95,7 +95,7 @@ def process_softclip(opts, pair, softclips, bam, lib_idx):
 # for merging SoftclipCluster objects with the same orientation
 # see helper.merge_nearby
 def softclip_cluster_mergefun(locs, softclips, min_support_filter=None):
-    print('[softclip_cluster_mergefun] merging:\n' + '\n'.join(str(sc) for sc in softclips))
+    # print('[softclip_cluster_mergefun] merging:\n' + '\n'.join(str(sc) for sc in softclips))
     is_right = softclips[0].is_right
     assert(all(s.is_right == is_right) for s in softclips)
     num_reads = sum(s.num_reads for s in softclips)
@@ -129,7 +129,7 @@ def softclip_cluster_mergefun(locs, softclips, min_support_filter=None):
                                 bases_clipped, bases_mapped,
                                 num_reads, num_reads_exact,
                                 sum_mapq, num_minus, num_plus, which_libs)
-    print('[softclip_cluster_mergefun] merged:\n' + str(sc_merged))
+    # print('[softclip_cluster_mergefun] merged:\n' + str(sc_merged))
     if min_support_filter is None or num_reads >= min_support_filter:
         return ((consensus_pos, sc_merged), )
     else:
