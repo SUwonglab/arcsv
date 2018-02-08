@@ -53,7 +53,7 @@ def extract_approximate_library_stats(opts, bam, rough_insert_median):
         for aln in bam.fetch_unsorted(chrom_name, start, end):
             # conditioning on mate position introduces slight bias,
             # but insignificant if chunk_size >> insert size
-            if not_primary(aln) or aln.mpos < start or aln.mpos >= endor aln.is_duplicate:
+            if not_primary(aln) or aln.mpos < start or aln.mpos >= end or aln.is_duplicate:
                 continue
             if aln.qname not in seen_aln:
                 if chunk_reads_seen < reads_per_chunk:
