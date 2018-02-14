@@ -136,18 +136,18 @@ def is_del_compatible(opts, pair1, pair2, max_distance,
         and max(pair1.pos1, pair2.pos1) < min(pair1.pos2, pair2.pos2)
 
 
-def is_ins_compatible(opts, pair1, pair2, max_distance, insert_mu, insert_sigma, adjust=True):
-    if adjust:
-        est_insertion_size = insert_mu - (pair1.insert + pair2.insert)/2
-        overlap = max(0, max(pair1.pos1, pair2.pos1) - min(pair1.pos2, pair2.pos2))
-        adjustment = max(0, est_insertion_size - overlap - 3/sqrt(2)*insert_sigma)
-        # TODO use this
-        adjusted_max_distance = max_distance - adjustment
-        # if adjustment > 0:
-        #     print('ins_compatible adjust mu={0} est={1} adjusted={2}'
-        #           .format(insert_mu, est_insertion_size, adjusted_max_distance))
-    else:
-        adjusted_max_distance = max_distance  # INSERTIONS THESIS
+def is_ins_compatible(opts, pair1, pair2, max_distance, insert_mu, insert_sigma):
+    # if adjust:
+    #     est_insertion_size = insert_mu - (pair1.insert + pair2.insert)/2
+    #     overlap = max(0, max(pair1.pos1, pair2.pos1) - min(pair1.pos2, pair2.pos2))
+    #     adjustment = max(0, est_insertion_size - overlap - 3/sqrt(2)*insert_sigma)
+    #     # TODO use this
+    #     adjusted_max_distance = max_distance - adjustment
+    #     # if adjustment > 0:
+    #     #     print('ins_compatible adjust mu={0} est={1} adjusted={2}'
+    #     #           .format(insert_mu, est_insertion_size, adjusted_max_distance))
+    # else:
+    #     adjusted_max_distance = max_distance  # INSERTIONS THESIS
     is_close = max(abs(pair1.pos1 - pair2.pos1), abs(pair1.pos2 - pair2.pos2)) <= max_distance
     overlap = max(0, max(pair1.pos1, pair2.pos1) - min(pair1.pos2, pair2.pos2))
 
@@ -240,6 +240,9 @@ def cluster_pairs(opts, pairs, dtype, insert_mu, insert_sigma):
         if len(comp) > 1:
             clusters.extend(cluster_handle_component(comp, is_compatible,
                                                      opts['max_pecluster_size']))
+        if len(comp) > opts['max_pecluster_size']:
+            excluded_pairs.update(comp)
+
     # insertions need some additional filtering
     if dtype == 'Ins':
         clusters = [c for c in clusters if is_ins_cluster_compatible(opts, c)]
