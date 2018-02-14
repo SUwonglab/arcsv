@@ -7,7 +7,6 @@ import pyinter
 import sys
 from bisect import bisect_left
 from operator import attrgetter
-from math import sqrt
 
 from arcsv.breakpoint_merge import Breakpoint
 from arcsv.helper import normcdf, not_primary
@@ -82,29 +81,23 @@ def apply_discordant_clustering(opts, discordant_pairs_list,
                                 insert_mu, insert_sigma,
                                 insert_min, insert_max, gap_file,
                                 lr_cond=False, bp_confidence_level=0.95):
-    # compute null distributions of cluster scores using permutation
     nlib = opts['nlib']
-    null_dists = [{} for i in range(nlib)]
-    for i in range(nlib):
-        for (dtype, pairs) in discordant_pairs_list[i].items():
-            insert_cutoff = insert_max[i] if dtype == 'Del' else insert_min[i]
-            if opts['verbosity'] > 0:
-                print('[pecluster] computing null distribution for {0} clusters'.format(dtype))
-            null_dists[i][dtype] = compute_null_dist(opts, pairs, dtype,
-                                                     insert_mu[i], insert_sigma[i],
-                                                     gap_file, lib_idx=i, lr_cond=lr_cond)
-    # cluster
     breakpoints = []
     for i in range(nlib):
         lib_name = opts['library_names'][i]
         for (dtype, pairs) in discordant_pairs_list[i].items():
             if opts['verbosity'] > 0:
                 print('[pecluster] clustering {0}'.format(dtype))
-            clusters, excluded = cluster_pairs(opts, pairs, dtype,
-                                               insert_mu[i], insert_sigma[i])
-            insert_cutoff = insert_max[i] if dtype == 'Del' else insert_min[i]
+            clusters, pairs_clustered = cluster_pairs(opts, pairs, dtype,
+                                                      insert_mu[i], insert_sigma[i])
 
-            lr_null_clusters = null_dists[i][dtype]
+            if opts['verbosity'] > 0:
+                print('[pecluster] computing null distribution for {0} clusters'.format(dtype))
+            lr_null_clusters = compute_null_dist(opts, pairs_clustered, dtype,
+                                                 insert_mu[i], insert_sigma[i],
+                                                 gap_file, lib_idx=i, lr_cond=lr_cond)
+
+            insert_cutoff = insert_max[i] if dtype == 'Del' else insert_min[i]
             fdc_out = fdr_discordant_clusters(opts, clusters, lr_null_clusters, dtype,
                                               insert_mu[i], insert_sigma[i],
                                               insert_cutoff, lr_cond)
@@ -130,7 +123,7 @@ def apply_discordant_clustering(opts, discordant_pairs_list,
 
 
 def is_deldupinv_compatible(opts, pairs, max_distance,
-                      insert_mu=None, insert_sigma=None, adjust=None):
+                            insert_mu=None, insert_sigma=None, adjust=None):
     # close and intersecting?
     min_pos1 = min(p.pos1 for p in pairs)
     max_pos1 = max(p.pos1 for p in pairs)
@@ -190,7 +183,7 @@ def cluster_pairs(opts, pairs, dtype, insert_mu, insert_sigma):
     cur_comps = []              # pairs in the current connected components
     cur_maxpos = []             # max(pair.pos1) over pairs in cur_comps
     clusters = []               # list of components
-    excluded_pairs = set()
+    pairs_clustered = []
     for pair in pairs:
         # check for components we've moved past
         passed_comps = [i for i in range(len(cur_comps)) if
@@ -201,11 +194,11 @@ def cluster_pairs(opts, pairs, dtype, insert_mu, insert_sigma):
         for i in passed_comps:
             idx = i - offset    # adjust for deleting other stuff
             # print('passed component with maxpos %d' % cur_maxpos[idx])
-            if len(cur_comps[idx]) > 1:
-                clusters.extend(cluster_handle_component(cur_comps[idx], is_compatible,
-                                                         opts['max_pecluster_size']))
-            if len(cur_comps[idx]) > opts['max_pecluster_size']:
-                excluded_pairs.update(cur_comps[idx])
+            new_clusters = cluster_handle_component(cur_comps[idx], is_compatible,
+                                                    opts['max_pecluster_size'])
+            if len(new_clusters) > 0:
+                clusters.extend(new_clusters)
+                pairs_clustered.extend(cur_comps[idx])
             del cur_comps[idx]
             del cur_maxpos[idx]
             offset += 1
@@ -233,16 +226,16 @@ def cluster_pairs(opts, pairs, dtype, insert_mu, insert_sigma):
             cur_maxpos.append(merged_maxpos)
     # handle remaining components
     for comp in cur_comps:
-        if len(comp) > 1:
-            clusters.extend(cluster_handle_component(comp, is_compatible,
-                                                     opts['max_pecluster_size']))
-        if len(comp) > opts['max_pecluster_size']:
-            excluded_pairs.update(comp)
+        new_clusters = cluster_handle_component(comp, is_compatible,
+                                                opts['max_pecluster_size'])
+        if len(new_clusters) > 0:
+            clusters.extend(new_clusters)
+            pairs_clustered.extend(cur_comps[idx])
 
     # insertions need some additional filtering
     if dtype == 'Ins':
         clusters = [c for c in clusters if is_ins_cluster_compatible(opts, c)]
-    return clusters, excluded_pairs
+    return clusters, pairs_clustered
 
 
 # component: guaranteed length >= 2
@@ -273,9 +266,11 @@ def cluster_handle_component(component, is_compatible, max_cluster_size):
 
 # discordant_pairs: list of tuples corresponding to discordant pairs
 # non_gaps: list of intervals where we can place the discordant pairs
-def shuffle_discordant_pairs(discordant_pairs, chrom_len_no_gaps):
+def shuffle_discordant_pairs(discordant_pairs, chrom_len_no_gaps, max_insert_size=np.Inf):
     shuffled = []
     for pair in discordant_pairs:
+        if pair.insert > max_insert_size:
+            continue
         pair_len = pair.pos2 - pair.pos1
         # ignoring read length, but doesn't matter for chrom_len >> read_len
         if pair_len < chrom_len_no_gaps and pair_len > -chrom_len_no_gaps:
@@ -362,10 +357,19 @@ def compute_null_dist(opts, discordant_pairs, dtype,
     non_gaps = [(i.lower_value, i.upper_value) for i in non_gaps_inter]
     total_len = sum([i[1] - i[0] for i in non_gaps])
 
+    # For deletion null clusters, don't use pairs that are obviously too large.
+    # (for normal data the discordant read cutoff for deletion supports
+    #  is like mu + 3 sigma ~ mu + .3mu, and we're excluding stuff bigger than 3mu)
+    if dtype == 'Del':
+        max_null_insert = insert_mu * opts['insert_max_mu_multiple']
+    else:
+        max_null_insert = np.Inf
+
     null_clusters = []
     lr_null_clusters = np.array([], float)
     for _ in range(nreps):
-        shuffled = shuffle_discordant_pairs(discordant_pairs, total_len)
+        shuffled = shuffle_discordant_pairs(discordant_pairs, total_len,
+                                            max_insert_size=max_null_insert)
         clusters_tmp, _ = cluster_pairs(opts, shuffled, dtype, insert_mu, insert_sigma)
         null_clusters.extend(clusters_tmp)
         lr_tmp = np.fromiter((lr_fun[dtype](c, insert_mu, insert_sigma,
