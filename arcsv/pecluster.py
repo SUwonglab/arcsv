@@ -269,21 +269,6 @@ def cluster_handle_component(component, is_compatible, max_cluster_size):
         return result
 
 
-def cluster_discordant_nodes(graph, min_clique_size=2):
-    clusters = []
-    comp = graph.components()
-    for i in range(len(comp)):
-        subgraph = comp.subgraph(i)
-        lc = subgraph.largest_cliques()
-        for clique in lc:
-            if len(clique) >= min_clique_size:
-                clustered_pairs = tuple([subgraph.vs[v]['pair'] for v in clique])
-                # print('clique {0}'.format(str(clique)))
-                # print('clustered pairs {0}'.format(str(clustered_pairs)))
-                clusters.append(clustered_pairs)
-    return clusters
-
-
 # discordant_pairs: list of tuples corresponding to discordant pairs
 # non_gaps: list of intervals where we can place the discordant pairs
 def shuffle_discordant_pairs(discordant_pairs, chrom_len_no_gaps):
@@ -404,15 +389,6 @@ def compute_null_dist(opts, discordant_pairs, dtype,
     return lr_null_clusters
 
 
-def filter_discordant_clusters(clusters, cutoff, dtype, insert_mu, insert_sigma,
-                               insert_cutoff, lr_cond):
-    lr_clusters = [lr_fun[dtype](c, insert_mu, insert_sigma, insert_cutoff, lr_cond)
-                   for c in clusters]
-    clusters_pass = [clusters[i] for i in range(len(clusters)) if lr_clusters[i] >= cutoff]
-    clusters_fail = [clusters[i] for i in range(len(clusters)) if lr_clusters[i] < cutoff]
-    return clusters_pass, clusters_fail, lr_clusters
-
-
 def fdr_discordant_clusters(opts, clusters, lr_null_clusters, dtype,
                             insert_mu, insert_sigma, insert_cutoff, lr_cond):
     # SPEEDUP this should be computed already
@@ -469,13 +445,6 @@ def write_clustering_results(filename, lr_pairs, first_reject):
             fout.write('{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\n'
                        .format(min(pos1), max(pos1), min(pos2), max(pos2), npairs,
                                lr, passing, qnames))
-    fout.close()
-
-
-def write_del_reads(filename, pairs):
-    fout = open(filename, 'w')
-    for p in pairs:
-        fout.write('{0}\n'.format(p.insert))
     fout.close()
 
 
