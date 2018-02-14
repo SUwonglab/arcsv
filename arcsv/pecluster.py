@@ -5,6 +5,7 @@ import numpy as np
 import os
 import pyinter
 import sys
+from bisect import bisect_left
 from operator import attrgetter
 from math import sqrt
 
@@ -103,8 +104,8 @@ def apply_discordant_clustering(opts, discordant_pairs_list,
                                                insert_mu[i], insert_sigma[i])
             insert_cutoff = insert_max[i] if dtype == 'Del' else insert_min[i]
 
-            null_dist = null_dists[i][dtype]
-            fdc_out = fdr_discordant_clusters(clusters, null_dist, dtype,
+            lr_null_clusters = null_dists[i][dtype]
+            fdc_out = fdr_discordant_clusters(opts, clusters, lr_null_clusters, dtype,
                                               insert_mu[i], insert_sigma[i],
                                               insert_cutoff, lr_cond)
             clusters_pass, clusters_fail, lr_pairs, first_reject = fdc_out
@@ -359,10 +360,13 @@ def lr_dup(cluster, insert_mu, insert_sigma, cutoff=None, conditioning=None):
 lr_fun = {'Del': lr_del, 'Ins': lr_ins, 'InvL': lr_inv, 'InvR': lr_inv, 'Dup': lr_dup}
 
 
+# does opts['pecluster_null_reps'] replicates of null cluster simulation and returns
+# a sorted list of the null cluster likelihood ratios
 # returns sorted list of null likelihood ratios under a permutation simulation
 def compute_null_dist(opts, discordant_pairs, dtype,
                       insert_mu, insert_sigma,
                       gap_file, lib_idx, lr_cond):
+    nreps = opts['pecluster_null_reps']
     chrom_name, start, end = opts['chromosome'], opts['region_start'], opts['region_end']
     gaps_inter = load_genome_gaps(gap_file, chrom_name)
     chrom_inter = pyinter.IntervalSet()
@@ -371,28 +375,33 @@ def compute_null_dist(opts, discordant_pairs, dtype,
     non_gaps = [(i.lower_value, i.upper_value) for i in non_gaps_inter]
     total_len = sum([i[1] - i[0] for i in non_gaps])
 
-    shuffled = shuffle_discordant_pairs(discordant_pairs, total_len)
-    # print('shuffled: ')
-    # print(shuffled)
-    clusters, _ = cluster_pairs(opts, shuffled, dtype, insert_mu, insert_sigma)
-    # print('shuffled clusters:')
-    # print(clusters)
-    lr_clusters = [lr_fun[dtype](c, insert_mu, insert_sigma, opts['insert_cutoff'], lr_cond)
-                   for c in clusters]
+    null_clusters = []
+    lr_null_clusters = np.array([], float)
+    for _ in range(nreps):
+        shuffled = shuffle_discordant_pairs(discordant_pairs, total_len)
+        clusters_tmp, _ = cluster_pairs(opts, shuffled, dtype, insert_mu, insert_sigma)
+        null_clusters.extend(clusters_tmp)
+        lr_tmp = np.fromiter((lr_fun[dtype](c, insert_mu, insert_sigma,
+                                            opts['insert_cutoff'], lr_cond)
+                              for c in clusters_tmp),
+                             float)
+        lr_null_clusters = np.append(lr_null_clusters, lr_tmp)
     if opts['verbosity'] > 1:
         print('[compute_null_dist] {0}'.format(dtype))
         print('shuffled lr:')
-        print(lr_clusters)
+        print(lr_null_clusters)
         print('')
 
-    outname = '{0}_{1}_null_cluster.txt'.format(opts['library_names'][lib_idx], dtype)
+    outname = ('{0}_{1}_null_cluster_{2}reps.txt'
+               .format(opts['library_names'][lib_idx], dtype, nreps))
     fname = os.path.join(opts['outdir'], 'logging', outname)
-    write_clustering_results(fname, list(zip(lr_clusters, clusters)), first_reject=0)
+    write_clustering_results(fname, list(zip(lr_null_clusters, null_clusters)), first_reject=0)
 
     # print('there were {0} {1} clusters after shuffling'.format(len(clusters),
     #                                                            dtype))
 
-    return sorted(lr_clusters)
+    lr_null_clusters.sort()
+    return lr_null_clusters
 
 
 def filter_discordant_clusters(clusters, cutoff, dtype, insert_mu, insert_sigma,
@@ -404,40 +413,39 @@ def filter_discordant_clusters(clusters, cutoff, dtype, insert_mu, insert_sigma,
     return clusters_pass, clusters_fail, lr_clusters
 
 
-def fdr_discordant_clusters(clusters, null_dist, dtype,
-                            insert_mu, insert_sigma, insert_cutoff,
-                            lr_cond, target_fdr=0.1):
+def fdr_discordant_clusters(opts, clusters, lr_null_clusters, dtype,
+                            insert_mu, insert_sigma, insert_cutoff, lr_cond):
+    # SPEEDUP this should be computed already
     lr_clusters = [lr_fun[dtype](c, insert_mu, insert_sigma, insert_cutoff, lr_cond)
                    for c in clusters]
     lr_pairs = list(zip(lr_clusters, clusters))
     lr_pairs.sort()
 
-    # find BHq cutoff
-    null_idx = 0                # rejecting null_dist[null_idx:]
-    num_null = len(null_dist)
-    num_obs = len(lr_pairs)
-    if num_null > num_obs:
-        p = num_obs / num_null
+    # find FDR cutoff
+    target_fdr = opts['pecluster_target_fdr']
+    null_sim_nreps = opts['pecluster_null_reps']
+    M = len(lr_clusters)
+    M_0 = len(lr_null_clusters) / null_sim_nreps
+
+    if M > 0:
+        pi_0 = min(1, M_0 / M)
     else:
-        p = 1
-    for i in range(num_obs + 1):
-        # rejecting clusters[i:]
-        if i == num_obs:
+        pi_0 = None
+
+    for j in range(M + 1):
+        if j == M:              # failed, can't reject anything
             break
-        R = num_obs - i
-        while null_idx < num_null and null_dist[null_idx] < lr_pairs[i][0]:
-            null_idx += 1
-        est_fdr = (num_null - null_idx) * p / max(R, 1)
-        # est_fdr = ((num_null - null_idx)/max(num_null, 1)*num_obs) / max(R, 1)
-        # print('i: {0}, null_idx: {1}/{2}, est_fdr: {3}'
-        #       .format(i, null_idx, num_null, est_fdr))
-        if est_fdr <= target_fdr:
+        # estimated fdr from rejecting lr_pairs[j:]
+        num_rej = M - j
+        s_j = lr_clusters[j]
+        est_fdr = M * pi_0 * (M_0 - bisect_left(lr_null_clusters, s_j)) / num_rej
+        if est_fdr < target_fdr:
             break
 
-    clusters_pass = [lr_pairs[j][1] for j in range(i, num_obs)]
-    clusters_fail = [lr_pairs[j][1] for j in range(0, i)]
+    clusters_pass = [lr_pairs[i][1] for i in range(j, M)]
+    clusters_fail = [lr_pairs[i][1] for i in range(0, j)]
 
-    return clusters_pass, clusters_fail, lr_pairs, i
+    return clusters_pass, clusters_fail, lr_pairs, j
 
 
 def write_clustering_results(filename, lr_pairs, first_reject):
