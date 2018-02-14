@@ -436,15 +436,18 @@ def fdr_discordant_clusters(opts, clusters, lr_null_clusters, dtype,
     else:
         pi_0 = None
 
-    for j in range(M + 1):
-        if j == M:              # failed, can't reject anything
-            break
-        # estimated fdr from rejecting lr_pairs[j:]
-        num_rej = M - j
-        s_j = lr_pairs[j][0]
-        est_fdr = M * pi_0 * p_null_exceeds(s_j) / num_rej
-        if est_fdr <= target_fdr:
-            break
+    if M_0 == 0:                # no nulls, reject everything
+        j = 0
+    else:
+        for j in range(M + 1):
+            if j == M:              # failed, can't reject anything
+                break
+            # estimated fdr from rejecting lr_pairs[j:]
+            num_rej = M - j
+            s_j = lr_pairs[j][0]
+            est_fdr = M * pi_0 * p_null_exceeds(s_j) / num_rej
+            if est_fdr <= target_fdr:
+                break
 
     clusters_pass = [lr_pairs[i][1] for i in range(j, M)]
     clusters_fail = [lr_pairs[i][1] for i in range(0, j)]
