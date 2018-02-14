@@ -441,7 +441,7 @@ def fdr_discordant_clusters(opts, clusters, lr_null_clusters, dtype,
             break
         # estimated fdr from rejecting lr_pairs[j:]
         num_rej = M - j
-        s_j = lr_clusters[j]
+        s_j = lr_pairs[j][0]
         est_fdr = M * pi_0 * p_null_exceeds(s_j) / num_rej
         if est_fdr <= target_fdr:
             break
