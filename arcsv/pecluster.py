@@ -437,8 +437,8 @@ def write_clustering_results(filename, lr_pairs, first_reject):
         lr_clusters, clusters = list(zip(*lr_pairs))
         for i in range(len(clusters)):
             npairs = len(clusters[i])
-            pos1 = sorted([p.pos1 for p in clusters[i]])
-            pos2 = sorted([p.pos2 for p in clusters[i]])
+            pos1 = [p.pos1 for p in clusters[i]]
+            pos2 = [p.pos2 for p in clusters[i]]
             lr = lr_clusters[i]
             passing = True if i >= first_reject else False
             qnames = ';'.join([p.qname for p in clusters[i]])
