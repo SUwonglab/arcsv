@@ -51,7 +51,7 @@ DEFAULT_OPTS = {
     'max_ins_cluster_slop': 25,  # LATER don't actually need this?
     'max_ins_pair_slop': 20,
     'max_pecluster_size': 100,  # LATER set to 3x coverage
-    'pecluster_null_reps': 10,  # how many times to repeat null cluster simulation
+    'pecluster_null_reps': 4,  # how many times to repeat null cluster simulation
     'pecluster_target_fdr': 0.1,  # target false discovery rate for significant clusters
 
     # ADJACENCY GRAPH CONSTRUCTION
