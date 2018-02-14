@@ -427,6 +427,10 @@ def fdr_discordant_clusters(opts, clusters, lr_null_clusters, dtype,
     M = len(lr_clusters)
     M_0 = len(lr_null_clusters) / null_sim_nreps
 
+    # P(null score >= x)
+    def p_null_exceeds(x):
+        return 1 - bisect_left(lr_null_clusters, x) / len(lr_null_clusters)
+
     if M > 0:
         pi_0 = min(1, M_0 / M)
     else:
@@ -438,8 +442,8 @@ def fdr_discordant_clusters(opts, clusters, lr_null_clusters, dtype,
         # estimated fdr from rejecting lr_pairs[j:]
         num_rej = M - j
         s_j = lr_clusters[j]
-        est_fdr = M * pi_0 * (M_0 - bisect_left(lr_null_clusters, s_j)) / num_rej
-        if est_fdr < target_fdr:
+        est_fdr = M * pi_0 * p_null_exceeds(s_j) / num_rej
+        if est_fdr <= target_fdr:
             break
 
     clusters_pass = [lr_pairs[i][1] for i in range(j, M)]
