@@ -251,7 +251,7 @@ def cluster_handle_component(component, is_compatible, max_cluster_size):
     if len(component) > max_cluster_size:
         # print('component too large')
         if is_compatible(pairs=component):
-            return component
+            return [component]
         else:
             return []
     else:
