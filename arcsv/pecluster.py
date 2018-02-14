@@ -269,7 +269,7 @@ def cluster_handle_component(component, is_compatible, max_cluster_size):
 def shuffle_discordant_pairs(discordant_pairs, chrom_len_no_gaps, max_insert_size=np.Inf):
     shuffled = []
     for pair in discordant_pairs:
-        if pair.insert > max_insert_size:
+        if max_insert_size < np.Inf and pair.insert > max_insert_size:
             continue
         pair_len = pair.pos2 - pair.pos1
         # ignoring read length, but doesn't matter for chrom_len >> read_len
