@@ -129,14 +129,18 @@ def apply_discordant_clustering(opts, discordant_pairs_list,
     return breakpoints
 
 
-def is_del_compatible(opts, pair1, pair2, max_distance,
+def is_deldupinv_compatible(opts, pairs, max_distance,
                       insert_mu=None, insert_sigma=None, adjust=None):
     # close and intersecting?
-    return (max(abs(pair1.pos1 - pair2.pos1), abs(pair1.pos2 - pair2.pos2)) <= max_distance) \
-        and max(pair1.pos1, pair2.pos1) < min(pair1.pos2, pair2.pos2)
+    min_pos1 = min(p.pos1 for p in pairs)
+    max_pos1 = max(p.pos1 for p in pairs)
+    min_pos2 = min(p.pos2 for p in pairs)
+    max_pos2 = max(p.pos2 for p in pairs)
+    return max(max_pos1 - min_pos1, max_pos2 - min_pos2) <= max_distance \
+        and max_pos1 < min_pos2
 
 
-def is_ins_compatible(opts, pair1, pair2, max_distance, insert_mu, insert_sigma):
+def is_ins_compatible(opts, pairs, max_distance, insert_mu, insert_sigma):
     # if adjust:
     #     est_insertion_size = insert_mu - (pair1.insert + pair2.insert)/2
     #     overlap = max(0, max(pair1.pos1, pair2.pos1) - min(pair1.pos2, pair2.pos2))
@@ -148,24 +152,16 @@ def is_ins_compatible(opts, pair1, pair2, max_distance, insert_mu, insert_sigma)
     #     #           .format(insert_mu, est_insertion_size, adjusted_max_distance))
     # else:
     #     adjusted_max_distance = max_distance  # INSERTIONS THESIS
-    is_close = max(abs(pair1.pos1 - pair2.pos1), abs(pair1.pos2 - pair2.pos2)) <= max_distance
-    overlap = max(0, max(pair1.pos1, pair2.pos1) - min(pair1.pos2, pair2.pos2))
+    min_pos1 = min(p.pos1 for p in pairs)
+    max_pos1 = max(p.pos1 for p in pairs)
+    min_pos2 = min(p.pos2 for p in pairs)
+    max_pos2 = max(p.pos2 for p in pairs)
+
+    is_close = max(max_pos1 - min_pos1, max_pos2 - min_pos2) <= max_distance
+    overlap = max(0, max_pos1 - min_pos2)
 
     # no intersection requirement because possible homologous flanking sequences
     return is_close and overlap <= opts['max_ins_pair_slop']
-
-
-def is_dup_compatible(opts, pair1, pair2, max_distance,
-                      insert_mu, insert_sigma, adjust=None):
-    # close?
-    return max(abs(pair1.pos1 - pair2.pos1), abs(pair1.pos2 - pair2.pos2)) <= max_distance \
-        and max(pair1.pos1, pair2.pos1) < min(pair1.pos2, pair2.pos2)
-
-
-def is_inv_compatible(opts, pair1, pair2, max_distance, insert_mu, insert_sigma, adjust=None):
-    # close?
-    return max(abs(pair1.pos1 - pair2.pos1), abs(pair1.pos2 - pair2.pos2)) <= max_distance \
-        and max(pair1.pos1, pair2.pos1) < min(pair1.pos2, pair2.pos2)
 
 
 def is_ins_cluster_compatible(opts, cluster):
@@ -174,11 +170,11 @@ def is_ins_cluster_compatible(opts, cluster):
     return overlap <= opts['max_ins_cluster_slop']
 
 
-compatibility_fun = {'Del': is_del_compatible,
+compatibility_fun = {'Del': is_deldupinv_compatible,
                      'Ins': is_ins_compatible,
-                     'Dup': is_dup_compatible,
-                     'InvR': is_inv_compatible,
-                     'InvL': is_inv_compatible}
+                     'Dup': is_deldupinv_compatible,
+                     'InvR': is_deldupinv_compatible,
+                     'InvL': is_deldupinv_compatible}
 
 
 def cluster_pairs(opts, pairs, dtype, insert_mu, insert_sigma):
@@ -215,7 +211,7 @@ def cluster_pairs(opts, pairs, dtype, insert_mu, insert_sigma):
             offset += 1
         # check whether pair is connected to existing components
         adjacent_comps = [i for i in range(len(cur_comps))
-                          if any(is_compatible(pair1=pair, pair2=p)
+                          if any(is_compatible(pairs=(pair, p))
                                  for p in reversed(cur_comps[i]))]
         # add pair to existing component, else make new component
         if len(adjacent_comps) > 0:
@@ -254,14 +250,17 @@ def cluster_handle_component(component, is_compatible, max_cluster_size):
     # print('handling component:\n\t%s' % component)
     if len(component) > max_cluster_size:
         # print('component too large')
-        return [component]
+        if is_compatible(pairs=component):
+            return component
+        else:
+            return []
     else:
         # create a graph and fill in all the edges
         g = igraph.Graph(len(component))
         g.vs['pairs'] = component
         iter_pairs = range(len(component))
         compatible_pairs = [(i, j) for (i, j) in itertools.product(iter_pairs, repeat=2) if
-                            i != j and is_compatible(pair1=component[i], pair2=component[j])]
+                            i != j and is_compatible(pairs=(component[i], component[j]))]
         for cp in compatible_pairs:
             g.add_edge(*cp)
         # get max cliques and add to result
