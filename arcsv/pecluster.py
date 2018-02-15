@@ -200,7 +200,7 @@ def cluster_pairs(opts, pairs, dtype, insert_mu, insert_sigma):
                 # for huge clusters, we just skip unless all discordant pairs
                 #   are mutually compatible
                 new_clusters = [cur_comps[idx]]
-            elif len(cur_comps[idx]) > 1:
+            elif 1 < len(cur_comps[idx]) <= opts['max_pecluster_size']:
                 new_clusters = cluster_handle_component(cur_comps[idx], is_compatible)
             else:
                 new_clusters = []
@@ -240,7 +240,7 @@ def cluster_pairs(opts, pairs, dtype, insert_mu, insert_sigma):
         if len(comp) > opts['max_pecluster_size'] and \
            is_compatible(pairs=comp):
             new_clusters = [comp]
-        elif len(comp) > 1:
+        elif 1 < len(comp) <= opts['max_pecluster_size']:
             new_clusters = cluster_handle_component(comp, is_compatible)
         else:
             new_clusters = []
