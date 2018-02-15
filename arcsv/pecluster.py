@@ -194,11 +194,22 @@ def cluster_pairs(opts, pairs, dtype, insert_mu, insert_sigma):
         for i in passed_comps:
             idx = i - offset    # adjust for deleting other stuff
             # print('passed component with maxpos %d' % cur_maxpos[idx])
-            new_clusters = cluster_handle_component(cur_comps[idx], is_compatible,
-                                                    opts['max_pecluster_size'])
-            if len(new_clusters) > 0:
-                clusters.extend(new_clusters)
+
+            if len(cur_comps[idx]) > opts['max_pecluster_size'] and \
+               is_compatible(pairs=cur_comps[idx]):
+                # for huge clusters, we just skip unless all discordant pairs
+                #   are mutually compatible
+                new_clusters = [cur_comps[idx]]
+            elif len(cur_comps[idx]) > 1:
+                new_clusters = cluster_handle_component(cur_comps[idx], is_compatible)
+            else:
+                new_clusters = []
+            clusters.extend(new_clusters)
+            # add to list of pairs to use for null distribution simulation,
+            #   unless this is a huge cluster we skipped
+            if len(new_clusters) > 0 or len(cur_comps[idx]) == 1:
                 pairs_clustered.extend(cur_comps[idx])
+
             del cur_comps[idx]
             del cur_maxpos[idx]
             offset += 1
@@ -226,11 +237,16 @@ def cluster_pairs(opts, pairs, dtype, insert_mu, insert_sigma):
             cur_maxpos.append(merged_maxpos)
     # handle remaining components
     for comp in cur_comps:
-        new_clusters = cluster_handle_component(comp, is_compatible,
-                                                opts['max_pecluster_size'])
-        if len(new_clusters) > 0:
-            clusters.extend(new_clusters)
-            pairs_clustered.extend(cur_comps[idx])
+        if len(comp) > opts['max_pecluster_size'] and \
+           is_compatible(pairs=comp):
+            new_clusters = [comp]
+        elif len(comp) > 1:
+            new_clusters = cluster_handle_component(comp, is_compatible)
+        else:
+            new_clusters = []
+        clusters.extend(new_clusters)
+        if len(new_clusters) > 0 or len(comp) == 1:
+            pairs_clustered.extend(comp)
 
     # insertions need some additional filtering
     if dtype == 'Ins':
@@ -239,29 +255,22 @@ def cluster_pairs(opts, pairs, dtype, insert_mu, insert_sigma):
 
 
 # component: guaranteed length >= 2
-def cluster_handle_component(component, is_compatible, max_cluster_size):
+def cluster_handle_component(component, is_compatible):
     # print('handling component:\n\t%s' % component)
-    if len(component) > max_cluster_size:
-        # print('component too large')
-        if is_compatible(pairs=component):
-            return [component]
-        else:
-            return []
-    else:
-        # create a graph and fill in all the edges
-        g = igraph.Graph(len(component))
-        g.vs['pairs'] = component
-        iter_pairs = range(len(component))
-        compatible_pairs = [(i, j) for (i, j) in itertools.product(iter_pairs, repeat=2) if
-                            i != j and is_compatible(pairs=(component[i], component[j]))]
-        for cp in compatible_pairs:
-            g.add_edge(*cp)
-        # get max cliques and add to result
-        result = []
-        for clique in g.largest_cliques():
-            # print('\tclique of size %d' % len(clique))
-            result.append(g.vs[clique]['pairs'])
-        return result
+    # create a graph and fill in all the edges
+    g = igraph.Graph(len(component))
+    g.vs['pairs'] = component
+    iter_pairs = range(len(component))
+    compatible_pairs = [(i, j) for (i, j) in itertools.product(iter_pairs, repeat=2) if
+                        i != j and is_compatible(pairs=(component[i], component[j]))]
+    for cp in compatible_pairs:
+        g.add_edge(*cp)
+    # get max cliques and add to result
+    result = []
+    for clique in g.largest_cliques():
+        # print('\tclique of size %d' % len(clique))
+        result.append(g.vs[clique]['pairs'])
+    return result
 
 
 # discordant_pairs: list of tuples corresponding to discordant pairs
