@@ -1,4 +1,3 @@
-import itertools
 import numpy as np
 import os
 
@@ -55,23 +54,20 @@ def process_softclip(opts, pair, softclips, bam, lib_idx):
                 # other segment mapped to same chromosome -- process with splits
                 continue
 
-        # count number of phred qual > 2 clipped bases
-        lowqual_left, lowqual_right = count_lowqual_bases(aln)
-        lowqual_left += lowqual_trim_extra * (lowqual_left > 0)
-        lowqual_right += lowqual_trim_extra * (lowqual_right > 0)
-        nclip = [0, 0]
-        nclip[LEFT] = max(0, aln.query_alignment_start - lowqual_left)
-        nclip[RIGHT] = max(0, len(aln.seq) - lowqual_right - aln.query_alignment_end)
-        if nclip == [0, 0]:     # no clipped bases
+        # count number of phred qual > 2 clipped bases and adjust nclip
+        nclip = [aln.query_alignment_start, len(aln.seq) - aln.query_alignment_end]
+        if nclip == [0, 0]:
             continue
-        clipped_basequal = ['', '']
-        clipped_basequal[LEFT] = \
-            aln.query_qualities[lowqual_left:(lowqual_left+nclip[LEFT])]
-        clipped_basequal[RIGHT] = \
-            aln.query_qualities[-(lowqual_right+nclip[RIGHT]):-lowqual_right]
-        pos = [0, 0]
-        pos[LEFT] = aln.reference_start
-        pos[RIGHT] = aln.reference_end
+        lowqual_left, lowqual_right = count_lowqual_bases(aln)
+        if lowqual_left > 0:
+            lowqual_left += lowqual_trim_extra
+        if lowqual_right > 0:
+            lowqual_right += lowqual_trim_extra
+        nclip[LEFT] -= lowqual_left
+        nclip[RIGHT] -= lowqual_right
+        clipped_basequal = (aln.query_qualities[lowqual_left:(lowqual_left+nclip[LEFT])],
+                            aln.query_qualities[-(lowqual_right+nclip[RIGHT]):-lowqual_right])
+        pos = (aln.reference_start, aln.reference_end)
 
         for orientation in (LEFT, RIGHT):
             if nclip[orientation] < min_clipped_bases:

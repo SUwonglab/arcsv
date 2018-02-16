@@ -18,3 +18,6 @@ SPLIT_TYPES = {(SPLIT_FIRST_PLUS | SPLIT_SECOND_PLUS): 'Del+',
 # softclip orientation constants
 LEFT = 0
 RIGHT = 1
+
+# Low base quality symbols
+LOWQUAL_CHARS = ('#', '!', '"')

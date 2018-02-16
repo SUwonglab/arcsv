@@ -2,7 +2,7 @@ import numpy as np
 import pysam
 from math import sqrt, floor, log, erf
 
-from arcsv.constants import LEFT, RIGHT
+from arcsv.constants import LOWQUAL_CHARS
 
 
 # preliminary checks on reads
@@ -414,9 +414,17 @@ def flip_parity(i):
 
 
 def count_lowqual_bases(aln):
-    seqlen = len(aln.qual)
-    lowqual_left = seqlen - len(aln.qual.lstrip('#!"'))
-    lowqual_right = seqlen - len(aln.qual.rstrip('#!"'))
+    lowqual_left, lowqual_right = 0, 0
+    for char in aln.qual:
+        if char in LOWQUAL_CHARS:
+            lowqual_left += 1
+        else:
+            break
+    for char in reversed(aln.qual):
+        if char in LOWQUAL_CHARS:
+            lowqual_right += 1
+        else:
+            break
     return (lowqual_left, lowqual_right)
 
 
