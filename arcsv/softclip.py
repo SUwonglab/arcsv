@@ -36,23 +36,16 @@ class SoftclipCluster:
                      self.num_minus, self.num_plus, self.which_libs))
 
 
-def process_softclip(opts, pair, softclips, bam, lib_idx):
+def process_softclip(opts, pair, pair_split_found, softclips, lib_idx):
     min_mapq = opts['min_mapq_softclip']
     min_clipped_bases = opts['min_clipped_bases']
     min_clipped_qual = opts['min_clipped_qual']
     lowqual_trim_extra = opts['lowqual_trim_extra']
-    for aln in pair:
+    for (aln, split_found) in zip(pair, pair_split_found):
         if aln is None or aln.is_unmapped or \
-           aln.mapq < min_mapq or not_primary(aln):
+           aln.mapq < min_mapq or not_primary(aln) or \
+           split_found:
             continue
-        if aln.has_tag('SA'):       # primary alignment in a split read?
-            if not opts['do_splits']:  # not using split reads
-                continue
-            SA = aln.get_tag('SA')
-            split_rname = bam.gettid(SA.strip(';').split(',')[0])
-            if split_rname == aln.rname:
-                # other segment mapped to same chromosome -- process with splits
-                continue
 
         # count number of phred qual > 2 clipped bases and adjust nclip
         nclip = [aln.query_alignment_start, len(aln.seq) - aln.query_alignment_end]

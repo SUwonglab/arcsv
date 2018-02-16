@@ -11,6 +11,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
+from arcsv.constants import CIGAR_SOFT_CLIP
 from arcsv.conditional_mappable_model import process_aggregate_mapstats
 from arcsv.helper import valid_hanging_anchor, valid_hanging_pair, \
     get_chrom_size_from_bam, not_primary, robust_sd, normpdf, \
@@ -271,7 +272,6 @@ def parse_bam(opts, reference_files, bamfiles):
 
         # handle softclip information, insert len, mapping stats, splits/discordants
         if not (aln.is_duplicate or mate.is_duplicate):
-            process_softclip(opts, pair, softclips[lib_idx], bam, lib_idx)
             ilen = process_insert_len(pair, insert_len[lib_idx],
                                       opts['min_mapq_reads'], opts['read_len'])
             if not opts['use_mate_tags']:
@@ -283,13 +283,17 @@ def parse_bam(opts, reference_files, bamfiles):
                                         ilen, min_concordant_insert[lib_idx],
                                         max_concordant_insert[lib_idx],
                                         opts['library_is_rf'])
-            if opts['do_splits']:
-                a1_split = process_splits(pair[0], splits[lib_idx],
-                                          bam, min_mapq=min_mapq_reads,
-                                          mate=pair[1])
-                a2_split = process_splits(pair[1], splits[lib_idx],
-                                          bam, min_mapq=min_mapq_reads,
-                                          mate=pair[0])
+            if any(op == CIGAR_SOFT_CLIP for (op, oplen) in
+                   itertools.chain(aln.cigartuples, mate.cigartuples)):
+                if opts['do_splits']:
+                    a1_split = process_splits(pair[0], splits[lib_idx],
+                                              bam, min_mapq=min_mapq_reads,
+                                              mate=pair[1])
+                    a2_split = process_splits(pair[1], splits[lib_idx],
+                                              bam, min_mapq=min_mapq_reads,
+                                              mate=pair[0])
+                else:
+                    a1_split, a2_split = False, False
                 # if we found the same breakpoint in both reads,
                 # it's quite likely that the reads were overlapping due to a short insert
                 if a1_split and a2_split and splits_are_mirrored(splits[lib_idx][-1],
@@ -298,6 +302,8 @@ def parse_bam(opts, reference_files, bamfiles):
                         print('[bamparser] mirrored split: {0} {1} {2}'.
                               format(chrom_name, splits[lib_idx][-1].bp2, pair[0].qname))
                     del splits[lib_idx][-1]
+                process_softclip(opts, pair, (a1_split, a2_split), softclips[lib_idx], lib_idx)
+
 
     # handle unpaired reads
     if opts['verbosity'] > 0:
@@ -593,10 +599,12 @@ def handle_unpaired_read(opts, aln, coverage,
     pair = (aln, None)
 
     if not aln.is_duplicate:
-        process_softclip(opts, pair, softclips[lib_idx], bam, lib_idx)
         if opts['do_splits']:
-            process_splits(aln, splits[lib_idx], bam, min_mapq=opts['min_mapq_reads'],
-                           mate=None)
+            has_split = process_splits(aln, splits[lib_idx], bam,
+                                       min_mapq=opts['min_mapq_reads'], mate=None)
+        else:
+            has_split = False
+        process_softclip(opts, pair, (has_split, False), softclips[lib_idx], lib_idx)
         if not opts['use_mate_tags']:
             process_aggregate_mapstats(pair, mapstats[lib_idx],
                                        opts['min_mapq_reads'], opts['max_pair_distance'])

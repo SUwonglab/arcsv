@@ -19,5 +19,7 @@ SPLIT_TYPES = {(SPLIT_FIRST_PLUS | SPLIT_SECOND_PLUS): 'Del+',
 LEFT = 0
 RIGHT = 1
 
-# Low base quality symbols
+# Soft-clip stuff
+CIGAR_SOFT_CLIP = 4                  # http://pysam.readthedocs.io/en/latest/api.html
 LOWQUAL_CHARS = ('#', '!', '"')
+
