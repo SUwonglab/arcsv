@@ -466,8 +466,10 @@ def block_parser_handle_pair(opts, aln1, aln2, bam, g, blocks,
             print('[sv_parse_reads] read-through')
         return
 
-    qmean1 = np.mean(aln1.query_qualities) if qmean1 is None else qmean1
-    qmean2 = np.mean(aln2.query_qualities) if qmean2 is None else qmean2
+    # qmean1 = np.mean(aln1.query_qualities) if qmean1 is None else qmean1
+    # qmean2 = np.mean(aln2.query_qualities) if qmean2 is None else qmean2
+    # DEPRECATED feature
+    qmean1, qmean2 = 0, 0
     rlen1, rlen2 = aln1.query_length, aln2.query_length
     if aln1.is_unmapped or aln2.is_unmapped:
         # we always treat the "hanging" end as read 2, and the anchored end as read 1
