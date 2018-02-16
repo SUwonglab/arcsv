@@ -14,7 +14,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 from arcsv.conditional_mappable_model import process_aggregate_mapstats
 from arcsv.helper import valid_hanging_anchor, valid_hanging_pair, \
     get_chrom_size_from_bam, not_primary, robust_sd, normpdf, \
-    get_ucsc_name, get_chrom_size, is_read_through
+    get_ucsc_name, get_chrom_size, is_read_through, add_time_checkpoint
 from arcsv.invertedreads import get_inverted_pair, write_inverted_pairs_bigbed
 from arcsv.pecluster import process_discordant_pair
 from arcsv.read_viz import write_trackdb, write_array_bigwig, SparseSignalTrack
@@ -124,6 +124,8 @@ def parse_bam(opts, reference_files, bamfiles):
 
     if opts['verbosity'] > 0:
         print('[parse_bam] library stats:\n\tmu = {0}\n\tsigma = {1}'.format(mean_approx, sd_approx))
+    add_time_checkpoint(opts, 'lib. stats')
+
 
     def get_lr_cutoff(opts, pmf, do_min=False):
         cutoff_normal_equivalent = opts['insert_cutoff']
@@ -158,7 +160,6 @@ def parse_bam(opts, reference_files, bamfiles):
               .join(['{0}-{1}'.format(min_concordant_insert[i], max_concordant_insert[i])
                      for i in range(len(mean_approx))]))
         print('[parse_bam] equivalent quantiles to normal:\n\t{0}\n\t{1}\n'.format(qlower, qupper))
-
     if do_viz:
         ucsc_chrom = get_ucsc_name(chrom_name)
         coverage = [[0]*get_chrom_size(chrom_name, reference_files['reference'])
@@ -325,6 +326,7 @@ def parse_bam(opts, reference_files, bamfiles):
         print('[parse_bam] processed a total of {0} reads'.format(nreads))
         if opts['filter_read_through']:
             print('[parse_bam] found {0} read-through pairs'.format(num_read_through))
+    add_time_checkpoint(opts, 'parse bam')
 
     # compute insert length distributions and save plots
     if opts['verbosity'] > 1:
@@ -348,6 +350,7 @@ def parse_bam(opts, reference_files, bamfiles):
     if opts['verbosity'] > 1:
         for i in range(nlib):
             print('[parse_bam] lib {0} mu {1} sigma {2}'.format(i, insert_mean[i], insert_sd[i]))
+    add_time_checkpoint(opts, 'pmf smooth')
 
     # insert dist plots
     plot_insert_dist(opts, insert_len_dist, outdir)

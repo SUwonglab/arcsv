@@ -10,7 +10,7 @@ from arcsv.bamparser_streaming import parse_bam, BamGroup
 from arcsv.breakpoint_merge import merge_breakpoints
 from arcsv.conditional_mappable_model import (model_from_mapstats, load_aggregate_model,
                                               load_model)
-from arcsv.helper import get_chrom_size, time_to_str
+from arcsv.helper import get_chrom_size, add_time_checkpoint, print_time_checkpoints
 from arcsv.pecluster import apply_discordant_clustering
 from arcsv.sv_inference import do_inference
 from arcsv.sv_parse_reads import parse_reads_with_blocks
@@ -23,6 +23,9 @@ def run(args):
     # region, input_list, cutoff_type, output_name, verbosity, reference_name,
     # insert_cutoff, do_viz, no_pecluster, use_mate_tags = get_args()
     opts = vars(args)
+
+    # setup time checkpoints
+    opts['time_checkpoints'] = []
 
     if opts.get('reference_name') is not None:  # NOT IMPLEMENTED
         reference_file = os.path.join(this_dir, 'resources', opts['reference_name']+'.fa')
@@ -104,9 +107,7 @@ def run(args):
 # NOTE: lib names in metainfo contained in inputs need to be all unique
 def call_sv(opts, inputs, reference_files):
     # start timer
-    call_sv_start_time = time.time()
-    if opts['verbosity'] > 0:
-        print('[call_sv] start time: {0}'.format(call_sv_start_time))
+    add_time_checkpoint(opts, 'start')
     # load some options for convenience
     outdir = opts['outdir']
     # create ouput directories if needed
@@ -145,7 +146,7 @@ def call_sv(opts, inputs, reference_files):
 
     # random seed
     if opts['nondeterministic_seed']:
-        opts['random_seed'] = int(call_sv_start_time)
+        opts['random_seed'] = int(time.time())
     rnd.seed(opts['random_seed'])
     np.random.seed(opts['random_seed'] + 1)
     if opts['verbosity'] > 1:
@@ -186,15 +187,28 @@ def call_sv(opts, inputs, reference_files):
     # lib_dict_all.append(lib_dict)
     # lib_dict_combined = combine_lib_dict(lib_dict_all)
 
+    add_time_checkpoint(opts, '(first pass)')
+    if opts['verbosity'] > 0:
+        print_time_checkpoints(opts)
+        print('\n\n')
+
     # cluster discordant pairs
     if opts['do_pecluster']:
         bp_disc = apply_discordant_clustering(opts, disc, insert_mu, insert_sigma,
                                               insert_min, insert_max, reference_files['gap'])
     else:
         bp_disc = []
+    add_time_checkpoint(opts, '(DRP clust)')
+    if opts['verbosity'] > 0:
+        print_time_checkpoints(opts)
+        print('\n\n')
 
     # merge breakpoints
     bp_merged = merge_breakpoints(opts, softclips, splits, bp_disc)
+    add_time_checkpoint(opts, '(BP merge)')
+    if opts['verbosity'] > 0:
+        print_time_checkpoints(opts)
+        print('\n\n')
 
     # load mappability models from disk
     mappable_models = []
@@ -268,9 +282,6 @@ def call_sv(opts, inputs, reference_files):
         print('insert_ranges:')
         print('\n'.join(['\t{0}'.format(insert_ranges[l]) for l in range(len(insert_ranges))])
               + '\n')
-    call_sv_firstpass_time = time.time()
-    time_string = time_to_str(call_sv_firstpass_time - call_sv_start_time)
-    print('[call_sv] first pass elapsed time: {0}\n\n'.format(time_string))
 
     # call SVs
     bamfiles = [ip[0] for ip in inputs]
@@ -279,9 +290,10 @@ def call_sv(opts, inputs, reference_files):
     pr_out = parse_reads_with_blocks(opts, reference_files, [bamgroup],
                                      bp_merged, insert_ranges, mappable_models)
     graph, blocks, gap_indices, left_bp, right_bp = pr_out
-    call_sv_second_time = time.time()
-    time_string = time_to_str(call_sv_second_time - call_sv_start_time)
-    print('[call_sv] second pass elapsed time: {0}\n\n'.format(time_string))
+    add_time_checkpoint(opts, '(second pass)')
+    if opts['verbosity'] > 0:
+        print_time_checkpoints(opts)
+        print('\n\n')
 
     # TODO
     def compute_pi_robust(pmf, p=opts['robustness_parameter']):
@@ -306,20 +318,11 @@ def call_sv(opts, inputs, reference_files):
         insert_q99.append(q99)
     insertion_search_width = 1.1 * max(insert_q99)
 
-    inference_time = do_inference(opts, reference_files, graph, blocks,
-                                  gap_indices, left_bp, right_bp,
-                                  insert_dists, insert_cdfs, insert_cdf_sums,
-                                  class_probs, rlen_stats, insertion_search_width)
+    do_inference(opts, reference_files, graph, blocks,
+                 gap_indices, left_bp, right_bp,
+                 insert_dists, insert_cdfs, insert_cdf_sums,
+                 class_probs, rlen_stats, insertion_search_width)
+    add_time_checkpoint(opts, '(sv inference)')
 
-    # end timer
     if opts['verbosity'] > 0:
-        print('[call_sv] first pass cumulative time: ' +
-              time_to_str(call_sv_firstpass_time - call_sv_start_time))
-        print('[call_sv] second pass cumulative time: ' +
-              time_to_str(call_sv_second_time - call_sv_start_time))
-        print('[call_sv] insertion testing cumulative time: ' +
-              time_to_str(inference_time - call_sv_start_time))
-    call_sv_end_time = time.time()
-    elapsed_time = call_sv_end_time - call_sv_start_time
-    time_string = time_to_str(elapsed_time)
-    print('[call_sv] total elapsed time: ' + time_string)
+        print_time_checkpoints(opts)

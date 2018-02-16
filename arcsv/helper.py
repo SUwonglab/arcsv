@@ -1,5 +1,6 @@
 import numpy as np
 import pysam
+import time
 from math import sqrt, floor, log, erf
 
 from arcsv.constants import LEFT, RIGHT
@@ -267,12 +268,10 @@ def fetch_seq(ref, ctg, start, end, truncate=False, pad_N=False, is_reverse=Fals
 
 
 def time_to_str(seconds):
-    elapsed_hrs = floor(seconds / 3600)
-    elapsed_mins = floor((seconds % 3600) / 60)
-    elapsed_sec = floor((seconds % 60))
-    return '{0} hours {1} minutes {2} seconds'.format(elapsed_hrs,
-                                                      elapsed_mins,
-                                                      elapsed_sec)
+    hrs = floor(seconds / 3600)
+    mins = floor((seconds % 3600) / 60)
+    sec = floor((seconds % 60))
+    return '%02d:%02d:%02d' % (hrs, mins, sec)
 
 
 def normcdf(x, mu=0, sigma=1):
@@ -418,6 +417,22 @@ def count_lowqual_bases(aln):
     lowqual_left = seqlen - len(aln.qual.lstrip('#!"'))
     lowqual_right = seqlen - len(aln.qual.rstrip('#!"'))
     return (lowqual_left, lowqual_right)
+
+
+def add_time_checkpoint(opts, name):
+    cur_time = time.time()
+    opts['time_checkpoints'].append((cur_time, name))
+
+
+def print_time_checkpoints(opts):
+    start_time = opts['time_checkpoints'][0][0]
+    prev_time = opts['time_checkpoints'][0][0]
+    for (t, name) in opts['time_checkpoints'][1:]:
+        elapsed = t - prev_time
+        cumulative = t - start_time
+        print('[timer]\t{0}\telapsed\t{1}\tcumulative\t{2}'.
+              format(name, time_to_str(elapsed), time_to_str(cumulative)))
+        prev_time = t
 
 
 def test_merge_nearby():
