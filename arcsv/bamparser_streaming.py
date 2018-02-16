@@ -219,6 +219,7 @@ def parse_bam(opts, reference_files, bamfiles):
             continue
 
         # rg = aln.get_tag('RG')
+        # MULTILIB
         lib_idx = 0          # get_lib_idx(rg, lib_dict, lib_patterns)
 
         # handle softclip information, insert len, mapping stats, splits/discordants
@@ -234,8 +235,9 @@ def parse_bam(opts, reference_files, bamfiles):
                                         ilen, min_concordant_insert[lib_idx],
                                         max_concordant_insert[lib_idx],
                                         opts['library_is_rf'])
-            if any(op == CIGAR_SOFT_CLIP for (op, oplen) in
-                   itertools.chain(aln.cigartuples, mate.cigartuples)):
+            c1 = aln.cigartuples if not aln.is_unmapped else ()
+            c2 = mate.cigartuples if not mate.is_unmapped else ()
+            if any(op == CIGAR_SOFT_CLIP for (op, oplen) in itertools.chain(c1, c2)):
                 if opts['do_splits']:
                     a1_split = process_splits(pair[0], splits[lib_idx],
                                               bam, min_mapq=min_mapq_reads,
