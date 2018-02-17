@@ -13,14 +13,12 @@ from matplotlib.backends.backend_pdf import PdfPages
 
 from arcsv.constants import CIGAR_SOFT_CLIP
 from arcsv.conditional_mappable_model import process_aggregate_mapstats
-from arcsv.helper import valid_hanging_anchor, valid_hanging_pair, \
-    get_chrom_size_from_bam, not_primary, robust_sd, normpdf, \
-    get_ucsc_name, get_chrom_size, is_read_through
-from arcsv.invertedreads import get_inverted_pair, write_inverted_pairs_bigbed
+from arcsv.helper import get_chrom_size_from_bam, not_primary, \
+    robust_sd, normpdf, is_read_through
+from arcsv.invertedreads import get_inverted_pair
 from arcsv.pecluster import process_discordant_pair
-from arcsv.read_viz import write_trackdb, write_array_bigwig, SparseSignalTrack
-from arcsv.softclip import process_softclip, write_softclips_bigwig
-from arcsv.splitreads import parse_splits, splits_are_mirrored, write_splits_bigbed
+from arcsv.softclip import process_softclip
+from arcsv.splitreads import parse_splits, splits_are_mirrored
 
 matplotlib.use('Agg')           # required if X11 display is not present
 
@@ -278,7 +276,8 @@ def parse_bam(opts, reference_files, bamfiles):
 
     if opts['verbosity'] > 1:
         for i in range(nlib):
-            print('[parse_bam] lib {0} mu {1} sigma {2}'.format(i, insert_mean[i], insert_sd[i]))
+            print('[parse_bam] lib {0} mu {1} sigma {2}'
+                  .format(i, insert_mean[i], insert_sd[i]))
 
     # insert dist plots
     plot_insert_dist(opts, insert_len_dist, outdir)
