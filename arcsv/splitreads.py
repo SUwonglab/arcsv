@@ -8,8 +8,6 @@ from arcsv.helper import get_ucsc_name
 
 
 def valid_split(aln, bam, min_mapq, max_splits=1):
-    if max_splits != 1:
-        raise Warning('max_splits = 1 is required for now')
     if (not aln.has_tag('SA')) or aln.mapq < min_mapq:
         return False
     SA = aln.get_tag('SA')

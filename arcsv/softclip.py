@@ -1,4 +1,3 @@
-import itertools
 import numpy as np
 import os
 
@@ -37,41 +36,31 @@ class SoftclipCluster:
                      self.num_minus, self.num_plus, self.which_libs))
 
 
-def process_softclip(opts, pair, softclips, bam, lib_idx):
+def process_softclip(opts, pair, pair_split_found, softclips, lib_idx):
     min_mapq = opts['min_mapq_softclip']
     min_clipped_bases = opts['min_clipped_bases']
     min_clipped_qual = opts['min_clipped_qual']
     lowqual_trim_extra = opts['lowqual_trim_extra']
-    for aln in pair:
+    for (aln, split_found) in zip(pair, pair_split_found):
         if aln is None or aln.is_unmapped or \
-           aln.mapq < min_mapq or not_primary(aln):
+           aln.mapq < min_mapq or not_primary(aln) or \
+           split_found:
             continue
-        if aln.has_tag('SA'):       # primary alignment in a split read?
-            if not opts['do_splits']:  # not using split reads
-                continue
-            SA = aln.get_tag('SA')
-            split_rname = bam.gettid(SA.strip(';').split(',')[0])
-            if split_rname == aln.rname:
-                # other segment mapped to same chromosome -- process with splits
-                continue
 
-        # count number of phred qual > 2 clipped bases
-        lowqual_left, lowqual_right = count_lowqual_bases(aln)
-        lowqual_left += lowqual_trim_extra * (lowqual_left > 0)
-        lowqual_right += lowqual_trim_extra * (lowqual_right > 0)
-        nclip = [0, 0]
-        nclip[LEFT] = max(0, aln.query_alignment_start - lowqual_left)
-        nclip[RIGHT] = max(0, len(aln.seq) - lowqual_right - aln.query_alignment_end)
-        if nclip == [0, 0]:     # no clipped bases
+        # count number of phred qual > 2 clipped bases and adjust nclip
+        nclip = [aln.query_alignment_start, len(aln.seq) - aln.query_alignment_end]
+        if nclip == [0, 0]:
             continue
-        clipped_basequal = ['', '']
-        clipped_basequal[LEFT] = \
-            aln.query_qualities[lowqual_left:(lowqual_left+nclip[LEFT])]
-        clipped_basequal[RIGHT] = \
-            aln.query_qualities[-(lowqual_right+nclip[RIGHT]):-lowqual_right]
-        pos = [0, 0]
-        pos[LEFT] = aln.reference_start
-        pos[RIGHT] = aln.reference_end
+        lowqual_left, lowqual_right = count_lowqual_bases(aln)
+        if lowqual_left > 0:
+            lowqual_left += lowqual_trim_extra
+        if lowqual_right > 0:
+            lowqual_right += lowqual_trim_extra
+        nclip[LEFT] -= lowqual_left
+        nclip[RIGHT] -= lowqual_right
+        clipped_basequal = (aln.query_qualities[lowqual_left:(lowqual_left+nclip[LEFT])],
+                            aln.query_qualities[-(lowqual_right+nclip[RIGHT]):-lowqual_right])
+        pos = (aln.reference_start, aln.reference_end)
 
         for orientation in (LEFT, RIGHT):
             if nclip[orientation] < min_clipped_bases:
