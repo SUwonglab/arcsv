@@ -381,15 +381,17 @@ def handle_unpaired_read(opts, aln, softclips, splits, bam, mapstats):
     # MULTILIB
     lib_idx = 0
 
-    if opts['do_splits']:
-        has_split = process_splits(aln, splits[lib_idx], bam,
-                                   min_mapq=opts['min_mapq_reads'], mate=None)
-    else:
-        has_split = False
-    process_softclip(opts, pair, (has_split, False), softclips[lib_idx], lib_idx)
     if not opts['use_mate_tags']:
         process_aggregate_mapstats(pair, mapstats[lib_idx],
                                    opts['min_mapq_reads'], opts['max_pair_distance'])
+
+    if any(op == CIGAR_SOFT_CLIP for (op, oplen) in aln.cigartuples):
+        if opts['do_splits']:
+            has_split = process_splits(aln, splits[lib_idx], bam,
+                                       min_mapq=opts['min_mapq_reads'], mate=None)
+        else:
+            has_split = False
+        process_softclip(opts, pair, (has_split, False), softclips[lib_idx], lib_idx)
 
 
 # assume no hard-clipping so sequence length is calculated correctly by pysam
