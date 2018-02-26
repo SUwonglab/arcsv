@@ -27,7 +27,6 @@ setup(
         'scipy',
         'scikit-learn',
         'matplotlib',
-        'patsy',
         'python-igraph',
         'pyinter'
     ],

@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from sklearn import linear_model
 from sklearn.metrics import log_loss
-from patsy import dmatrices, build_design_matrices
 
 matplotlib.use('Agg')           # required if X11 display is not present
 
@@ -122,86 +121,6 @@ def add_dummy_obs(mappable_stats, use_rlen):
     print(len(mappable_stats['label']))
     quantiles = [np.percentile(m, (10, 50, 90)) for m in mappable_stats.values() if len(m) > 0]
     print('\n'.join([str(q) for q in quantiles]))
-
-
-def fit_mappable_model(mappable_stats, use_rlen, max_obs=5000000):
-    # fit model
-    if use_rlen:
-        design = 'label ~ (qmean1 + qmean2 + rlen1 + rlen2)*(qmean1 + qmean2 + rlen1 + rlen2)'
-    else:
-        design = 'label ~ qmean1 * qmean2'
-    y, X = dmatrices(design, mappable_stats)
-    builder = X.design_info.builder
-    X = np.asarray(X)
-    y = np.ravel(y)
-    if max_obs < len(y):
-        factor = max_obs/len(y)
-        subsample = [i for i in range(len(y)) if np.random.rand() <= factor]
-        X = X[subsample, :]
-        y = y[subsample]
-    print(X.shape)
-    print(y.shape)
-    model = linear_model.LogisticRegression(multi_class='multinomial', solver='newton-cg', fit_intercept=False, C=1e6, max_iter=50000)
-    model.fit(X, y)
-    print('loss on training data: {0}'.format(log_loss(y, predict_prob(model, X))))
-
-    qmin, qmax = min(mappable_stats['qmean1']), max(mappable_stats['qmean2'])
-
-    return model, builder, (qmin, qmax)
-
-
-def predict_prob(model, X):
-    tmp = X.dot(model.coef_.T)
-    M = np.max(tmp, 1, keepdims=True)
-    L = np.exp(tmp - M)
-    return L / np.sum(L, 1, keepdims=True)
-
-
-def predict_grid(model, builder, mappable_stats, use_rlen, qmean_res=1, rlen_res=10):
-    qmin = min(mappable_stats['qmean1'] + mappable_stats['qmean2'])
-    qmax = max(mappable_stats['qmean1'] + mappable_stats['qmean2'])
-    qmin_rounded = int(np.floor(qmin / qmean_res) * qmean_res)
-    qmax_rounded = int(np.ceil(qmax / qmean_res) * qmean_res)
-    qrange = np.arange(qmin_rounded, qmax_rounded + qmean_res, qmean_res)
-    if use_rlen:
-        rmin = min(mappable_stats['rlen1'] + mappable_stats['rlen2'])
-        rmax = max(mappable_stats['rlen1'] + mappable_stats['rlen2'])
-        rmin_rounded = int(np.floor(rmin / rlen_res) * rlen_res)
-        rmax_rounded = int(np.ceil(rmax / rlen_res) * rlen_res)
-        rrange = np.arange(rmin_rounded, rmax_rounded + rlen_res, rlen_res)
-    if use_rlen:
-        q1g, q2g, r1g, r2g = np.meshgrid(qrange, qrange, rrange, rrange)
-        q1ravel, q2ravel = np.ravel(q1g), np.ravel(q2g)
-        r1ravel, r2ravel = np.ravel(r1g), np.ravel(r2g)
-        m = len(q1ravel)
-        x_new = build_design_matrices([builder],
-                                      {'qmean1': np.ravel(q1g),
-                                       'qmean2': np.ravel(q2g),
-                                       'rlen1': np.ravel(r1g),
-                                       'rlen2': np.ravel(r2g)})[0]
-        x_new = np.asarray(x_new)
-        pr = predict_prob(model, x_new)
-        grid_dict = {(q1ravel[i], r1ravel[i], q2ravel[i], r2ravel[i]): tuple(pr[i]) for i in range(m)}
-        return (qmin_rounded, qmax_rounded, qmean_res), (rmin_rounded, rmax_rounded, rlen_res), grid_dict
-    else:
-        q1g, q2g = np.meshgrid(qrange, qrange)
-        q1ravel, q2ravel = np.ravel(q1g), np.ravel(q2g)
-        m = len(q1ravel)
-        x_new = build_design_matrices([builder],
-                                      {'qmean1': np.ravel(q1g),
-                                       'qmean2': np.ravel(q2g)})[0]
-        x_new = np.asarray(x_new)
-        pr = predict_prob(model, x_new)
-        grid_dict = {(q1ravel[i], q2ravel[i]): tuple(pr[i]) for i in range(m)}
-        return (qmin_rounded, qmax_rounded, qmean_res), grid_dict
-
-
-def save_model(filename, fitted_prob, qgrid, rgrid=None):
-    outfile = open(filename, 'wb')
-    pickle.dump(fitted_prob, outfile)
-    pickle.dump(qgrid, outfile)
-    pickle.dump(rgrid, outfile)
-    outfile.close()
 
 
 def load_aggregate_model(model_dir, bam_name, lib_stats):

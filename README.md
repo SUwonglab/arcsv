@@ -41,7 +41,6 @@ This software was developed in the [Wong Lab](https://web.stanford.edu/group/won
 - python packages (automatically installed by pip)
     - matplotlib
     - numpy
-    - patsy
     - pyinter
     - pysam
     - python-igraph
