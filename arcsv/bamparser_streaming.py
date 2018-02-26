@@ -8,6 +8,7 @@ import random as rnd
 import sys
 
 import matplotlib
+matplotlib.use('Agg')           # required if X11 display is not present
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
@@ -19,8 +20,6 @@ from arcsv.invertedreads import get_inverted_pair
 from arcsv.pecluster import process_discordant_pair
 from arcsv.softclip import process_softclip
 from arcsv.splitreads import parse_splits, splits_are_mirrored
-
-matplotlib.use('Agg')           # required if X11 display is not present
 
 
 def extract_approximate_library_stats(opts, bam, rough_insert_median):

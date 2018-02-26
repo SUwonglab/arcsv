@@ -2,6 +2,7 @@ import gc
 import resource
 import itertools
 import matplotlib
+matplotlib.use('Agg')           # required if X11 display is not present
 import matplotlib.pyplot as plt
 import pickle
 import pysam
@@ -12,7 +13,6 @@ from bisect import bisect_left
 from collections import defaultdict
 from math import floor
 
-matplotlib.use('Agg')           # required if X11 display is not present
 
 # Huref contig-chromosome mapping
 huref_chrom = {'1': 'CM000462.1', '2': 'CM000463.1', '3': 'CM000464.1',

@@ -4,14 +4,13 @@ import numpy as np
 import os
 from math import floor
 import matplotlib
-# from matplotlib.backends.backend_pdf import PdfPages
+matplotlib.use('Agg')           # required if X11 display is not present
 from matplotlib.cm import jet
 from matplotlib.collections import PatchCollection
 from matplotlib.patches import Polygon
 
 from arcsv.helper import GenomeInterval
 
-matplotlib.use('Agg')           # required if X11 display is not present
 PHI = 1.618
 
 

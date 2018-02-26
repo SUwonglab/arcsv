@@ -2,12 +2,12 @@ import os
 import pickle
 import numpy as np
 import matplotlib
+matplotlib.use('Agg')           # required if X11 display is not present
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from sklearn import linear_model
 from sklearn.metrics import log_loss
 
-matplotlib.use('Agg')           # required if X11 display is not present
 
 # 1 = mapped
 # 0 = unmapped
