@@ -28,6 +28,7 @@ def extract_approximate_library_stats(opts, bam, rough_insert_median):
     # lib_patterns, lib_stats = parse_library_stats(meta)
     # maps read groups matching lib_patterns to indices in lib_stats
     # lib_dict = {}
+    # MULTILIB
     nlib = opts['nlib']
     insert_len = [[] for i in range(nlib)]
     read_len_shorter = [[] for i in range(nlib)]
@@ -48,6 +49,9 @@ def extract_approximate_library_stats(opts, bam, rough_insert_median):
         # parse reads
         seen_aln = {}
         chunk_reads_seen = 0
+        alns = list(bam.fetch_unsorted(chrom_name, start, end))
+        if bam.num_bam > 1:
+            alns.sort(key=lambda a: a.pos)
         for aln in list(bam.fetch_unsorted(chrom_name, start, end)):
             # conditioning on mate position introduces slight bias,
             # but insignificant if chunk_size >> insert size
@@ -431,6 +435,10 @@ class BamGroup:
     @property
     def lengths(self):
         return self.bamlist[0].lengths
+
+    @property
+    def num_bam(self):
+        return len(self.bamlist)
 
 
 def pmf_kernel_smooth(a, xmin, xmax, max_kde_samples):

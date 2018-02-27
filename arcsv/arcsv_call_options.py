@@ -32,7 +32,6 @@ DEFAULT_OPTS = {
     'approx_stats_nchunks': 1000,
     'max_kde_samples': 1000000,
     'insert_max_mu_multiple': 3,  # median * multiple is the assumed maximum insert size
-
     # BREAKPOINT DETECTION
     'max_softclip_merge_distance': 5,
     'min_softclip_support': 2,
