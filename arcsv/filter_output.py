@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 
 
@@ -42,8 +43,13 @@ def filter_arcsv_output(args):
         sys.exit(1)
 
     filtered_records = apply_filters(opts, arcsv_records, header)
-    filtered_records.sort(key=lambda x: (int(x[0]), int(x[1])))
+
+    chrom_names = {x[0]: convert_chrom_name(x[0]) for x in filtered_records}
+    if not all(isinstance(x, int) for x in chrom_names.values()):
+        chrom_names = {x: str(y) for x, y in chrom_names.items()}
+    filtered_records.sort(key=lambda x: (chrom_names[x[0]], int(x[1])))
     print('sorted')
+
     write_arcsv_output(opts, filtered_records, header)
     # if opts.get('reference_name') is not None:  # NOT IMPLEMENTED
     #     reference_file = os.path.join(this_dir, 'resources', opts['reference_name']+'.fa')
@@ -56,6 +62,17 @@ def filter_arcsv_output(args):
     # reference_files = {'reference': reference_file, 'gap': gap_file}
     # if opts['verbosity'] > 0:
     #     print('[run] ref files {0}'.format(reference_files))
+
+
+def convert_chrom_name(chrom_name):
+    chrom_name = chrom_name.lstrip('chr')
+    if re.match('[0-9]+', chrom_name) is not None:
+        return int(chrom_name)
+    elif re.match('[a-zA-Z]', chrom_name) is not None:
+        # put chrX, chrY, etc after numbered chromosomes
+        return int(1e9 + ord(chrom_name))
+    else:
+        return chrom_name
 
 
 def read_arcsv_output(directory, filename, records):
