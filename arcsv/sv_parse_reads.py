@@ -456,7 +456,7 @@ def block_parser_handle_pair(opts, aln1, aln2, bam, g, blocks, block_ends,
         return
 
     if opts['filter_read_through'] and \
-       is_read_through((aln1, aln2), opts['read_through_slop']):
+       is_read_through(opts, (aln1, aln2)):
         if opts['verbosity'] > 1:
             print('[sv_parse_reads] read-through')
         return
