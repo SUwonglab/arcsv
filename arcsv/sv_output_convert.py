@@ -4,10 +4,10 @@ import pysam
 
 
 from arcsv.breakpoint_merge import Breakpoint
-from arcsv.helper import GenomeInterval
+from arcsv.helper import GenomeInterval, load_genome_gaps
 from arcsv.splitreads import SupportingSplit
 from arcsv.sv_output import do_sv_processing
-from arcsv.sv_parse_reads import load_genome_gaps, create_blocks
+from arcsv.sv_parse_reads import create_blocks
 
 
 def svelter_convert(svelterfile, outdir, reffile, filter_gaps=False, refgapfile=None,

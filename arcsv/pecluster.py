@@ -9,8 +9,7 @@ from bisect import bisect_left
 from operator import attrgetter
 
 from arcsv.breakpoint_merge import Breakpoint
-from arcsv.helper import normcdf, not_primary
-from arcsv.sv_parse_reads import load_genome_gaps
+from arcsv.helper import normcdf, not_primary, load_genome_gaps
 from arcsv.unif_ci import uniform_ci
 
 
@@ -88,7 +87,7 @@ def apply_discordant_clustering(opts, discordant_pairs_list,
         for (dtype, pairs) in discordant_pairs_list[i].items():
             if opts['verbosity'] > 0:
                 print('[pecluster] clustering {0}'.format(dtype))
-            clusters, pairs_clustered = cluster_pairs(opts, pairs, dtype,
+            clusters, pairs_clustered = cluster_pairs(opts, pairs, dtype, i,
                                                       insert_mu[i], insert_sigma[i])
 
             if opts['verbosity'] > 0:
@@ -170,15 +169,17 @@ compatibility_fun = {'Del': is_deldupinv_compatible,
                      'InvL': is_deldupinv_compatible}
 
 
-def cluster_pairs(opts, pairs, dtype, insert_mu, insert_sigma):
-    if opts['verbosity'] > 1:
-        print('clustering {0} pairs'.format(dtype))
+def cluster_pairs(opts, pairs, dtype, lib_idx, insert_mu, insert_sigma):
     pairs.sort(key=attrgetter('pos1'))
     max_compatible_distance = insert_mu + opts['cluster_max_distance_sd'] * insert_sigma
+    max_cluster_size = opts['max_pecluster_size'][lib_idx]
     is_compatible = functools.partial(compatibility_fun[dtype],
                                       opts=opts,
                                       max_distance=max_compatible_distance,
                                       insert_mu=insert_mu, insert_sigma=insert_sigma)
+    if opts['verbosity'] > 1:
+        print('clustering {0} pairs'.format(dtype))
+        print('max cluster size: {0}'.format(max_cluster_size))
 
     cur_comps = []              # pairs in the current connected components
     cur_maxpos = []             # max(pair.pos1) over pairs in cur_comps
@@ -195,12 +196,12 @@ def cluster_pairs(opts, pairs, dtype, insert_mu, insert_sigma):
             idx = i - offset    # adjust for deleting other stuff
             # print('passed component with maxpos %d' % cur_maxpos[idx])
 
-            if len(cur_comps[idx]) > opts['max_pecluster_size'] and \
+            if len(cur_comps[idx]) > max_cluster_size and \
                is_compatible(pairs=cur_comps[idx]):
                 # for huge clusters, we just skip unless all discordant pairs
                 #   are mutually compatible
                 new_clusters = [cur_comps[idx]]
-            elif 1 < len(cur_comps[idx]) <= opts['max_pecluster_size']:
+            elif 1 < len(cur_comps[idx]) <= max_cluster_size:
                 new_clusters = cluster_handle_component(cur_comps[idx], is_compatible)
             else:
                 new_clusters = []
@@ -237,10 +238,10 @@ def cluster_pairs(opts, pairs, dtype, insert_mu, insert_sigma):
             cur_maxpos.append(merged_maxpos)
     # handle remaining components
     for comp in cur_comps:
-        if len(comp) > opts['max_pecluster_size'] and \
+        if len(comp) > max_cluster_size and \
            is_compatible(pairs=comp):
             new_clusters = [comp]
-        elif 1 < len(comp) <= opts['max_pecluster_size']:
+        elif 1 < len(comp) <= max_cluster_size:
             new_clusters = cluster_handle_component(comp, is_compatible)
         else:
             new_clusters = []
@@ -379,7 +380,8 @@ def compute_null_dist(opts, discordant_pairs, dtype,
     for _ in range(nreps):
         shuffled = shuffle_discordant_pairs(discordant_pairs, total_len,
                                             max_insert_size=max_null_insert)
-        clusters_tmp, _ = cluster_pairs(opts, shuffled, dtype, insert_mu, insert_sigma)
+        clusters_tmp, _ = cluster_pairs(opts, shuffled, dtype, lib_idx,
+                                        insert_mu, insert_sigma)
         null_clusters.extend(clusters_tmp)
         lr_tmp = np.fromiter((lr_fun[dtype](c, insert_mu, insert_sigma,
                                             opts['insert_cutoff'], lr_cond)

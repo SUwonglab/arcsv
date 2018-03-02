@@ -15,7 +15,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 from arcsv.constants import CIGAR_SOFT_CLIP
 from arcsv.conditional_mappable_model import process_aggregate_mapstats
 from arcsv.helper import get_chrom_size_from_bam, not_primary, robust_sd, \
-    add_time_checkpoint, normpdf, is_read_through
+    add_time_checkpoint, normpdf, is_read_through, len_without_gaps
 from arcsv.invertedreads import get_inverted_pair
 from arcsv.pecluster import process_discordant_pair
 from arcsv.softclip import process_softclip
@@ -164,7 +164,7 @@ def parse_bam(opts, reference_files, bamfiles):
               .format(qlower, qupper))
 
     seen_aln = {}
-    nreads = 0
+    nreads, npairs = 0, 0
     num_read_through = 0
     insert_len = [[] for i in range(nlib)]
     softclips = [(defaultdict(list), defaultdict(list)) for i in range(nlib)]
@@ -198,6 +198,7 @@ def parse_bam(opts, reference_files, bamfiles):
             continue
 
         # Completed a pair!
+        npairs += 1
         mate = seen_aln[aln.qname]
         pair = (aln, mate)
         del seen_aln[aln.qname]
@@ -286,6 +287,18 @@ def parse_bam(opts, reference_files, bamfiles):
 
     # insert dist plots
     plot_insert_dist(opts, insert_len_dist, outdir)
+
+    # compute average coverage
+    # MULTILIB this needs adjusting -- keeping track of nreads from each bamgroup
+    region_len = len_without_gaps(chrom_name, start, end, reference_files['gap'])
+    opts['seq_coverage'] = [nreads * opts['read_len'] / (nlib * region_len) for _ in range(nlib)]
+    opts['phys_coverage'] = [npairs * m / region_len for m in insert_mean]
+    opts['max_pecluster_size'] = [pc * opts['pecluster_size_coverage_ratio']
+                                  for pc in opts['phys_coverage']]
+
+    if opts['verbosity'] > 0:
+        print('[parse_bam] average sequence coverage: %.1fx' % opts['seq_coverage'][0])
+        print('[parse_bam] average physical coverage: %.1fx' % opts['phys_coverage'][0])
 
     if opts['do_pecluster']:
         return (softclips, splits, mapstats, rlen_medians, insert_len_dist,

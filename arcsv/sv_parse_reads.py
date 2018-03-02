@@ -8,7 +8,7 @@ from math import floor
 
 from arcsv.breakpoint_merge import Breakpoint
 from arcsv.helper import not_primary, is_read_through, \
-    block_distance, flip_parity, GenomeInterval
+    block_distance, flip_parity, GenomeInterval, load_genome_gaps
 
 
 # CLEANUP this is a pretty messy data structure
@@ -749,17 +749,6 @@ def get_blocks_gaps(aln):
                 gap += length
     gaps.append(gap)
     return blocks, gaps
-
-
-def load_genome_gaps(gapsfile, chrom_name):
-    gaps = pyinter.IntervalSet()
-    with open(gapsfile, 'r') as file:
-        lines = [l for l in file.readlines() if l.split('\t')[0] == chrom_name]
-        for line in lines:
-            toks = line.split('\t')
-            a, b = int(toks[1]), int(toks[2])
-            gaps.add(pyinter.closedopen(a, b))
-    return gaps
 
 
 def test_intersects():

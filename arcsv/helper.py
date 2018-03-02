@@ -1,4 +1,5 @@
 import numpy as np
+import pyinter
 import pysam
 import time
 from math import sqrt, floor, log, erf
@@ -70,6 +71,25 @@ def get_chrom_size(chrom_name, refname):
     i = min(i for i in range(ref.nreferences) if
             ref.references[i] == chrom_name)
     return ref.lengths[i]
+
+
+def load_genome_gaps(gapsfile, chrom_name):
+    gaps = pyinter.IntervalSet()
+    with open(gapsfile, 'r') as file:
+        lines = [l for l in file.readlines() if l.split('\t')[0] == chrom_name]
+        for line in lines:
+            toks = line.split('\t')
+            a, b = int(toks[1]), int(toks[2])
+            gaps.add(pyinter.closedopen(a, b))
+    return gaps
+
+
+def len_without_gaps(chrom_name, start, end, gapsfile):
+    gaps = load_genome_gaps(gapsfile, chrom_name)
+    region = pyinter.IntervalSet()
+    region.add(pyinter.closedopen(start, end))
+    diff = region.difference(gaps)
+    return sum(x.upper_value - x.lower_value for x in diff)
 
 
 def get_chrom_size_from_bam(chrom_name, bam):
