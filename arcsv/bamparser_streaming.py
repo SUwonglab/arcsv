@@ -55,7 +55,8 @@ def extract_approximate_library_stats(opts, bam, rough_insert_median):
         for aln in list(bam.fetch_unsorted(chrom_name, start, end)):
             # conditioning on mate position introduces slight bias,
             # but insignificant if chunk_size >> insert size
-            if not_primary(aln) or aln.mpos < start or aln.mpos >= end or aln.is_duplicate:
+            if not_primary(aln) or aln.is_duplicate or aln.is_unmapped or \
+               aln.mpos < start or aln.mpos >= end or aln.mate_is_unmapped:
                 continue
             if aln.qname not in seen_aln:
                 if chunk_reads_seen < reads_per_chunk:
@@ -68,15 +69,15 @@ def extract_approximate_library_stats(opts, bam, rough_insert_median):
             mate = seen_aln[aln.qname]
             pair = (aln, mate)
             del seen_aln[aln.qname]
-            if not mate.is_duplicate:  # not sure if this is needed?
-                lib_idx = 0  # get_lib_idx(aln.get_tag('RG'), lib_dict, lib_patterns)
-                process_insert_len(pair, insert_len[lib_idx], opts['min_mapq_reads'],
-                                   opts['read_len'], maximum_insert_size=rough_insert_max)
-                process_read_len(pair, read_len_shorter[lib_idx], read_len_longer[lib_idx])
-                reads_processed[lib_idx] += 1
-                if min(reads_processed) % 200000 == 0 and opts['verbosity'] > 0:
-                    print('[library_stats] processed {0} reads ({1} chunks) for each lib'.
-                          format(min(reads_processed), chunks_processed))
+
+            lib_idx = 0  # get_lib_idx(aln.get_tag('RG'), lib_dict, lib_patterns)
+            process_insert_len(pair, insert_len[lib_idx], opts['min_mapq_reads'],
+                               opts['read_len'], maximum_insert_size=rough_insert_max)
+            process_read_len(pair, read_len_shorter[lib_idx], read_len_longer[lib_idx])
+            reads_processed[lib_idx] += 1
+            if min(reads_processed) % 200000 == 0 and opts['verbosity'] > 0:
+                print('[library_stats] processed {0} reads ({1} chunks) for each lib'.
+                      format(min(reads_processed), chunks_processed))
         chunks_processed += 1
 
     insert_mean = [np.median(il) for il in insert_len]
