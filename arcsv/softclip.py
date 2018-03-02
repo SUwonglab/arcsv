@@ -51,34 +51,31 @@ def process_softclip(opts, pair, pair_split_found, softclips, lib_idx):
         nclip = [aln.query_alignment_start, len(aln.seq) - aln.query_alignment_end]
         if nclip == [0, 0]:
             continue
-        lowqual_left, lowqual_right = count_lowqual_bases(aln)
-        if lowqual_left > 0:
-            lowqual_left += lowqual_trim_extra
-        if lowqual_right > 0:
-            lowqual_right += lowqual_trim_extra
-        nclip[LEFT] -= lowqual_left
-        nclip[RIGHT] -= lowqual_right
-        clipped_basequal = (aln.query_qualities[lowqual_left:(lowqual_left+nclip[LEFT])],
-                            aln.query_qualities[-(lowqual_right+nclip[RIGHT]):-lowqual_right])
         pos = (aln.reference_start, aln.reference_end)
+        lowqual = count_lowqual_bases(aln, lowqual_trim_extra)
 
-        for orientation in (LEFT, RIGHT):
-            if nclip[orientation] < min_clipped_bases:
+        for o in (LEFT, RIGHT):
+            if lowqual[o] > 0:
+                nclip[o] = max(0, nclip[o] - lowqual[o])
+            if nclip[o] < min_clipped_bases:
                 continue
-            med_qual = np.median(clipped_basequal[orientation])
+            if o == LEFT:
+                med_qual = np.median(aln.query_qualities[lowqual[o]:(lowqual[o]+nclip[o])])
+            else:
+                med_qual = np.median(aln.query_qualities[(-lowqual[o]-nclip[o]):(-lowqual[o] or None)])
             if med_qual < min_clipped_qual:
                 continue
-            this_nclip = nclip[orientation]
-            this_pos = pos[orientation]
+            this_nclip = nclip[o]
+            this_pos = pos[o]
             this_nmapped = aln.query_alignment_end - aln.query_alignment_start
-            sc = SoftclipCluster(is_right=(orientation == RIGHT), pos=this_pos,
+            sc = SoftclipCluster(is_right=(o == RIGHT), pos=this_pos,
                                  bases_clipped=this_nclip, bases_mapped=this_nmapped,
                                  num_reads=1, num_reads_exact=1,
                                  sum_mapq=aln.mapq,
                                  num_minus=int(aln.is_reverse),
                                  num_plus=1-int(aln.is_reverse),
                                  which_libs=(1 << lib_idx))
-            softclips[orientation][this_pos].append(sc)
+            softclips[o][this_pos].append(sc)
 
 
 # for merging SoftclipCluster objects with the same orientation

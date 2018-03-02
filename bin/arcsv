@@ -3,7 +3,6 @@
 import argparse
 import sys
 
-
 from arcsv.arcsv_call_options import DEFAULT_OPTS
 from arcsv._version import __version__
 

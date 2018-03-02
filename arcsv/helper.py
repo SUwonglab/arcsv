@@ -432,7 +432,7 @@ def flip_parity(i):
     return 2 * floor(i / 2) + (1 - i % 2)
 
 
-def count_lowqual_bases(aln):
+def count_lowqual_bases(aln, slop=0):
     lowqual_left, lowqual_right = 0, 0
     for char in aln.qual:
         if char in LOWQUAL_CHARS:
@@ -444,6 +444,10 @@ def count_lowqual_bases(aln):
             lowqual_right += 1
         else:
             break
+    if lowqual_left > 0:
+        lowqual_left += slop
+    if lowqual_right > 0:
+        lowqual_right += slop
     return (lowqual_left, lowqual_right)
 
 
