@@ -433,8 +433,7 @@ def block_parser_handle_pair(opts, aln1, aln2, bam, g, blocks, block_ends,
         aln1_in_range = aln1_chrom == chrom_name
         aln2_in_range = aln2_chrom == chrom_name
     lib_idx = 0  # lib_dict[aln1.get_tag('RG')]
-    if (not opts['do_splits']) and (aln1.has_tag('SA') or aln2.has_tag('SA')):
-        return
+
     is_rf = opts['library_is_rf']
     true_rlen = opts['read_len']
     min_mapq = opts['min_mapq_reads']
@@ -502,7 +501,25 @@ def block_parser_handle_pair(opts, aln1, aln2, bam, g, blocks, block_ends,
 # (see above) we are guaranteed aln.pos < blocks[block_idx].end
 def get_blocked_alignment(opts, aln, blocks, block_ends, block_idx, bam,
                           is_rf=False, true_rlen=0, max_splits=1):
-    if not aln.has_tag('SA'):   # Check for split alignment
+    if aln.has_tag('SA'):
+        SA = aln.get_tag('SA')
+        # SA tag is like split1;split2;...;splitN;
+        nsplits = len(SA.split(';')) - 1
+        SA_split = SA.split(';')[0].split(',')  # only doing 1 split for now
+        supp_chrom = SA_split[0]
+        supp_pos = int(SA_split[1])
+        supp_mapq = int(SA_split[4])
+
+        if any([not opts['do_splits'],
+                nsplits > max_splits,
+                supp_mapq < opts['min_mapq_reads'],
+                supp_chrom != bam.getrname(aln.rname),
+                abs(supp_pos - aln.pos) > opts['max_pair_distance']]):
+            split_ok = False
+        else:
+            split_ok = True
+
+    if not (aln.has_tag('SA') and split_ok):
         aln_blocks, aln_gaps = get_blocks_gaps(aln)
         if is_rf:
             is_reverse = not aln.is_reverse
@@ -510,41 +527,22 @@ def get_blocked_alignment(opts, aln, blocks, block_ends, block_idx, bam,
             is_reverse = aln.is_reverse
         overlapping_blocks, offset = get_overlapping_blocks(blocks, aln_blocks, aln_gaps, block_idx, is_reverse,
                                                             true_read_length=true_rlen, aln_read_length=aln.query_length)
-    else:
+    elif split_ok:
         # currently only support 1 split
-        if aln.is_reverse:
-            main_start = aln.query_length - aln.query_alignment_end
-        else:
-            main_start = aln.query_alignment_start
-
-        SA = aln.get_tag('SA')
-        nsplits = len(SA.split(';')) - 1
-        if nsplits > max_splits:
-            if opts['verbosity'] > 1:
-                print('\nsplit blocks None: too many splits')
-                print(aln)
-                print('')
-            return (None, None)
-        SA_split = SA.strip(';').split(',')
         supp = pysam.AlignedSegment()
-        if SA_split[0] != bam.getrname(aln.rname):
-            # print('\nsplit blocks None: interchromosomal')
-            # print(aln)
-            # print('')
-            return (None, None)  # interchromosomal alignment
-        if abs(int(SA_split[1]) - aln.pos) > opts['max_pair_distance']:
-            # print('\nsplit blocks None: distant')
-            # print(aln)
-            # print('')
-            return (None, None)
         supp.seq = aln.seq              # necessary for query_alignment_start to function
         supp.pos = int(SA_split[1]) - 1  # make 0-based for pysam
         supp.is_reverse = True if SA_split[2] == '-' else False
         supp.cigarstring = SA_split[3]
+
         if supp.is_reverse:
             supp_start = supp.query_length - supp.query_alignment_end
         else:
             supp_start = supp.query_alignment_start
+        if aln.is_reverse:
+            main_start = aln.query_length - aln.query_alignment_end
+        else:
+            main_start = aln.query_alignment_start
         if main_start < supp_start:
             first, second = aln, supp
         elif main_start > supp_start:
