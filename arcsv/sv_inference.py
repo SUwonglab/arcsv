@@ -48,8 +48,6 @@ def do_inference(opts, reference_files, g, blocks,
     split_outfile.write(splitout_header_line())
 
     ref = pysam.FastaFile(reference_files['reference'])
-    # rmsk_track = pybedtools.BedTool(reference_files['rmsk'])
-    # segdup_track = pybedtools.BedTool(reference_files['segdup'])
 
     supp_edges = len([e for e in g.graph.es if e['support'] >= opts['min_edge_support']])
     unsupp_edges = len([e for e in g.graph.es if e['support'] < opts['min_edge_support']
@@ -962,30 +960,25 @@ def get_edges_in_range(g, which_dup, start_block, end_block):
 
 # insertion_test - if set, only include hanging reads, reads with adjacency requirements, and reads spanning
 #                  the blocks with indices (insertion_test, insertion_test + 1)
-def compute_likelihood(edges, path, blocks, insert_dists, insert_cdfs, insert_cdf_sums, class_probs, rlen_stats, start, insertion_test_block=None):
+def compute_likelihood(edges, path, blocks, insert_dists, insert_cdfs, insert_cdf_sums,
+                       class_probs, rlen_stats, start, insertion_test_block=None):
     likelihood = []
     norm_consts = []
     lib_counter = Counter()
 
-    # compute normalizing constants for each library
     lib_norm_consts = []
     for l in range(len(insert_dists)):
-        # in case read length is variable, we compute the n.c. for short and
-        # long reads, then average. note having 1 short, 1 long is reasonable
-        # for Nextera mate pair data, in which one read is trimmed
-
-        # SPEEDUP only if rlen_stats are different, as in trimmed case
-        # rls = rlen_stats[l]
-        # if rls[0] == rls[1]:
         nc1 = compute_normalizing_constant(path, blocks,
                                            insert_cdfs[l], insert_cdf_sums[l],
                                            class_probs[l],
                                            rlen_stats[l][0], rlen_stats[l][1])
-        nc2 = compute_normalizing_constant(path, blocks,
-                                           insert_cdfs[l], insert_cdf_sums[l],
-                                           class_probs[l],
-                                           rlen_stats[l][1], rlen_stats[l][0])
-        lib_norm_consts.append((nc1+nc2)/2)
+        # MATE PAIR possibly 2 different read lengths
+        # nc2 = compute_normalizing_constant(path, blocks,
+        #                                    insert_cdfs[l], insert_cdf_sums[l],
+        #                                    class_probs[l],
+        #                                    rlen_stats[l][1], rlen_stats[l][0])
+        # lib_norm_consts.append((nc1+nc2)/2)
+        lib_norm_consts.append(nc1)
 
     # compute normalizing constants for reads
     for edge in edges:
@@ -1033,29 +1026,10 @@ def compute_likelihood(edges, path, blocks, insert_dists, insert_cdfs, insert_cd
 # hanging_adj_only - only use hanging reads and reads with adjacency requirements; and ignore the rest (NOT IMPLEMENTED)
 def compute_edge_likelihood(edge, path, blocks, insert_dists, insert_cdfs, insert_cdf_sums, hanging_adj_only=False):
     likelihood = []
-    # inserts = []
-    v1, v2 = edge.tuple
-    if v1 > v2:
-        v1, v2 = v2, v1
-    adj1_unique = set(edge['adj1'])
-    adj2_unique = set(edge['adj2'])
+    v1, v2 = min(edge.tuple), max(edge.tuple)
+    adj1_unique, adj2_unique = set(edge['adj1']), set(edge['adj2'])
     dists, adj1_satisfied, adj2_satisfied = get_block_distances_between_nodes(path, blocks, v1, v2, adj1_unique, adj2_unique)
-    # SPEEDUP if dists == 0, think we're fine with insertions
-    # if len(dists) == 0:
-    #     print('not found, len(dists) == 0, {0} reads lh = 0'.format(len(edge['offset'])))
-    # elif all(d < 0 for d in dists):
-    #     print('correct orientation not found, {0} reads lh = 0'.format(len(edge['offset'])))
-    # print('distances, adj satisfied:')
-    # print(dists)
-    # print(adj1_satisfied)
-    # print(adj2_satisfied)
-    # print('')
-    # DEBUG
-    # too_large = [0 for i in range(1+max(edge['lib']))]
-    # too_small = [0 for i in range(1+max(edge['lib']))]
-    # missing = 0
-    # adj_error = []
-    #
+
     which_mapped = [i for i in range(len(edge['offset'])) if i not in edge['which_hanging']]
     i_pmap_idx = 0
     for i in which_mapped:
@@ -1066,70 +1040,22 @@ def compute_edge_likelihood(edge, path, blocks, insert_dists, insert_cdfs, inser
         lib_idx = edge['lib'][i]
         pmapped = edge['pmapped'][i_pmap_idx]  # pmapped has no entries for hanging reads
         i_pmap_idx += 1
-        # DEBUG
-        # this_too_large = 0
-        # this_too_small = 0
-        # this_inserts = []
-        # this_insert_lh = []
-        #
         for j in range(len(dists)):
             if adj1_satisfied[adj1][j] and adj2_satisfied[adj2][j]:
                 dist = dists[j]
                 insert = dist + offset
-                # DEBUG
-                # this_inserts.append(insert)
-                #
-                # if insert < insert_lower[lib_idx]:
-                #     this_too_small += 1
-                # elif insert > insert_upper[lib_idx]:
-                #     this_too_large += 1
-                # inserts.append((lib_idx, insert))
                 lh += insert_dists[lib_idx](insert)
-                # DEBUG
-                # this_insert_lh.append(insert_dists[lib_idx](insert))
-                #
-            # else:               # DEBUG
-            #     if not adj1_satisfied[adj1][j]:
-            #         adj_error.append(adj1)
-            #     if not adj2_satisfied[adj2][j]:
-            #         adj_error.append(adj2)
-        # if lh == 0 and len(dists) > 0:
-        #     print('lh = 0: lib {0} adj {1} {2}'.format(lib_idx, adj1, adj2))
-        # elif lh < 1e-6 and len(dists) > 0:
-        #     print('lh small: lib {0}\n\tinserts:\n\t{1}\n\t{2}'.format(lib_idx, this_inserts, this_insert_lh))
-        # DEBUG
-        # if len(dists) == 0:
-        #     missing += 1
-        # if len(dists) > 0 and this_too_large == len(dists):
-        #     too_large[lib_idx] += 1
-        # if len(dists) > 0 and this_too_small == len(dists):
-        #     too_small[lib_idx] += 1
         lh *= pmapped
         likelihood.append(lh)
 
     if len(edge['which_hanging']) > 0 and len(dists) > 0:  # has hanging reads
-        which_dist_zero = [i for i in range(len(dists)) if i == 0][0]
+        which_dist_zero = [i for i in range(len(dists)) if dists[i] == 0][0]
         self_adj_satisfied = {adj: adj1_satisfied[adj][which_dist_zero] for adj in adj1_satisfied}
         likelihood.extend(compute_hanging_edge_likelihood(edge, path, blocks,
                                                           insert_cdfs, self_adj_satisfied))
     elif len(edge['which_hanging']) > 0:
         likelihood.extend([0] * len(edge['which_hanging']))
 
-    # DEBUG
-    # if missing > 1:
-    #     print('{0} reads unaccounted for (edges missing)'.format(missing))
-    # if len(adj_error) > 1:
-    #     print('adjacency errors:')
-    #     print(Counter(adj_error))
-    # for i in range(len(too_large)):
-    #     if too_large[i] > 1:
-    #         med = np.median([it[1] for it in inserts if it[0] == i])
-    #         print('{0} inserts from library {1} too large (median {2})'.format(too_large[i], i, med))
-    #     if too_small[i] > 1:
-    #         med = np.median([it[1] for it in inserts if it[0] == i])
-    #         print('{0} inserts from library {1} too small (median {2})'.format(too_small[i], i, med))
-    # print('returning {0} reads with lh = 0'.format(len([l for l in likelihood if l == 0])))
-    #
     return likelihood
 
 
