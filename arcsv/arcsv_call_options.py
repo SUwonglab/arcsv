@@ -70,7 +70,6 @@ DEFAULT_OPTS = {
     'robustness_parameter': 1e-4,
     'pi_robust': None,
     'allele_fraction_list': '0.5',  # allele fractions to check for heterozygotes
-    'allele_fractions': None,   # parsed from allele_fraction_list
     # 'lh_tol': 1e-10,
 
     # OUTPUT

@@ -62,20 +62,23 @@ def run(args):
         opts['min_bp_support'] = 4
         opts['min_edge_support'] = 4
 
-    try:
-        allele_fractions = [float(x) for x in opts['allele_fraction_list'].split(',')]
-        symmetrized = set(itertools.chain(allele_fractions,
-                                          (1-x for x in allele_fractions)))
-        if 0 in symmetrized:
-            symmetrized.remove(0)
-        if 1 in symmetrized:
-            symmetrized.remove(1)
-        opts['allele_fractions_symmetrized'] = sorted(symmetrized)
-    except ValueError:
-        sys.stderr.write('\ninvalid format for allele_fraction_list -- '
-                         'use a comma-separated list, e.g.: 0.5, 1\n')
-        sys.exit(1)
-    # print('allele_fractions: ' + str(opts['allele_fractions_symmetrized']))
+    if opts['allele_fraction_list'] == "":
+        opts['allele_fractions_symmetrized'] = []
+    else:
+        try:
+            allele_fractions = [float(x) for x in opts['allele_fraction_list'].split(',')]
+            symmetrized = set(itertools.chain(allele_fractions,
+                                              (1-x for x in allele_fractions)))
+            if 0 in symmetrized:
+                symmetrized.remove(0)
+            if 1 in symmetrized:
+                symmetrized.remove(1)
+            opts['allele_fractions_symmetrized'] = sorted(symmetrized)
+        except ValueError:
+            sys.stderr.write('\ninvalid format for allele_fraction_list -- '
+                             'use a comma-separated list, e.g.: 0.5, 1\n')
+            sys.exit(1)
+        # print('allele_fractions: ' + str(opts['allele_fractions_symmetrized']))
 
     # CLEANUP no tuple
     inputs = [(os.path.realpath(ip.strip()),)

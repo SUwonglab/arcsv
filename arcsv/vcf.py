@@ -9,10 +9,10 @@ from arcsv.sv_filter import get_filter_string
 from arcsv._version import __version__
 
 
-def sv_to_vcf(sv, reference, filterstring=None,
+def sv_to_vcf(sv, frac, reference, filterstring=None,
               event_lh=None, ref_lh=None):
     if sv.type == 'BND':
-        return bnd_to_vcf(sv, reference, filterstring,
+        return bnd_to_vcf(sv, frac, reference, filterstring,
                           event_lh, ref_lh)
     template = '{chr}\t{pos}\t{id}\t{ref}\t{alt}\t{qual}\t{filter}\t{info}\t{format}\t{gt}\n'
     info_list = []
@@ -62,6 +62,7 @@ def sv_to_vcf(sv, reference, filterstring=None,
     info_list.append(('SR', sv.split_support))
     info_list.append(('PE', sv.pe_support))
     info_list.append(('EVENTTYPE', sv.event_type))
+    info_list.append(('AF', '%.3f' % frac))
     # FORMAT/GT
     if svtype != 'DUP':
         format = 'GT'
@@ -78,7 +79,7 @@ def sv_to_vcf(sv, reference, filterstring=None,
     return line
 
 
-def bnd_to_vcf(sv, reference, filterstring,
+def bnd_to_vcf(sv, frac, reference, filterstring,
                event_lh, ref_lh):
     template = '{chr}\t{pos}\t{id}\t{ref}\t{alt}\t{qual}\t{filter}\t{info}\t{format}\t{gt}\n'
     chrom = sv.ref_chrom
@@ -132,6 +133,7 @@ def bnd_to_vcf(sv, reference, filterstring,
         info_list.append(('SR', sv.split_support))
         info_list.append(('PE', sv.pe_support))
         info_list.append(('EVENTTYPE', sv.event_type))
+        info_list.append(('AF', '%.3f' % frac))
         info = ';'.join(['{0}={1}'.format(el[0], el[1]) for el in info_list])
         format = 'GT'
         gt = sv.genotype

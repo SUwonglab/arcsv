@@ -334,8 +334,15 @@ def do_inference(opts, reference_files, g, blocks,
         pathstrings = [path_to_string(p, start, blocks)
                        for p in paths]
 
-        all_lh = itertools.chain(zip(homozygous_likelihood, range(npaths), ['HOM'] * npaths),
-                                 zip(heterozygous_likelihood, range(npaths), ['HET'] * npaths))
+        if len(opts['allele_fractions_symmetrized']) > 0:  # doing HET calls?
+            all_lh = itertools.chain(zip(homozygous_likelihood,
+                                         range(npaths),
+                                         ['HOM'] * npaths),
+                                     zip(heterozygous_likelihood,
+                                         range(npaths),
+                                         ['HET'] * npaths))
+        else:                   # homozygous calls only
+            all_lh = zip(homozygous_likelihood, range(npaths), ['HOM'] * npaths)
         all_lh_sorted = sorted(all_lh, key=lambda pair: -pair[0])
 
         idx_ref = [i for i in range(npaths) if is_path_ref(paths[i], blocks)][0]
@@ -449,7 +456,7 @@ def do_inference(opts, reference_files, g, blocks,
         
         sv1 = [sv for sv in svs if sv.genotype == '1/1' or sv.genotype == '1/0']
         sv2 = [sv for sv in svs if sv.genotype == '1/1' or sv.genotype == '0/1']
-        for (k, sv_list) in [(0, sv1), (1, sv2)]:
+        for (k, sv_list, frac) in [(0, sv1, frac1), (1, sv2, frac2)]:
             if k == 1 and np1 == np2:  # homozygous
                 continue
             fs = sorted(set(get_filter_string(sv, filter_criteria) for sv in sv_list))
@@ -459,7 +466,7 @@ def do_inference(opts, reference_files, g, blocks,
                 filters = ','.join(x for x in fs if x != 'PASS')
             for sv in sv_list:
                 # possibly multiple lines for BND events
-                vcflines = sv_to_vcf(sv, ref, filters,
+                vcflines = sv_to_vcf(sv, frac, ref, filters,
                                      best_lh, ref_likelihood)
                 vcflines = vcflines.rstrip().split('\n')
                 for line in vcflines:
