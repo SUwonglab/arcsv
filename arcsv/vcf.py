@@ -5,7 +5,6 @@ from time import strftime
 from pysam import FastaFile
 
 from arcsv.helper import fetch_seq
-from arcsv.sv_filter import get_filter_string
 from arcsv._version import __version__
 
 
@@ -166,6 +165,7 @@ def get_vcf_header(reference_name, sample_name='sample1'):
 ##INFO=<ID=SVLEN,Number=1,Type=Integer,Description="Difference in length between REF and ALT alleles">
 ##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">
 ##INFO=<ID=EVENTTYPE,Number=1,Type=String,Description="Type of rearrangement on this allele (simple/complex)">
+##INFO=<ID=AF,Number=1,Type=Float,Description="Minor allele fraction">
 ##FILTER=<ID=INSERTION,Description="Event contains an insertion call">
 ##FORMAT=<ID=HCN,Number=1,Type=Integer,Description="Haploid copy number for duplications">
 ##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
