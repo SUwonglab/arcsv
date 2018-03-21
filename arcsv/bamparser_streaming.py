@@ -259,7 +259,8 @@ def parse_bam(opts, reference_files, bamfiles):
     if opts['verbosity'] > 0:
         print('[parse_bam] processed a total of {0} reads'.format(nreads))
         if opts['filter_read_through']:
-            print('[parse_bam] found {0} read-through pairs'.format(num_read_through))
+            print('[parse_bam] found {0} read-through pairs out of {1} total'
+                  .format(num_read_through, npairs))
     add_time_checkpoint(opts, 'parse bam')
 
     # compute insert length distributions and save plots
