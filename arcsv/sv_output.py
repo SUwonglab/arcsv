@@ -2,13 +2,14 @@ import numpy as np
 import os
 import pickle
 import pysam
-from math import floor
+from math import ceil, floor
 
 from arcsv.constants import ALTERED_QNAME_MAX_LEN
-from arcsv.helper import path_to_string, block_gap
+from arcsv.helper import path_to_string, block_gap, fetch_seq
 from arcsv.sv_classify import classify_paths
 from arcsv.sv_filter import get_filter_string
 from arcsv.sv_validate import altered_reference_sequence
+from arcsv.vcf import vcf_line_template
 
 
 def sv_extra_lines(sv_ids, info_extra, format_extra):
@@ -17,6 +18,7 @@ def sv_extra_lines(sv_ids, info_extra, format_extra):
     info_line = ';'.join(x for x in info_tags)
     format_line = ':'.join(x for x in format_tags)
     return '\n'.join('\t'.join((sv_id, info_line, format_line)) for sv_id in sv_ids) + '\n'
+
 
 # VALID need to update this, at least the reference to sv_output
 # note: only used while converting other SV file formats
@@ -39,7 +41,8 @@ def do_sv_processing(opts, data, outdir, reffile,
         sv_extra = open(os.path.join(outdir, 'sv_vcf_extra.bed'), 'w')
 
     for datum in data:
-        paths, blocks, left_bp, right_bp, score, filterstring, id_extra, info_extra, format_extra = datum
+        paths, blocks, left_bp, right_bp, score, \
+            filterstring, id_extra, info_extra, format_extra = datum
         path1, path2 = paths
         # start, end = 0, len(blocks) - 1
         graphsize = 2 * len(blocks)
@@ -49,7 +52,9 @@ def do_sv_processing(opts, data, outdir, reffile,
         (event1, event2), svs, complex_types = cpout
 
         # if only one simple SV is present and < 50 bp, skip it
-        if len(svs) == 1 and svs[0].type != 'BND' and svs[0].length < opts['min_simplesv_size']:
+        if len(svs) == 1 and \
+           svs[0].type != 'BND' and \
+           svs[0].length < opts['min_simplesv_size']:
             skipped_too_small += 1
             continue
 
@@ -88,7 +93,8 @@ def do_sv_processing(opts, data, outdir, reffile,
             qname += ':{0}'.format(pathstring)
             for sv in svlist:
                 qname += ':{0}'.format(sv.type.split(':')[0])  # just write DUP, not DUP:TANDEM
-            ars_out = altered_reference_sequence(path, blocks, ref, flank_size=opts['altered_flank_size'])
+            ars_out = altered_reference_sequence(path, blocks, ref,
+                                                 flank_size=opts['altered_flank_size'])
             seqs, block_pos, insertion_size, del_size, svb, svp, hlf, hrf = ars_out
             if sum(len(s) for s in seqs) > opts['max_size_altered']:
                 skipped_altered_size += 1
@@ -120,26 +126,74 @@ def do_sv_processing(opts, data, outdir, reffile,
     sv_outfile.close()
 
 
-# writes out svs in our own format:
-# chrom, first bp, last bp, id (eg 20:1:1000:alt1), svtype (similar to vcf), bp list (with uncertainty), rearrangement, filter, hom/het?, other tags (INSLEN, SR, PE)
-# NOTE: outputs one line per unique non-reference path
+def get_bp_string(sv):
+    if sv.type == 'INS':
+        bp = int(floor(np.median(sv.bp1)))
+        return str(bp)
+    else:
+        bp1 = int(floor(np.median(sv.bp1)))
+        bp2 = int(floor(np.median(sv.bp2)))
+        return '{0},{1}'.format(bp1, bp2)
+
+
+def get_bp_uncertainty_string(sv):
+    if sv.type == 'INS':
+        bpu = sv.bp1[1] - sv.bp1[0] - 2
+        return str(bpu)
+    else:
+        bp1u = sv.bp1[1] - sv.bp1[0] - 2
+        bp2u = sv.bp2[1] - sv.bp2[0] - 2
+        return '{0},{1}'.format(bp1u, bp2u)
+
+
+def get_bp_ci(sv):
+    bp1_cilen = sv.bp1[1] - sv.bp1[0] - 2
+    bp1_ci = (-int(floor(bp1_cilen/2)), int(ceil(bp1_cilen/2)))
+    bp2_cilen = sv.bp2[1] - sv.bp2[0] - 2
+    bp2_ci = (-int(floor(bp2_cilen/2)), int(ceil(bp2_cilen/2)))
+    return bp1_ci, bp2_ci
+
+
+def get_sv_ins(sv):
+    if sv.type == 'INS':
+        return sv.length
+    elif sv.type == 'BND':
+        return sv.bnd_ins
+    else:
+        return 0
+
+
+def bnd_alt_string(orient, other_orient, chrom, other_pos, ref_base):
+    alt_after = True if orient == '-' else False
+    alt_location_template = ']{0}]' if other_orient == '-' else '[{0}['
+    alt_location = alt_location_template.format(str(chrom) + ':' + str(other_pos))
+    alt_string = (ref_base + alt_location) if alt_after else (alt_location + ref_base)
+    return alt_string
+
+
+# writes out svs
+# NOTE: main output consists of one line per unique non-reference path
 def sv_output(path1, path2, blocks, event1, event2,
               frac1, frac2, sv_list, complex_types,
               event_lh, ref_lh, next_best_lh,
-              next_best_pathstring, npaths,
+              next_best_pathstring, num_paths,
               filter_criteria,
               filterstring_manual=None, id_extra='',
+              output_vcf=False,
+              reference=False,
               output_split_support=False):
     lines = ''
-    if output_split_support:
-        splitlines = ''
+    splitlines = ''
+    vcflines = []
     sv1 = [sv for sv in sv_list if sv.genotype == '1/1' or sv.genotype == '1/0']
     sv2 = [sv for sv in sv_list if sv.genotype == '1/1' or sv.genotype == '0/1']
     compound_het = (path1 != path2) and (len(sv1) > 0) and (len(sv2) > 0)
     is_het = (path1 != path2)
-    # CLEANUP lots of duplicated code
-    for (k, path, event, svs, ct, frac) in [(0, path1, event1, sv1, complex_types[0], frac1),
-                                            (1, path2, event2, sv2, complex_types[1], frac2)]:
+    num_paths = str(num_paths)
+    for (k, path, event, svs, complex_type, frac) in [(0, path1, event1, sv1,
+                                                       complex_types[0], frac1),
+                                                      (1, path2, event2, sv2,
+                                                       complex_types[1], frac2)]:
         if k == 1 and path1 == path2:
             continue
         if len(svs) == 0:
@@ -147,37 +201,14 @@ def sv_output(path1, path2, blocks, event1, event2,
 
         chrom = blocks[int(floor(path1[0]/2))].chrom
 
-        all_sv_bp = [int(floor(np.median(sv.bp1))) for sv in svs] + \
-                    [int(floor(np.median(sv.bp2))) for sv in svs]
-        minbp, maxbp = min(all_sv_bp), max(all_sv_bp)
-
-        def bp_string(sv):
-            if sv.type == 'INS':
-                bp = int(floor(np.median(sv.bp1)))
-                return str(bp)
-            else:
-                bp1 = int(floor(np.median(sv.bp1)))
-                bp2 = int(floor(np.median(sv.bp2)))
-                return '{0},{1}'.format(bp1, bp2)
-        def bp_uncertainty_string(sv):
-            if sv.type == 'INS':
-                bpu = sv.bp1[1] - sv.bp1[0] - 2
-                return str(bpu)
-            else:
-                bp1u = sv.bp1[1] - sv.bp1[0] - 2
-                bp2u = sv.bp2[1] - sv.bp2[0] - 2
-                return '{0},{1}'.format(bp1u, bp2u)
-        sv_bp = ';'.join(bp_string(sv) for sv in svs)
-        sv_bp_uncertainty = ';'.join(bp_uncertainty_string(sv) for sv in svs)
-
         # CLEANUP this code is duplicated up above -- should be merged
         id = ','.join(svs[0].event_id.split(',')[0:2])
         if compound_het:
             id = id + ',' + str(k + 1)
         id += id_extra
 
-        svtypes = ','.join(sv.type.split(':')[0] for sv in svs)  # use DUP not DUP:TANDEM
-        nsv = len(svs)
+        num_sv = len(svs)
+
         if filterstring_manual is None:
             fs = sorted(set((get_filter_string(sv, filter_criteria) for sv in svs)))
             if all(x == 'PASS' for x in fs):
@@ -187,49 +218,173 @@ def sv_output(path1, path2, blocks, event1, event2,
         else:
             filters = filterstring_manual
 
+        all_sv_bp1 = [int(floor(np.median(sv.bp1))) for sv in svs]
+        all_sv_bp2 = [int(floor(np.median(sv.bp2))) for sv in svs]
+        all_sv_bp = all_sv_bp1 + all_sv_bp2
+
+        minbp, maxbp = min(all_sv_bp), max(all_sv_bp)
+        # sv_span = maxbp - minbp
+
+        # bp_cis = bp_ci for sv in svs
+        # (bp1, bp2) in bp_cis
+
+        sv_bp_joined = ';'.join(get_bp_string(sv) for sv in svs)
+        sv_bp_uncertainty_joined = ';'.join(get_bp_uncertainty_string(sv) for sv in svs)
+        sv_bp_ci = [get_bp_ci(sv) for sv in svs]
+
+        svtypes = list(sv.type.split(':')[0] for sv in svs)  # use DUP not DUP:TANDEM
+        svtypes_joined = ','.join(svtypes)
+
         nonins_blocks = [b for b in blocks if not b.is_insertion()]
         nni = len(nonins_blocks)
         block_bp = [nonins_blocks[0].start] + \
-                   [int(floor(np.median((blocks[i-1].end, blocks[i].start)))) for i in range(1, nni)] + \
+                   [int(floor(np.median((blocks[i-1].end, blocks[i].start))))
+                    for i in range(1, nni)] + \
                    [nonins_blocks[-1].end]
-        block_bp = ','.join(str(x) for x in block_bp)
+        block_bp_joined = ','.join(str(x) for x in block_bp)
         block_bp_uncertainty = [0] + \
                                [block_gap(blocks, 2*i) for i in range(1, nni)] + \
                                [0]
-        block_bp_uncertainty = ','.join(str(x) for x in block_bp_uncertainty)
+        block_bp_uncertainty_joined = ','.join(str(x) for x in block_bp_uncertainty)
 
-        s = path_to_string(path, blocks=blocks)
+        pathstring = path_to_string(path, blocks=blocks)
         nblocks = len([b for b in blocks if not b.is_insertion()])
         refpath = list(range(2 * nblocks))
         ref_string = path_to_string(refpath, blocks=blocks)
         gt = 'HET' if is_het else 'HOM'
 
-        def sv_ins(sv):
-            if sv.type == 'INS':
-                return sv.length
-            elif sv.type == 'BND':
-                return sv.bnd_ins
-            else:
-                return 0
-        insertion_lengths = [sv_ins(sv) for sv in svs if sv_ins(sv) > 0]
+        insertion_lengths = [get_sv_ins(sv) for sv in svs if get_sv_ins(sv) > 0]
         if len(insertion_lengths) == 0:
-            inslen = 'NA'
+            inslen_joined = 'NA'
         else:
-            inslen = ','.join(str(l) for l in insertion_lengths)
-        sr = ','.join(str(sv.split_support) for sv in svs)
-        pe = ','.join(str(sv.pe_support) for sv in svs)
+            inslen_joined = ','.join(str(l) for l in insertion_lengths)
+        sr = list(sv.split_support for sv in svs)
+        pe = list(sv.pe_support for sv in svs)
+        sr_joined = ','.join(map(str, sr))
+        pe_joined = ','.join(map(str, pe))
         lhr = '%.2f' % (event_lh - ref_lh)
         lhr_next = '%.2f' % (event_lh - next_best_lh)
-        frac = '%.3f' % frac
+        frac_str = '%.3f' % frac
 
-        line = '\t'.join((chrom, str(minbp), str(maxbp), id,
-                          svtypes, ct, str(nsv),
-                          block_bp, block_bp_uncertainty, ref_string, s,
-                          filters,
-                          sv_bp, sv_bp_uncertainty,
-                          gt, frac, inslen, sr, pe, lhr, lhr_next,
-                          next_best_pathstring, str(npaths))) + '\n'
+        line = '\t'.join(str(x) for x in
+                         (chrom, minbp, maxbp, id,
+                          svtypes_joined, complex_type, num_sv,
+                          block_bp_joined, block_bp_uncertainty_joined,
+                          ref_string, pathstring, filters,
+                          sv_bp_joined, sv_bp_uncertainty_joined,
+                          gt, frac_str, inslen_joined,
+                          sr_joined, pe_joined, lhr, lhr_next,
+                          next_best_pathstring, num_paths))
+        line += '\n'
         lines = lines + line
+
+        if output_vcf:
+            template = vcf_line_template()
+            for (i, sv) in enumerate(svs):
+                info_list = []
+                sv_chrom = sv.ref_chrom
+                # pos
+                pos = all_sv_bp1[i] + 1
+                # TODO change back id
+                # if len(svs) > 1:
+                #     id_vcf = id + '_' + str(i + 1)
+                # else:
+                #     id_vcf = id
+                id_vcf = sv.event_id
+                ##########
+                ref_base = fetch_seq(reference, sv_chrom, pos-1, pos)  # pysam is 0-indexed
+                alt = '<{0}>'.format(sv.type)
+                qual = '.'
+                svtype = svtypes[i]
+                info_list.append(('SVTYPE', svtype))
+                end = all_sv_bp2[i] + 1
+                info_list.append(('END', end))
+
+                # REMOVE later
+                if svtype == 'DEL':
+                    svlen = -(end-pos)
+                elif svtype == 'INS':
+                    svlen = sv.length
+                elif svtype == 'DUP':
+                    svlen = (end - pos) * (sv.copynumber - 1)  # length added in alt
+                elif svtype == 'INV' or svtype == 'BND':
+                    svlen = None
+                if svlen:
+                    info_list.append(('SVLEN', svlen))
+
+                bp1_ci, bp2_ci = sv_bp_ci[i]
+                bp1_ci_str = str(bp1_ci[0]) + ',' + str(bp1_ci[1])
+                bp2_ci_str = str(bp2_ci[0]) + ',' + str(bp2_ci[1])
+                if bp1_ci_str != '0,0':
+                    info_list.append(('CIPOS', bp1_ci_str))
+                if bp2_ci_str != '0,0' and svtype != 'INS':
+                    info_list.append(('CIEND', bp2_ci_str))
+                info_list.extend([('LHR', lhr), ('SR', sr[i]), ('PE', pe[i]),
+                                  ('EVENTTYPE', sv.event_type), ('AF', frac_str)])
+                # FORMAT/GT
+                if svtype != 'DUP':
+                    format_str = 'GT'
+                    gt_vcf = sv.genotype
+                else:
+                    format_str = 'GT:HCN'
+                    gt_vcf = '{0}:{1}'.format(sv.genotype, sv.copynumber)
+                if svtype != 'BND':
+                    # write line
+                    info = ';'.join(['{0}={1}'.format(el[0], el[1]) for el in info_list])
+                    line = template.format(chr=chrom, pos=pos, id=id_vcf,
+                                           ref=ref_base, alt=alt, qual=qual,
+                                           filter=filters, info=info,
+                                           format_str=format_str, gt=gt_vcf)
+                    vcflines.append(line)
+                else:           # breakend type --> 2 lines in vcf
+                    # TODO change back
+                    # id_bnd1, id_bnd2 = id_vcf + 'A', id_vcf + 'B'
+                    id_bnd1 = id_vcf + '_1'
+                    id_bnd2 = id_vcf + '_2'
+                    ##########
+                    
+                    mateid_bnd1, mateid_bnd2 = id_bnd2, id_bnd1
+                    orientation_bnd1, orientation_bnd2 = sv.bnd_orientation
+                    pos_bnd1 = all_sv_bp1[i] + 1
+                    pos_bnd2 = all_sv_bp2[i] + 1
+                    if orientation_bnd1 == '-':
+                        pos_bnd1 -= 1
+                    if orientation_bnd2 == '-':
+                        pos_bnd2 -= 1
+                    ref_bnd1 = fetch_seq(reference, sv_chrom, pos_bnd1 - 1, pos_bnd1)
+                    ref_bnd2 = fetch_seq(reference, sv_chrom, pos_bnd2 - 1, pos_bnd2)
+                    alt_bnd1 = bnd_alt_string(orientation_bnd1, orientation_bnd2,
+                                              sv.ref_chrom, pos_bnd2, ref_bnd1)
+                    alt_bnd2 = bnd_alt_string(orientation_bnd2, orientation_bnd1,
+                                              sv.ref_chrom, pos_bnd1, ref_bnd2)
+
+                    info_list_bnd1 = [('SVTYPE', svtype), ('MATEID', mateid_bnd1)]
+                    info_list_bnd2 = [('SVTYPE', svtype), ('MATEID', mateid_bnd2)]
+                    if bp1_ci_str != '0,0':
+                        info_list_bnd1.append(('CIPOS', bp1_ci_str))
+                    if bp2_ci_str != '0,0':
+                        info_list_bnd2.append(('CIPOS', bp2_ci_str))
+                    if sv.bnd_ins > 0:
+                        info_list_bnd1.append(('INSLEN', sv.bnd_ins))
+                        info_list_bnd2.append(('INSLEN', sv.bnd_ins))
+                    info_list_bnd1.extend([('LHR', lhr), ('SR', sr[i]), ('PE', pe[i]),
+                                           ('EVENTTYPE', sv.event_type), ('AF', frac_str)])
+                    info_bnd1 = ';'.join(['{0}={1}'.format(el[0], el[1])
+                                          for el in info_list_bnd1])
+                    info_list_bnd2.extend([('LHR', lhr), ('SR', sr[i]), ('PE', pe[i]),
+                                           ('EVENTTYPE', sv.event_type), ('AF', frac_str)])
+                    info_bnd2 = ';'.join(['{0}={1}'.format(el[0], el[1])
+                                          for el in info_list_bnd2])
+                    line1 = template.format(chr=chrom, pos=pos_bnd1, id=id_bnd1,
+                                            ref=ref_bnd1, alt=alt_bnd1, qual=qual,
+                                            filter=filters, info=info_bnd1,
+                                            format_str=format_str, gt=gt_vcf)
+                    line2 = template.format(chr=chrom, pos=pos_bnd2, id=id_bnd2,
+                                            ref=ref_bnd2, alt=alt_bnd2, qual=qual,
+                                            filter=filters, info=info_bnd2,
+                                            format_str=format_str, gt=gt_vcf)
+                    vcflines.append(line1)
+                    vcflines.append(line2)
 
         if output_split_support:
             split_line_list = []
@@ -256,8 +411,9 @@ def sv_output(path1, path2, blocks, event1, event2,
                         mate_seq = 'NA'
                         mate_mapq = 'NA'
                         mate_has_split = 'NA'
-                    line = '\t'.join((id, block_bp, ref_string, s, sv_bp,
-                                      'split', qname, str(bp_idx),
+                    line = '\t'.join(str(x) for x in
+                                     (id, block_bp_joined, ref_string, pathstring,
+                                      sv_bp_joined, 'split', qname, bp_idx,
                                       bp1, bp2, orientation,
                                       qname, strand, seq, mapq,
                                       mate_seq, mate_mapq, mate_has_split))
@@ -265,10 +421,7 @@ def sv_output(path1, path2, blocks, event1, event2,
                 bp_idx += 1
             if len(split_line_list) > 0:
                 splitlines = splitlines + '\n'.join(split_line_list) + '\n'
-    if output_split_support:
-        return lines, splitlines
-    else:
-        return lines
+    return lines, vcflines, splitlines
 
 
 def svout_header_line():

@@ -30,6 +30,8 @@ DEFAULT_OPTS = {
     # LIBRARY QUANTIFICATION
     'approx_stats_nreads': 1000000,
     'approx_stats_nchunks': 1000,
+    # 'approx_stats_nreads': 100000,
+    # 'approx_stats_nchunks': 100,
     'max_kde_samples': 1000000,
     'insert_max_mu_multiple': 3,  # median * multiple is the assumed maximum insert size
     # BREAKPOINT DETECTION

@@ -4,7 +4,6 @@ from math import floor
 
 from arcsv.helper import GenomeInterval
 from arcsv.sv_validate import simplify_blocks
-from arcsv.vcf import sv_to_vcf
 
 BND_SPLIT_TYPES = {('-', '+'): 'Del',
                    ('+', '-'): 'Dup',
@@ -633,7 +632,7 @@ def path_classify_test():
     print(ev)
     print('\n'.join([repr(s) for s in sv]))
     ref = pysam.FastaFile('/home/jgarthur/sv/reference/GRCh37.fa')
-    print('\n'.join([sv_to_vcf(s, ref) for s in sv]))
+    # print('\n'.join([sv_to_vcf(s, ref) for s in sv]))
 
     # ABC/AC
     p1 = [0, 1, 2, 3, 4, 5]
@@ -643,7 +642,7 @@ def path_classify_test():
     ev, sv = classify_paths(p1, p2, blocks, num_genome_blocks)
     print(ev)
     print('\n'.join([repr(s) for s in sv]))
-    print('\n'.join([sv_to_vcf(s, ref) for s in sv]))
+    # print('\n'.join([sv_to_vcf(s, ref) for s in sv]))
     # ACBC/ABC
     p1 = [0, 1, 4, 5, 2, 3, 4, 5]
     p2 = [0, 1, 2, 3, 4, 5]
@@ -652,7 +651,7 @@ def path_classify_test():
     ev, sv = classify_paths(p1, p2, blocks, num_genome_blocks)
     print(ev)
     print('\n'.join([repr(s) for s in sv]))
-    print('\n'.join([sv_to_vcf(s, ref) for s in sv]))
+    # print('\n'.join([sv_to_vcf(s, ref) for s in sv]))
     # ACBC/ACBC
     p1 = [0, 1, 4, 5, 2, 3, 4, 5]
     p2 = p1
@@ -661,7 +660,7 @@ def path_classify_test():
     ev, sv = classify_paths(p1, p2, blocks, num_genome_blocks)
     print(ev)
     print('\n'.join([repr(s) for s in sv]))
-    print('\n'.join([sv_to_vcf(s, ref) for s in sv]))
+    # print('\n'.join([sv_to_vcf(s, ref) for s in sv]))
     # ACBC/AC'BC
     p1 = [0, 1, 4, 5, 2, 3, 4, 5]
     p2 = [0, 1, 5, 4, 2, 3, 4, 5]
@@ -670,7 +669,7 @@ def path_classify_test():
     ev, sv = classify_paths(p1, p2, blocks, num_genome_blocks)
     print(ev)
     print('\n'.join([repr(s) for s in sv]))
-    print('\n'.join([sv_to_vcf(s, ref) for s in sv]))
+    # print('\n'.join([sv_to_vcf(s, ref) for s in sv]))
     # ACBAC/AC
     p1 = [0, 1, 4, 5, 2, 3, 0, 1, 4, 5]
     p2 = [0, 1, 4, 5]
@@ -679,7 +678,7 @@ def path_classify_test():
     ev, sv = classify_paths(p1, p2, blocks, num_genome_blocks)
     print(ev)
     print('\n'.join([repr(s) for s in sv]))
-    print('\n'.join([sv_to_vcf(s, ref) for s in sv]))
+    # print('\n'.join([sv_to_vcf(s, ref) for s in sv]))
     # ACBD/ACB'D
     p1 = [0, 1, 4, 5, 2, 3, 6, 7]
     p2 = [0, 1, 4, 5, 3, 2, 6, 7]
@@ -688,7 +687,7 @@ def path_classify_test():
     ev, sv = classify_paths(p1, p2, blocks, num_genome_blocks)
     print(ev)
     print('\n'.join([repr(s) for s in sv]))
-    print('\n'.join([sv_to_vcf(s, ref) for s in sv]))
+    # print('\n'.join([sv_to_vcf(s, ref) for s in sv]))
     # ACBD
     # AC'BD
     p1 = [0, 1, 4, 5, 2, 3, 6, 7]
@@ -698,7 +697,7 @@ def path_classify_test():
     ev, sv = classify_paths(p1, p2, blocks, num_genome_blocks)
     print(ev)
     print('\n'.join([repr(s) for s in sv]))
-    print('\n'.join([sv_to_vcf(s, ref) for s in sv]))
+    # print('\n'.join([sv_to_vcf(s, ref) for s in sv]))
     # AIC
     # AIBC
     p1 = [0, 1, 20, 21, 4, 5]
@@ -706,7 +705,7 @@ def path_classify_test():
     ev, sv = classify_paths(p1, p2, blocks, num_genome_blocks)
     print(ev)
     print('\n'.join([repr(s) for s in sv]))
-    print('\n'.join([sv_to_vcf(s, ref) for s in sv]))
+    # print('\n'.join([sv_to_vcf(s, ref) for s in sv]))
     # ACD
     # ACDD'E
     p1 = [0, 1, 4, 5, 6, 7, 8, 9]
@@ -714,7 +713,7 @@ def path_classify_test():
     ev, sv = classify_paths(p1, p2, blocks, num_genome_blocks)
     print(ev)
     print('\n'.join([repr(s) for s in sv]))
-    print('\n'.join([sv_to_vcf(s, ref) for s in sv]))
+    # print('\n'.join([sv_to_vcf(s, ref) for s in sv]))
     # ABBBC
     # ABBBC
     p1 = [0, 1, 2, 3, 2, 3, 2, 3, 4, 5]
@@ -722,7 +721,7 @@ def path_classify_test():
     ev, sv = classify_paths(p1, p2, blocks, num_genome_blocks)
     print(ev)
     print('\n'.join([repr(s) for s in sv]))
-    print('\n'.join([sv_to_vcf(s, ref) for s in sv]))
+    # print('\n'.join([sv_to_vcf(s, ref) for s in sv]))
     # ABBB'C
     # ABBB'C
     p1 = [0, 1, 2, 3, 2, 3, 3, 2, 4, 5]
@@ -730,4 +729,4 @@ def path_classify_test():
     ev, sv = classify_paths(p1, p2, blocks, num_genome_blocks)
     print(ev)
     print('\n'.join([repr(s) for s in sv]))
-    print('\n'.join([sv_to_vcf(s, ref) for s in sv]))
+    # print('\n'.join([sv_to_vcf(s, ref) for s in sv]))

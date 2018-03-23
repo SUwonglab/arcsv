@@ -14,13 +14,13 @@ from arcsv.helper import GenomeInterval, path_to_string, \
     is_path_ref, flip_parity, is_adj_satisfied, get_block_distances_between_nodes
 from arcsv.sv_call_viz import plot_rearrangement
 from arcsv.sv_classify import classify_paths
-from arcsv.sv_filter import apply_filters, get_filter_string
+from arcsv.sv_filter import apply_filters
 from arcsv.sv_inference_insertions import compute_hanging_edge_likelihood, \
     compute_normalizing_constant
 from arcsv.sv_output import sv_output, svout_header_line, splitout_header_line
 from arcsv.sv_parse_reads import get_edge_color, GenomeGraph
 from arcsv.sv_validate import simplify_blocks_diploid, altered_reference_sequence
-from arcsv.vcf import get_vcf_header, sv_to_vcf
+from arcsv.vcf import get_vcf_header
 
 
 def do_inference(opts, reference_files, g, blocks,
@@ -214,7 +214,7 @@ def do_inference(opts, reference_files, g, blocks,
                           edge_colors=edge_colors, labels=vertex_labels)
 
     # call SVs
-    sv_calls = []
+    vcf_out = []
     if opts['verbosity'] > 0:
         print('')
     for sub in subgraphs:
@@ -454,35 +454,37 @@ def do_inference(opts, reference_files, g, blocks,
         apply_filters(svs)
         filter_criteria = opts['filter_criteria']
         
-        sv1 = [sv for sv in svs if sv.genotype == '1/1' or sv.genotype == '1/0']
-        sv2 = [sv for sv in svs if sv.genotype == '1/1' or sv.genotype == '0/1']
-        for (k, sv_list, frac) in [(0, sv1, frac1), (1, sv2, frac2)]:
-            if k == 1 and np1 == np2:  # homozygous
-                continue
-            fs = sorted(set(get_filter_string(sv, filter_criteria) for sv in sv_list))
-            if all(x == 'PASS' for x in fs):
-                filters = 'PASS'
-            else:
-                filters = ','.join(x for x in fs if x != 'PASS')
-            for sv in sv_list:
-                # possibly multiple lines for BND events
-                vcflines = sv_to_vcf(sv, frac, ref, filters,
-                                     best_lh, ref_likelihood)
-                vcflines = vcflines.rstrip().split('\n')
-                for line in vcflines:
-                    line += '\n'
-                    if opts['verbosity'] > 1:
-                        print(line)
-                        print('')
-                    pos = int(line.split('\t')[1])
-                    sv_calls.append((pos, line))
+        # sv1 = [sv for sv in svs if sv.genotype == '1/1' or sv.genotype == '1/0']
+        # sv2 = [sv for sv in svs if sv.genotype == '1/1' or sv.genotype == '0/1']
+        # for (k, sv_list, frac) in [(0, sv1, frac1), (1, sv2, frac2)]:
+        #     if k == 1 and np1 == np2:  # homozygous
+        #         continue
+        #     fs = sorted(set(get_filter_string(sv, filter_criteria) for sv in sv_list))
+        #     if all(x == 'PASS' for x in fs):
+        #         filters = 'PASS'
+        #     else:
+        #         filters = ','.join(x for x in fs if x != 'PASS')
+        #     for sv in sv_list:
+        #         # possibly multiple lines for BND events
+        #         vcflines = sv_to_vcf(sv, frac, ref, filters,
+        #                              best_lh, ref_likelihood)
+        #         vcflines = vcflines.rstrip().split('\n')
+        #         for line in vcflines:
+        #             line += '\n'
+        #             if opts['verbosity'] > 1:
+        #                 print(line)
+        #                 print('')
+        #             pos = int(line.split('\t')[1])
+        #             sv_calls.append((pos, line))
         # write to sv_out2.bed
         npaths_signed = -len(paths) if increased_edge_support else len(paths)
-        outlines, splitlines = sv_output(np1, np2, nb, event1, event2,
-                                         frac1, frac2, svs, complex_types,
-                                         best_lh, ref_likelihood, next_lh,
-                                         next_best_pathstring, npaths_signed,
-                                         filter_criteria, output_split_support=True)
+        outlines, vcflines, splitlines = sv_output(np1, np2, nb, event1, event2,
+                                                   frac1, frac2, svs, complex_types,
+                                                   best_lh, ref_likelihood, next_lh,
+                                                   next_best_pathstring, npaths_signed,
+                                                   filter_criteria, output_split_support=True,
+                                                   reference=ref, output_vcf = True)
+                                                   
         if opts['verbosity'] > 1:
             print(outlines)
             print('')
@@ -490,6 +492,9 @@ def do_inference(opts, reference_files, g, blocks,
             print('')
         sv_outfile.write(outlines)
         split_outfile.write(splitlines)
+        for line in vcflines:
+            pos = int(line.split('\t')[1])
+            vcf_out.append((pos, line))
 
         # if complex variant called, write out figure
         if variant_called and 'complex' in (event1 + event2):
@@ -557,8 +562,8 @@ def do_inference(opts, reference_files, g, blocks,
     # write sorted VCF
     vcf_file = open(os.path.join(outdir, 'arcsv_out.vcf'), 'w')
     vcf_file.write(get_vcf_header(reference_files['reference']))
-    sv_calls.sort()
-    for (pos, line) in sv_calls:
+    vcf_out.sort()
+    for (pos, line) in vcf_out:
         vcf_file.write(line)
     vcf_file.close()
 
