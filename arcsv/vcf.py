@@ -38,7 +38,7 @@ from arcsv._version import __version__
 #     # INFO: svtype, end, svlen, cipos, ciend
 #     # LATER add pathstring tag e.g. ABCD/ACBCD
 #     svtype = sv.type.split(':')[0]
-#     info_list.append(('SVTYPE', svtype))
+#     info_list.append(('SV_TYPE', svtype))
 #     end = bp2_pos + 1           # note insertion bp1=bp2 so ok; note updating to be 1-indexed
 #     info_list.append(('END', end))
 #     if svtype == 'DEL':
@@ -53,14 +53,14 @@ from arcsv._version import __version__
 #         info_list.append(('SVLEN', svlen))
 #     if bp1_cilen > 0:
 #         cipos = '%d,%d' % (bp1_ci[0], bp1_ci[1])
-#         info_list.append(('CIPOS', cipos))
+#         info_list.append(('CI_POS', cipos))
 #     if bp2_cilen > 0 and svtype != 'INS':
 #         ciend = '%d,%d' % (bp2_ci[0], bp2_ci[1])
-#         info_list.append(('CIEND', ciend))
+#         info_list.append(('CI_END', ciend))
 #     info_list.append(('LHR', '%.2f' % (event_lh - ref_lh)))
 #     info_list.append(('SR', sv.split_support))
 #     info_list.append(('PE', sv.pe_support))
-#     info_list.append(('EVENTTYPE', sv.event_type))
+#     info_list.append(('EVENT_TYPE', sv.event_type))
 #     info_list.append(('AF', '%.3f' % frac))
 #     # FORMAT/GT
 #     if svtype != 'DUP':
@@ -118,20 +118,20 @@ from arcsv._version import __version__
 #         alt_string = (ref + alt_location) if alt_after else (alt_location + ref)
 #         qual = '.'
 #         filter = filterstring
-#         info_list = [('SVTYPE', 'BND'),
-#                      ('MATEID', id[:-1] + str(2-i))]
+#         info_list = [('SV_TYPE', 'BND'),
+#                      ('MATE_ID', id[:-1] + str(2-i))]
 #         if pos_cilen > 0:
 #             ci = '%d,%d' % (pos_ci[0], pos_ci[1])
-#             info_list.append(('CIPOS', ci))
+#             info_list.append(('CI_POS', ci))
 #         # bp_uncertainty = bp[1] - bp[0] - 2
 #         # if bp_uncertainty > 0:
-#         #     info_list.append(('CIPOS', '0,{0}'.format(bp_uncertainty)))
+#         #     info_list.append(('CI_POS', '0,{0}'.format(bp_uncertainty)))
 #         if sv.bnd_ins > 0:
-#             info_list.append(('INSLEN', sv.bnd_ins))
+#             info_list.append(('INS_LEN', sv.bnd_ins))
 #         info_list.append(('LHR', '%.2f' % (event_lh - ref_lh)))
 #         info_list.append(('SR', sv.split_support))
 #         info_list.append(('PE', sv.pe_support))
-#         info_list.append(('EVENTTYPE', sv.event_type))
+#         info_list.append(('EVENT_TYPE', sv.event_type))
 #         info_list.append(('AF', '%.3f' % frac))
 #         info = ';'.join(['{0}={1}'.format(el[0], el[1]) for el in info_list])
 #         format = 'GT'
@@ -154,18 +154,30 @@ def get_vcf_header(reference_name, sample_name='sample1'):
 ##ALT=<ID=INV,Description="Inversion">
 ##ALT=<ID=DUP:TANDEM,Description="Tandem duplication">
 ##ALT=<ID=INS,Description="Insertion of novel sequence">
-##INFO=<ID=CIEND,Number=2,Type=Integer,Description="Confidence interval around END for imprecise variants">
-##INFO=<ID=CIPOS,Number=2,Type=Integer,Description="Confidence interval around POS for imprecise variants">
+##INFO=<ID=ALT_STRUCTURE,Number=1,Type=String,Description="Configuration of genomic segments in the prediction, including the unaffected flanking segments. Single quote indicates an inverted segment, and underscore indicates a novel insertion">
+##INFO=<ID=CI_END,Number=2,Type=Integer,Description="Confidence interval around END for imprecise breakpoints">
+##INFO=<ID=CI_POS,Number=2,Type=Integer,Description="Confidence interval around POS for imprecise breakpoints">
+##INFO=<ID=COMPLEX_TYPE,Number=1,Type=String,Description="Complex SV classification">
 ##INFO=<ID=END,Number=1,Type=Integer,Description="End position of the variant described in this record">
-##INFO=<ID=INSLEN,Number=1,Type=Integer,Description="Inserted sequence at breakend adjacency">
-##INFO=<ID=LHR,Number=1,Type=Float,Description="Log likelihood ratio of this event (higher is better)">
-##INFO=<ID=MATEID,Number=.,Type=String,Description="ID of mate breakends">
-##INFO=<ID=SR,Number=1,Type=Integer,Description="Number of split reads supporting this variant">
+##INFO=<ID=EVENT_END,Number=1,Type=Integer,Description="Right endpoint of the affected region, i.e., the left-most coordinate of the right flanking segment">
+##INFO=<ID=EVENT_SPAN,Number=1,Type=Integer,Description="Size of the affected region">
+##INFO=<ID=EVENT_START,Number=1,Type=Integer,Description="Left endpoint of the affected region, i.e., the right-most coordinate of the left flanking segment">
+##INFO=<ID=EVENT_NUM_SV,Number=1,Type=String,Description="Number of simple SVs + complex adjacencies within this rearrangement">
+##INFO=<ID=EVENT_TYPE,Number=1,Type=String,Description="Type of rearrangement present on this allele (SIMPLE/COMPLEX)">
+##INFO=<ID=INS_LEN,Number=1,Type=Integer,Description="Inserted sequence at breakend adjacency">
+##INFO=<ID=MAF,Number=1,Type=Float,Description="Minor allele fraction, which may be other than 0.5 or 1 for somatic calls">
+##INFO=<ID=MATE_ID,Number=.,Type=String,Description="ID of mate breakend">
+##INFO=<ID=NEXT_BEST_STRUCTURE,Number=1,Type=String,Description="Diploid configuration of genomic segments in the second-best prediction (total number of segments may be different than in ALT and REF structures)">
+##INFO=<ID=NUM_PATHS,Number=1,Type=Integer,Description="Number of paths observed in the the corresponding region in the ARC-SV adjacency graph, i.e., the number of haplotypes considered in this region">
 ##INFO=<ID=PE,Number=1,Type=Integer,Description="Number of discordant read pairs supporting this variant">
-##INFO=<ID=SVLEN,Number=1,Type=Integer,Description="Difference in length between REF and ALT alleles">
-##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">
-##INFO=<ID=EVENTTYPE,Number=1,Type=String,Description="Type of rearrangement on this allele (simple/complex)">
-##INFO=<ID=AF,Number=1,Type=Float,Description="Minor allele fraction">
+##INFO=<ID=REF_STRUCTURE,Number=1,Type=String,Description="Configuration of genomic segments in the reference">
+##INFO=<ID=SCORE_VS_NEXT,Number=1,Type=Float,Description="Log of the likelihood ratio between the called genotype and the second-best genotype">
+##INFO=<ID=SCORE_VS_REF,Number=1,Type=Float,Description="Log of the likelihood ratio between the called genotype and the reference genotype">
+##INFO=<ID=SEGMENT_ENDPTS,Number=.,Type=Integer,Description="Endpoints (in reference coordinates) of the genomic segments in REF_STRUCTURE">
+##INFO=<ID=SEGMENT_ENDPTS_CIWIDTH,Number=.,Type=Integer,Description="Width of confidence interval around each segment endpoint">
+##INFO=<ID=SR,Number=1,Type=Integer,Description="Number of split reads supporting this variant">
+##INFO=<ID=SV_SIZE,Number=1,Type=Integer,Description="Size of this structural variant">
+##INFO=<ID=SV_TYPE,Number=1,Type=String,Description="Type of structural variant">
 ##FILTER=<ID=INSERTION,Description="Event contains an insertion call">
 ##FORMAT=<ID=HCN,Number=1,Type=Integer,Description="Haploid copy number for duplications">
 ##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">

@@ -202,9 +202,9 @@ def sv_output(path1, path2, blocks, event1, event2,
         chrom = blocks[int(floor(path1[0]/2))].chrom
 
         # CLEANUP this code is duplicated up above -- should be merged
-        id = ','.join(svs[0].event_id.split(',')[0:2])
+        id = '_'.join(svs[0].event_id.split(',')[0:2])
         if compound_het:
-            id = id + ',' + str(k + 1)
+            id = id + '_' + str(k + 1)
         id += id_extra
 
         num_sv = len(svs)
@@ -223,6 +223,7 @@ def sv_output(path1, path2, blocks, event1, event2,
         all_sv_bp = all_sv_bp1 + all_sv_bp2
 
         minbp, maxbp = min(all_sv_bp), max(all_sv_bp)
+        total_span = maxbp - minbp
         # sv_span = maxbp - minbp
 
         # bp_cis = bp_ci for sv in svs
@@ -275,52 +276,65 @@ def sv_output(path1, path2, blocks, event1, event2,
                           gt, frac_str, inslen_joined,
                           sr_joined, pe_joined, lhr, lhr_next,
                           next_best_pathstring, num_paths))
+        # num_sv
+        # block_bp_joined
+        # block_bp_uncertainty_joined
         line += '\n'
         lines = lines + line
 
         if output_vcf:
             template = vcf_line_template()
+            info_tags_ordered = ['SV_TYPE', 'EVENT_TYPE', 'COMPLEX_TYPE', 'INS_LEN',
+                                 'MATE_ID', 'END', 'SV_SIZE', 'EVENT_SPAN',
+                                 'EVENT_START', 'EVENT_END', 'EVENT_NUM_SV',
+                                 'CI_POS', 'CI_END', 'REF_STRUCTURE',
+                                 'ALT_STRUCTURE',
+                                 'SEGMENT_ENDPTS', 'SEGMENT_ENDPTS_CIWIDTH',
+                                 'MAF', 'SR', 'PE', 'SCORE_VS_REF',
+                                 'SCORE_VS_NEXT', 'NEXT_BEST_STRUCTURE', 'NUM_PATHS']
+            info_tags_ordering = {y: x for x, y in enumerate(info_tags_ordered)}
             for (i, sv) in enumerate(svs):
                 info_list = []
                 sv_chrom = sv.ref_chrom
                 # pos
                 pos = all_sv_bp1[i] + 1
-                # TODO change back id
-                # if len(svs) > 1:
-                #     id_vcf = id + '_' + str(i + 1)
-                # else:
-                #     id_vcf = id
-                id_vcf = sv.event_id
-                ##########
+                if len(svs) > 1:
+                    id_vcf = id + '_' + str(i + 1)
+                else:
+                    id_vcf = id
                 ref_base = fetch_seq(reference, sv_chrom, pos-1, pos)  # pysam is 0-indexed
                 alt = '<{0}>'.format(sv.type)
                 qual = '.'
                 svtype = svtypes[i]
-                info_list.append(('SVTYPE', svtype))
+                info_list.append(('SV_TYPE', svtype))
                 end = all_sv_bp2[i] + 1
                 info_list.append(('END', end))
+                block_bp_vcf = ','.join(str(x+1) for x in block_bp)
+                info_list.append(('SEGMENT_ENDPTS', block_bp_vcf))
+                info_list.append(('SEGMENT_ENDPTS_CIWIDTH', block_bp_uncertainty_joined))
 
-                # REMOVE later
-                if svtype == 'DEL':
-                    svlen = -(end-pos)
-                elif svtype == 'INS':
+                if svtype == 'INS':
                     svlen = sv.length
-                elif svtype == 'DUP':
-                    svlen = (end - pos) * (sv.copynumber - 1)  # length added in alt
-                elif svtype == 'INV' or svtype == 'BND':
-                    svlen = None
-                if svlen:
-                    info_list.append(('SVLEN', svlen))
+                else:
+                    svlen = end - pos
+                info_list.append(('SV_SIZE', svlen))
+                if len(svs) > 1:
+                    info_list.append(('EVENT_SPAN', total_span))
 
                 bp1_ci, bp2_ci = sv_bp_ci[i]
                 bp1_ci_str = str(bp1_ci[0]) + ',' + str(bp1_ci[1])
                 bp2_ci_str = str(bp2_ci[0]) + ',' + str(bp2_ci[1])
                 if bp1_ci_str != '0,0':
-                    info_list.append(('CIPOS', bp1_ci_str))
+                    info_list.append(('CI_POS', bp1_ci_str))
                 if bp2_ci_str != '0,0' and svtype != 'INS':
-                    info_list.append(('CIEND', bp2_ci_str))
-                info_list.extend([('LHR', lhr), ('SR', sr[i]), ('PE', pe[i]),
-                                  ('EVENTTYPE', sv.event_type), ('AF', frac_str)])
+                    info_list.append(('CI_END', bp2_ci_str))
+                info_list.append(('EVENT_TYPE', sv.event_type))
+                info_list.extend([('REF_STRUCTURE', ref_string), ('ALT_STRUCTURE', pathstring),
+                                  ('MAF', frac_str), ('SR', sr[i]), ('PE', pe[i]),
+                                  ('SCORE_VS_REF', lhr), ('SCORE_VS_NEXT', lhr_next),
+                                  ('NEXT_BEST_STRUCTURE', next_best_pathstring),
+                                  ('NUM_PATHS', num_paths), ('EVENT_START', minbp + 1),
+                                  ('EVENT_END', maxbp + 1)])
                 # FORMAT/GT
                 if svtype != 'DUP':
                     format_str = 'GT'
@@ -330,6 +344,7 @@ def sv_output(path1, path2, blocks, event1, event2,
                     gt_vcf = '{0}:{1}'.format(sv.genotype, sv.copynumber)
                 if svtype != 'BND':
                     # write line
+                    info_list.sort(key=lambda x: info_tags_ordering[x[0]])
                     info = ';'.join(['{0}={1}'.format(el[0], el[1]) for el in info_list])
                     line = template.format(chr=chrom, pos=pos, id=id_vcf,
                                            ref=ref_base, alt=alt, qual=qual,
@@ -337,12 +352,7 @@ def sv_output(path1, path2, blocks, event1, event2,
                                            format_str=format_str, gt=gt_vcf)
                     vcflines.append(line)
                 else:           # breakend type --> 2 lines in vcf
-                    # TODO change back
-                    # id_bnd1, id_bnd2 = id_vcf + 'A', id_vcf + 'B'
-                    id_bnd1 = id_vcf + '_1'
-                    id_bnd2 = id_vcf + '_2'
-                    ##########
-                    
+                    id_bnd1, id_bnd2 = id_vcf + 'A', id_vcf + 'B'
                     mateid_bnd1, mateid_bnd2 = id_bnd2, id_bnd1
                     orientation_bnd1, orientation_bnd2 = sv.bnd_orientation
                     pos_bnd1 = all_sv_bp1[i] + 1
@@ -358,21 +368,32 @@ def sv_output(path1, path2, blocks, event1, event2,
                     alt_bnd2 = bnd_alt_string(orientation_bnd2, orientation_bnd1,
                                               sv.ref_chrom, pos_bnd1, ref_bnd2)
 
-                    info_list_bnd1 = [('SVTYPE', svtype), ('MATEID', mateid_bnd1)]
-                    info_list_bnd2 = [('SVTYPE', svtype), ('MATEID', mateid_bnd2)]
+                    ctype_str = complex_type.upper().replace('.', '_')
+
+                    info_list_bnd1 = [('MATE_ID', mateid_bnd1)]
+                    info_list_bnd2 = [('MATE_ID', mateid_bnd2)]
                     if bp1_ci_str != '0,0':
-                        info_list_bnd1.append(('CIPOS', bp1_ci_str))
+                        info_list_bnd1.append(('CI_POS', bp1_ci_str))
                     if bp2_ci_str != '0,0':
-                        info_list_bnd2.append(('CIPOS', bp2_ci_str))
+                        info_list_bnd2.append(('CI_POS', bp2_ci_str))
                     if sv.bnd_ins > 0:
-                        info_list_bnd1.append(('INSLEN', sv.bnd_ins))
-                        info_list_bnd2.append(('INSLEN', sv.bnd_ins))
-                    info_list_bnd1.extend([('LHR', lhr), ('SR', sr[i]), ('PE', pe[i]),
-                                           ('EVENTTYPE', sv.event_type), ('AF', frac_str)])
+                        info_list_bnd1.append(('INS_LEN', sv.bnd_ins))
+                        info_list_bnd2.append(('INS_LEN', sv.bnd_ins))
+                    common_tags = [('SV_TYPE', svtype), ('COMPLEX_TYPE', ctype_str),
+                                   ('EVENT_SPAN', total_span), ('EVENT_START', minbp + 1),
+                                   ('EVENT_END', maxbp + 1), ('REF_STRUCTURE', ref_string),
+                                   ('ALT_STRUCTURE', pathstring), ('MAF', frac_str),
+                                   ('SR', sr[i]), ('PE', pe[i]), ('SCORE_VS_REF', lhr),
+                                   ('SCORE_VS_NEXT', lhr_next),
+                                   ('NEXT_BEST_STRUCTURE', next_best_pathstring),
+                                   ('NUM_PATHS', num_paths)]
+                    info_list_bnd1.extend(common_tags)
+                    info_list_bnd2.extend(common_tags)
+
+                    info_list_bnd1.sort(key=lambda x: info_tags_ordering[x[0]])
+                    info_list_bnd2.sort(key=lambda x: info_tags_ordering[x[0]])
                     info_bnd1 = ';'.join(['{0}={1}'.format(el[0], el[1])
                                           for el in info_list_bnd1])
-                    info_list_bnd2.extend([('LHR', lhr), ('SR', sr[i]), ('PE', pe[i]),
-                                           ('EVENTTYPE', sv.event_type), ('AF', frac_str)])
                     info_bnd2 = ';'.join(['{0}={1}'.format(el[0], el[1])
                                           for el in info_list_bnd2])
                     line1 = template.format(chr=chrom, pos=pos_bnd1, id=id_bnd1,
