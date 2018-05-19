@@ -290,7 +290,7 @@ def sv_output(path1, path2, blocks, event1, event2,
                                  'CI_POS', 'CI_END', 'REF_STRUCTURE',
                                  'ALT_STRUCTURE',
                                  'SEGMENT_ENDPTS', 'SEGMENT_ENDPTS_CIWIDTH',
-                                 'MAF', 'SR', 'PE', 'SCORE_VS_REF',
+                                 'AF', 'SR', 'PE', 'SCORE_VS_REF',
                                  'SCORE_VS_NEXT', 'NEXT_BEST_STRUCTURE', 'NUM_PATHS']
             info_tags_ordering = {y: x for x, y in enumerate(info_tags_ordered)}
             for (i, sv) in enumerate(svs):
@@ -330,7 +330,7 @@ def sv_output(path1, path2, blocks, event1, event2,
                     info_list.append(('CI_END', bp2_ci_str))
                 info_list.append(('EVENT_TYPE', sv.event_type))
                 info_list.extend([('REF_STRUCTURE', ref_string), ('ALT_STRUCTURE', pathstring),
-                                  ('MAF', frac_str), ('SR', sr[i]), ('PE', pe[i]),
+                                  ('AF', frac_str), ('SR', sr[i]), ('PE', pe[i]),
                                   ('SCORE_VS_REF', lhr), ('SCORE_VS_NEXT', lhr_next),
                                   ('NEXT_BEST_STRUCTURE', next_best_pathstring),
                                   ('NUM_PATHS', num_paths), ('EVENT_START', minbp + 1),
@@ -382,7 +382,7 @@ def sv_output(path1, path2, blocks, event1, event2,
                     common_tags = [('SV_TYPE', svtype), ('COMPLEX_TYPE', ctype_str),
                                    ('EVENT_SPAN', total_span), ('EVENT_START', minbp + 1),
                                    ('EVENT_END', maxbp + 1), ('REF_STRUCTURE', ref_string),
-                                   ('ALT_STRUCTURE', pathstring), ('MAF', frac_str),
+                                   ('ALT_STRUCTURE', pathstring), ('AF', frac_str),
                                    ('SR', sr[i]), ('PE', pe[i]), ('SCORE_VS_REF', lhr),
                                    ('SCORE_VS_NEXT', lhr_next),
                                    ('NEXT_BEST_STRUCTURE', next_best_pathstring),

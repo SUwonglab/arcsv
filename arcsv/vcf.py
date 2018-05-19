@@ -165,7 +165,7 @@ def get_vcf_header(reference_name, sample_name='sample1'):
 ##INFO=<ID=EVENT_NUM_SV,Number=1,Type=String,Description="Number of simple SVs + complex adjacencies within this rearrangement">
 ##INFO=<ID=EVENT_TYPE,Number=1,Type=String,Description="Type of rearrangement present on this allele (SIMPLE/COMPLEX)">
 ##INFO=<ID=INS_LEN,Number=1,Type=Integer,Description="Inserted sequence at breakend adjacency">
-##INFO=<ID=MAF,Number=1,Type=Float,Description="Minor allele fraction, which may be other than 0.5 or 1 for somatic calls">
+##INFO=<ID=AF,Number=1,Type=Float,Description="Alternate allele fraction, which may be other than 0.5 or 1 for somatic calls">
 ##INFO=<ID=MATE_ID,Number=.,Type=String,Description="ID of mate breakend">
 ##INFO=<ID=NEXT_BEST_STRUCTURE,Number=1,Type=String,Description="Diploid configuration of genomic segments in the second-best prediction (total number of segments may be different than in ALT and REF structures)">
 ##INFO=<ID=NUM_PATHS,Number=1,Type=Integer,Description="Number of paths observed in the the corresponding region in the ARC-SV adjacency graph, i.e., the number of haplotypes considered in this region">
