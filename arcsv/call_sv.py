@@ -63,7 +63,7 @@ def run(args):
             opts['allele_fractions_symmetrized'] = sorted(symmetrized)
         except ValueError:
             sys.stderr.write('\ninvalid format for allele_fraction_list -- '
-                             'use a comma-separated list, e.g.: 0.5, 1\n')
+                             'use a comma-separated list, e.g.: 0.5,1\n')
             sys.exit(1)
         # print('allele_fractions: ' + str(opts['allele_fractions_symmetrized']))
 
