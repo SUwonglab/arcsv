@@ -52,9 +52,9 @@ def add_call_parser(subparsers):
                                '(for multiple files use a comma-separated list')
     required.add_argument('-r', '--region', required=True, type=str,
                           help='chromosome[:start-end]')
-    required.add_argument('-R', '--reference_file', type=str,
+    required.add_argument('-R', '--reference_file', required=True, type=str,
                           help='path to referece genome file')
-    required.add_argument('-G', '--gap_file', type=str,
+    required.add_argument('-G', '--gap_file', type=str, required=True,
                           help='path to referece genome gaps file (BED format)')
     optional = parser_call.add_argument_group('optional arguments')
     optional.add_argument('-o', '--outdir', type=str,

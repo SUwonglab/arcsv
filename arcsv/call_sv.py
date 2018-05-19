@@ -16,8 +16,6 @@ from arcsv.sv_inference import do_inference
 from arcsv.sv_parse_reads import parse_reads_with_blocks
 from arcsv._version import __version__
 
-this_dir = os.path.dirname(os.path.realpath(__file__))
-
 
 def run(args):
     # region, input_list, cutoff_type, output_name, verbosity, reference_name,
@@ -27,18 +25,7 @@ def run(args):
     # setup time checkpoints
     opts['time_checkpoints'] = []
 
-    if opts.get('reference_name') is not None:  # NOT IMPLEMENTED
-        reference_file = os.path.join(this_dir, 'resources', opts['reference_name']+'.fa')
-        gap_file = os.path.join(this_dir, 'resources', opts['reference_name']+'_gap.bed')
-    elif opts.get('reference_file') is not None and opts.get('gap_file') is not None:
-        reference_file = opts['reference_file']
-        gap_file = opts['gap_file']
-    else:
-        # quit
-        sys.stderr.write('\nPlease specify reference_file and gap_file, OR specify '
-                         'reference_name\n')
-        sys.exit(1)
-    reference_files = {'reference': reference_file, 'gap': gap_file}
+    reference_files = {'reference': opts['reference_file'], 'gap': opts['gap_file']}
     if opts['verbosity'] > 0:
         print('[run] ref files {0}'.format(reference_files))
 
