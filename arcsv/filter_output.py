@@ -24,7 +24,8 @@ def filter_arcsv_output(args):
 
     outfile = os.path.join(opts['outdir'], opts['outname'])
     if not opts['overwrite'] and os.path.exists(outfile):
-        sys.stderr.write('\nError: Output file {0} exists but --overwrite was not set\n')
+        sys.stderr.write('\nError: Output file {0} exists but --overwrite was not set\n'
+                         .format(outfile))
         sys.exit(1)
 
     header = None
@@ -95,10 +96,6 @@ def write_arcsv_output(opts, records, header):
     outdir = opts['outdir']
     outname = opts['outname']
     outfile = os.path.join(outdir, outname)
-
-    if not opts['overwrite'] and os.path.exists(outfile):
-        sys.stderr.write('\nError: Output file {0} exists but --overwrite was not set\n')
-        sys.exit(1)
 
     with open(outfile, 'w') as f:
         f.write(header)

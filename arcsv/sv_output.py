@@ -284,13 +284,12 @@ def sv_output(path1, path2, blocks, event1, event2,
 
         if output_vcf:
             template = vcf_line_template()
-            info_tags_ordered = ['SV_TYPE', 'EVENT_TYPE', 'COMPLEX_TYPE', 'INS_LEN',
-                                 'MATE_ID', 'END', 'SV_SIZE', 'EVENT_SPAN',
-                                 'EVENT_START', 'EVENT_END', 'EVENT_NUM_SV',
-                                 'CI_POS', 'CI_END', 'REF_STRUCTURE',
-                                 'ALT_STRUCTURE',
+            info_tags_ordered = ['SV_TYPE', 'HAPLOID_CN', 'COMPLEX_TYPE', 'MATE_ID', 'END',
+                                 'CI_POS', 'CI_END', 'INS_LEN', 'SR', 'PE', 'SV_SIZE',
+                                 'EVENT_SPAN', 'EVENT_START', 'EVENT_END', 'EVENT_NUM_SV',
+                                 'REF_STRUCTURE', 'ALT_STRUCTURE',
                                  'SEGMENT_ENDPTS', 'SEGMENT_ENDPTS_CIWIDTH',
-                                 'AF', 'SR', 'PE', 'SCORE_VS_REF',
+                                 'AF', 'SCORE_VS_REF',
                                  'SCORE_VS_NEXT', 'NEXT_BEST_STRUCTURE', 'NUM_PATHS']
             info_tags_ordering = {y: x for x, y in enumerate(info_tags_ordered)}
             for (i, sv) in enumerate(svs):
@@ -298,7 +297,7 @@ def sv_output(path1, path2, blocks, event1, event2,
                 sv_chrom = sv.ref_chrom
                 # pos
                 pos = all_sv_bp1[i] + 1
-                if len(svs) > 1:
+                if num_sv > 1:
                     id_vcf = id + '_' + str(i + 1)
                 else:
                     id_vcf = id
@@ -318,8 +317,10 @@ def sv_output(path1, path2, blocks, event1, event2,
                 else:
                     svlen = end - pos
                 info_list.append(('SV_SIZE', svlen))
-                if len(svs) > 1:
-                    info_list.append(('EVENT_SPAN', total_span))
+                info_list.append(('EVENT_SPAN', total_span))
+
+                if svtype == 'DUP':
+                    info_list.append(('HAPLOID_CN', sv.copynumber))
 
                 bp1_ci, bp2_ci = sv_bp_ci[i]
                 bp1_ci_str = str(bp1_ci[0]) + ',' + str(bp1_ci[1])
@@ -328,20 +329,16 @@ def sv_output(path1, path2, blocks, event1, event2,
                     info_list.append(('CI_POS', bp1_ci_str))
                 if bp2_ci_str != '0,0' and svtype != 'INS':
                     info_list.append(('CI_END', bp2_ci_str))
-                info_list.append(('EVENT_TYPE', sv.event_type))
                 info_list.extend([('REF_STRUCTURE', ref_string), ('ALT_STRUCTURE', pathstring),
                                   ('AF', frac_str), ('SR', sr[i]), ('PE', pe[i]),
                                   ('SCORE_VS_REF', lhr), ('SCORE_VS_NEXT', lhr_next),
                                   ('NEXT_BEST_STRUCTURE', next_best_pathstring),
                                   ('NUM_PATHS', num_paths), ('EVENT_START', minbp + 1),
-                                  ('EVENT_END', maxbp + 1)])
+                                  ('EVENT_END', maxbp), ('EVENT_NUM_SV', num_sv)])
+                
                 # FORMAT/GT
-                if svtype != 'DUP':
-                    format_str = 'GT'
-                    gt_vcf = sv.genotype
-                else:
-                    format_str = 'GT:HCN'
-                    gt_vcf = '{0}:{1}'.format(sv.genotype, sv.copynumber)
+                format_str = 'GT'
+                gt_vcf = sv.genotype
                 if svtype != 'BND':
                     # write line
                     info_list.sort(key=lambda x: info_tags_ordering[x[0]])
@@ -381,8 +378,11 @@ def sv_output(path1, path2, blocks, event1, event2,
                         info_list_bnd2.append(('INS_LEN', sv.bnd_ins))
                     common_tags = [('SV_TYPE', svtype), ('COMPLEX_TYPE', ctype_str),
                                    ('EVENT_SPAN', total_span), ('EVENT_START', minbp + 1),
-                                   ('EVENT_END', maxbp + 1), ('REF_STRUCTURE', ref_string),
-                                   ('ALT_STRUCTURE', pathstring), ('AF', frac_str),
+                                   ('EVENT_END', maxbp), ('EVENT_NUM_SV', num_sv),
+                                   ('SEGMENT_ENDPTS', block_bp_vcf),
+                                   ('SEGMENT_ENDPTS_CIWIDTH', block_bp_uncertainty_joined),
+                                   ('REF_STRUCTURE', ref_string), ('ALT_STRUCTURE', pathstring),
+                                   ('AF', frac_str),
                                    ('SR', sr[i]), ('PE', pe[i]), ('SCORE_VS_REF', lhr),
                                    ('SCORE_VS_NEXT', lhr_next),
                                    ('NEXT_BEST_STRUCTURE', next_best_pathstring),

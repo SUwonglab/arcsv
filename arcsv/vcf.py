@@ -154,6 +154,7 @@ def get_vcf_header(reference_name, sample_name='sample1'):
 ##ALT=<ID=INV,Description="Inversion">
 ##ALT=<ID=DUP:TANDEM,Description="Tandem duplication">
 ##ALT=<ID=INS,Description="Insertion of novel sequence">
+##INFO=<ID=AF,Number=1,Type=Float,Description="Alternate allele fraction, which may be other than 0.5 or 1 for somatic calls">
 ##INFO=<ID=ALT_STRUCTURE,Number=1,Type=String,Description="Configuration of genomic segments in the prediction, including the unaffected flanking segments. Single quote indicates an inverted segment, and underscore indicates a novel insertion">
 ##INFO=<ID=CI_END,Number=2,Type=Integer,Description="Confidence interval around END for imprecise breakpoints">
 ##INFO=<ID=CI_POS,Number=2,Type=Integer,Description="Confidence interval around POS for imprecise breakpoints">
@@ -163,9 +164,8 @@ def get_vcf_header(reference_name, sample_name='sample1'):
 ##INFO=<ID=EVENT_SPAN,Number=1,Type=Integer,Description="Size of the affected region">
 ##INFO=<ID=EVENT_START,Number=1,Type=Integer,Description="Left endpoint of the affected region, i.e., the right-most coordinate of the left flanking segment">
 ##INFO=<ID=EVENT_NUM_SV,Number=1,Type=String,Description="Number of simple SVs + complex adjacencies within this rearrangement">
-##INFO=<ID=EVENT_TYPE,Number=1,Type=String,Description="Type of rearrangement present on this allele (SIMPLE/COMPLEX)">
+##INFO=<ID=HAPLOID_CN,Number=1,Type=Integer,Description="Haploid copy number for duplications">
 ##INFO=<ID=INS_LEN,Number=1,Type=Integer,Description="Inserted sequence at breakend adjacency">
-##INFO=<ID=AF,Number=1,Type=Float,Description="Alternate allele fraction, which may be other than 0.5 or 1 for somatic calls">
 ##INFO=<ID=MATE_ID,Number=.,Type=String,Description="ID of mate breakend">
 ##INFO=<ID=NEXT_BEST_STRUCTURE,Number=1,Type=String,Description="Diploid configuration of genomic segments in the second-best prediction (total number of segments may be different than in ALT and REF structures)">
 ##INFO=<ID=NUM_PATHS,Number=1,Type=Integer,Description="Number of paths observed in the the corresponding region in the ARC-SV adjacency graph, i.e., the number of haplotypes considered in this region">
@@ -179,7 +179,6 @@ def get_vcf_header(reference_name, sample_name='sample1'):
 ##INFO=<ID=SV_SIZE,Number=1,Type=Integer,Description="Size of this structural variant">
 ##INFO=<ID=SV_TYPE,Number=1,Type=String,Description="Type of structural variant">
 ##FILTER=<ID=INSERTION,Description="Event contains an insertion call">
-##FORMAT=<ID=HCN,Number=1,Type=Integer,Description="Haploid copy number for duplications">
 ##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
 #CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t{4}\n"""
     header = header.format(strftime('%Y%m%d'),
