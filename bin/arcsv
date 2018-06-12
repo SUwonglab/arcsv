@@ -48,8 +48,9 @@ def add_call_parser(subparsers):
                                         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     required = parser_call.add_argument_group('required arguments')
     required.add_argument('-i', '--input_list', required=True, type=str,
-                          help='bam file to use for SV calling '
-                               '(for multiple files use a comma-separated list')
+                          help='bam file to use for SV calling. '
+                               'for a single library split across multiple files, '
+                               'use a comma-separated list')
     required.add_argument('-r', '--region', required=True, type=str,
                           help='chromosome[:start-end]')
     required.add_argument('-R', '--reference_file', required=True, type=str,

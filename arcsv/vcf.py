@@ -7,7 +7,6 @@ from pysam import FastaFile
 from arcsv.helper import fetch_seq
 from arcsv._version import __version__
 
-
 # def sv_to_vcf(sv, frac, reference, filterstring=None,
 #               event_lh=None, ref_lh=None):
 #     if sv.type == 'BND':
@@ -160,8 +159,9 @@ def get_vcf_header(reference_name, sample_name='sample1'):
 ##INFO=<ID=CI_POS,Number=2,Type=Integer,Description="Confidence interval around POS for imprecise breakpoints">
 ##INFO=<ID=COMPLEX_TYPE,Number=1,Type=String,Description="Complex SV classification">
 ##INFO=<ID=END,Number=1,Type=Integer,Description="End position of the variant described in this record">
+##INFO=<ID=EVENT_AFFECTED_LEN,Number=1,Type=Integer,Description="Number of base pairs in the reference affected by this rearrangement (plus the length of any novel insertions sequence)">
 ##INFO=<ID=EVENT_END,Number=1,Type=Integer,Description="Right endpoint of the affected region, i.e., the left-most coordinate of the right flanking segment">
-##INFO=<ID=EVENT_SPAN,Number=1,Type=Integer,Description="Size of the affected region">
+##INFO=<ID=EVENT_SPAN,Number=1,Type=Integer,Description="Span from left endpoint to right endpoint of the affected region in the reference.">
 ##INFO=<ID=EVENT_START,Number=1,Type=Integer,Description="Left endpoint of the affected region, i.e., the right-most coordinate of the left flanking segment">
 ##INFO=<ID=EVENT_NUM_SV,Number=1,Type=String,Description="Number of simple SVs + complex adjacencies within this rearrangement">
 ##INFO=<ID=HAPLOID_CN,Number=1,Type=Integer,Description="Haploid copy number for duplications">
@@ -176,7 +176,7 @@ def get_vcf_header(reference_name, sample_name='sample1'):
 ##INFO=<ID=SEGMENT_ENDPTS,Number=.,Type=Integer,Description="Endpoints (in reference coordinates) of the genomic segments in REF_STRUCTURE">
 ##INFO=<ID=SEGMENT_ENDPTS_CIWIDTH,Number=.,Type=Integer,Description="Width of confidence interval around each segment endpoint">
 ##INFO=<ID=SR,Number=1,Type=Integer,Description="Number of split reads supporting this variant">
-##INFO=<ID=SV_SIZE,Number=1,Type=Integer,Description="Size of this structural variant">
+##INFO=<ID=SV_SPAN,Number=1,Type=Integer,Description="Span of this structural variant">
 ##INFO=<ID=SV_TYPE,Number=1,Type=String,Description="Type of structural variant">
 ##FILTER=<ID=INSERTION,Description="Event contains an insertion call">
 ##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">

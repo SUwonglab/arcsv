@@ -5,7 +5,8 @@ import pysam
 from math import ceil, floor
 
 from arcsv.constants import ALTERED_QNAME_MAX_LEN
-from arcsv.helper import path_to_string, block_gap, fetch_seq
+from arcsv.helper import path_to_string, block_gap, fetch_seq, GenomeInterval
+from arcsv.sv_affected_len import sv_affected_len
 from arcsv.sv_classify import classify_paths
 from arcsv.sv_filter import get_filter_string
 from arcsv.sv_validate import altered_reference_sequence
@@ -248,6 +249,11 @@ def sv_output(path1, path2, blocks, event1, event2,
                                [0]
         block_bp_uncertainty_joined = ','.join(str(x) for x in block_bp_uncertainty)
 
+        blocks_midpoints = [GenomeInterval(chrom, block_bp[i], block_bp[i+1])
+                            for i in range(nni)]
+        blocks_midpoints.extend([b for b in blocks if b.is_insertion()])
+        len_affected = sv_affected_len(path, blocks_midpoints)
+
         pathstring = path_to_string(path, blocks=blocks)
         nblocks = len([b for b in blocks if not b.is_insertion()])
         refpath = list(range(2 * nblocks))
@@ -271,7 +277,7 @@ def sv_output(path1, path2, blocks, event1, event2,
                          (chrom, minbp, maxbp, id,
                           svtypes_joined, complex_type, num_sv,
                           block_bp_joined, block_bp_uncertainty_joined,
-                          ref_string, pathstring, filters,
+                          ref_string, pathstring, len_affected, filters,
                           sv_bp_joined, sv_bp_uncertainty_joined,
                           gt, frac_str, inslen_joined,
                           sr_joined, pe_joined, lhr, lhr_next,
@@ -285,9 +291,9 @@ def sv_output(path1, path2, blocks, event1, event2,
         if output_vcf:
             template = vcf_line_template()
             info_tags_ordered = ['SV_TYPE', 'HAPLOID_CN', 'COMPLEX_TYPE', 'MATE_ID', 'END',
-                                 'CI_POS', 'CI_END', 'INS_LEN', 'SR', 'PE', 'SV_SIZE',
-                                 'EVENT_SPAN', 'EVENT_START', 'EVENT_END', 'EVENT_NUM_SV',
-                                 'REF_STRUCTURE', 'ALT_STRUCTURE',
+                                 'CI_POS', 'CI_END', 'INS_LEN', 'SR', 'PE', 'SV_SPAN',
+                                 'EVENT_SPAN', 'EVENT_START', 'EVENT_END', 'EVENT_AFFECTED_LEN',
+                                 'EVENT_NUM_SV', 'REF_STRUCTURE', 'ALT_STRUCTURE',
                                  'SEGMENT_ENDPTS', 'SEGMENT_ENDPTS_CIWIDTH',
                                  'AF', 'SCORE_VS_REF',
                                  'SCORE_VS_NEXT', 'NEXT_BEST_STRUCTURE', 'NUM_PATHS']
@@ -316,8 +322,9 @@ def sv_output(path1, path2, blocks, event1, event2,
                     svlen = sv.length
                 else:
                     svlen = end - pos
-                info_list.append(('SV_SIZE', svlen))
+                info_list.append(('SV_SPAN', svlen))
                 info_list.append(('EVENT_SPAN', total_span))
+                info_list.append(('EVENT_AFFECTED_LEN', len_affected))
 
                 if svtype == 'DUP':
                     info_list.append(('HAPLOID_CN', sv.copynumber))
@@ -378,13 +385,12 @@ def sv_output(path1, path2, blocks, event1, event2,
                         info_list_bnd2.append(('INS_LEN', sv.bnd_ins))
                     common_tags = [('SV_TYPE', svtype), ('COMPLEX_TYPE', ctype_str),
                                    ('EVENT_SPAN', total_span), ('EVENT_START', minbp + 1),
-                                   ('EVENT_END', maxbp), ('EVENT_NUM_SV', num_sv),
-                                   ('SEGMENT_ENDPTS', block_bp_vcf),
+                                   ('EVENT_END', maxbp), ('EVENT_AFFECTED_LEN', len_affected),
+                                   ('EVENT_NUM_SV', num_sv), ('SEGMENT_ENDPTS', block_bp_vcf),
                                    ('SEGMENT_ENDPTS_CIWIDTH', block_bp_uncertainty_joined),
                                    ('REF_STRUCTURE', ref_string), ('ALT_STRUCTURE', pathstring),
-                                   ('AF', frac_str),
-                                   ('SR', sr[i]), ('PE', pe[i]), ('SCORE_VS_REF', lhr),
-                                   ('SCORE_VS_NEXT', lhr_next),
+                                   ('AF', frac_str), ('SR', sr[i]), ('PE', pe[i]),
+                                   ('SCORE_VS_REF', lhr), ('SCORE_VS_NEXT', lhr_next),
                                    ('NEXT_BEST_STRUCTURE', next_best_pathstring),
                                    ('NUM_PATHS', num_paths)]
                     info_list_bnd1.extend(common_tags)
@@ -448,7 +454,7 @@ def sv_output(path1, path2, blocks, event1, event2,
 def svout_header_line():
     return '\t'.join(('chrom', 'minbp', 'maxbp', 'id',
                       'svtype', 'complextype', 'num_sv',
-                      'bp', 'bp_uncertainty', 'reference', 'rearrangement',
+                      'bp', 'bp_uncertainty', 'reference', 'rearrangement', 'len_affected',
                       'filter', 'sv_bp', 'sv_bp_uncertainty',
                       'gt', 'af', 'inslen', 'sr_support', 'pe_support',
                       'score_vs_ref', 'score_vs_next', 'rearrangement_next', 'num_paths')) + \
