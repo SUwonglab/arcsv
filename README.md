@@ -174,6 +174,7 @@ bp | all breakpoints, i.e. boundaries of the blocks in the "reference" column (i
 bp_uncertainty | width of the uncertainty interval around each breakpoint in `bp`. For odd widths, there is 1 bp more uncertainty on the right side of the breakpoint
 reference | configuration of genomic blocks in the reference
 rearrangement | predicted configuration of genomic blocks in the sample. Inverted blocks are followed by a tick mark, e.g., A', and insertions are represented by underscores _
+len_affected | length of reference sequence affected by this rearrangement  (plus the length of any novel insertions). For complex SVs with no novel insertions, this is often smaller than maxbp - minbp, i.e., the "span" of the rearrangement in the reference
 filter | currently, this is `INSERTION` if there is an insertion present, otherwise `PASS`
 sv_bp | breakpoint positions for each simple SV/complex breakpoint in the event (there are `num_sv` pairs of non-adjacent reference positions, each one describing a novel adjacency)
 sv_bp_uncertainties | breakpoint uncertainties for each simple SV/complex breakpoint in the event

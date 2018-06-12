@@ -126,7 +126,11 @@ def apply_filters(opts, records, header):
         start, end = int(start), int(end)
         span = end - start
         # print('span {0}'.format(span))
-        if span < opts['minsize']:
+        if span < opts['minspan']:
+            continue
+
+        len_affected = int(sv[col_lookup['len_affected']])
+        if len_affected < opts['minsize']:
             continue
 
         # sv type

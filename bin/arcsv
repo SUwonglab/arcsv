@@ -109,8 +109,11 @@ def add_filter_parser(subparsers):
                                           help='Filter and/or merge ARC-SV output',
                                           formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser_filter.add_argument('--minsize', required=False, type=int, default=0,
-                               help='minimum SV size (span from first to last breakpoint)'
-                                    ' to output')
+                               help='minimum SV size (according to len_affected, i.e., length '
+                                    'of reference sequence affected by the event plus any '
+                                    'novel insertions')
+    parser_filter.add_argument('--minspan', required=False, type=int, default=0,
+                               help='minimum SV span (from first to last breakpoint)')
     parser_filter.add_argument('--outdir', required=False, type=str, default='.',
                                help='directory to output filtered SVs')
     parser_filter.add_argument('--outname', required=False, type=str,
