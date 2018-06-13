@@ -4,7 +4,7 @@ import pysam
 import time
 from math import sqrt, floor, log, erf
 
-from arcsv.constants import LOWQUAL_CHARS
+from arcsv.constants import LOWQUAL_CHARS, DE_NOVO_SYMBOL, TRANSLOCATION_SYMBOL
 
 
 # preliminary checks on reads
@@ -416,8 +416,8 @@ def rearrangement_to_string(rearrangement, start=0, blocks=None):
         s = ''.join([convert(x) for x in rearrangement])
     else:
         convert_with_insertion = lambda x, blocks: convert(x) if x == "'" \
-                                                   else '_' if blocks[x].is_de_novo \
-                                                   else '=' if blocks[x].is_translocation \
+                                                   else DE_NOVO_SYMBOL if blocks[x].is_de_novo \
+                                                   else TRANSLOCATION_SYMBOL if blocks[x].is_translocation \
                                                    else convert(x)
         s = ''.join([convert_with_insertion(x, blocks) for x in rearrangement])
     return s

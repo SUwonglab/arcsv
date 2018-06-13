@@ -2,6 +2,8 @@ import os
 import re
 import sys
 
+from arcsv.constants import DE_NOVO_SYMBOL
+
 
 sv_type_dict = {'DEL': 'deletions', 'INV': 'inversions', 'DUP': 'tandemdups',
                 'INS': 'insertions', 'BND': 'complex'}
@@ -136,6 +138,11 @@ def apply_filters(opts, records, header):
         # sv type
         sv_types_short = sv[col_lookup['svtype']].split(',')
         sv_types_long = set(sv_type_dict[x] for x in sv_types_short)
+        # complex insertions are still considered insertions
+        rearrangement = sv[col_lookup['rearrangement']]
+        if DE_NOVO_SYMBOL in rearrangement:
+            sv_types_long.add('insertions')
+
         # print('sv_types_long {0}'.format(sv_types_long))
         if len(sv_types_long.intersection(filtered_types)) > 0:
             continue

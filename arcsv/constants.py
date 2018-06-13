@@ -23,3 +23,6 @@ RIGHT = 1
 CIGAR_SOFT_CLIP = 4                  # http://pysam.readthedocs.io/en/latest/api.html
 LOWQUAL_CHARS = ('#', '!', '"')
 
+# Insertion symbol in rearrangement strings
+DE_NOVO_SYMBOL = '_'
+TRANSLOCATION_SYMBOL = '='
