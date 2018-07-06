@@ -50,7 +50,7 @@ def filter_arcsv_output(args):
     chrom_names = {x[0]: convert_chrom_name(x[0]) for x in filtered_records}
     if not all(isinstance(x, int) for x in chrom_names.values()):
         chrom_names = {x: str(y) for x, y in chrom_names.items()}
-    filtered_records.sort(key=lambda x: (chrom_names[x[0]], int(x[1])))
+    filtered_records.sort(key=lambda x: (chrom_names[x[0]], int(x[1]), int(x[2]), x[3]))
     print('sorted')
 
     write_arcsv_output(opts, filtered_records, header)
@@ -142,6 +142,10 @@ def apply_filters(opts, records, header):
         rearrangement = sv[col_lookup['rearrangement']]
         if DE_NOVO_SYMBOL in rearrangement:
             sv_types_long.add('insertions')
+        # compound het?
+        sv_id = sv[col_lookup['id']]
+        if re.match('.*_[12]$', sv_id) is not None:
+            sv_types_long.add('compoundhet')
 
         # print('sv_types_long {0}'.format(sv_types_long))
         if len(sv_types_long.intersection(filtered_types)) > 0:

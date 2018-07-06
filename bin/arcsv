@@ -130,6 +130,7 @@ def add_filter_parser(subparsers):
     parser_filter.add_argument('--notandemdups', action='store_true')
     parser_filter.add_argument('--noinsertions', action='store_true')
     parser_filter.add_argument('--noinversions', action='store_true')
+    parser_filter.add_argument('--nocompoundhet', action='store_true')
     parser_filter.add_argument('basedir', nargs='*',
                                help='base directory containing the ARC-SV output. Multiple'
                                     ' directories may be specified with wildcards'
