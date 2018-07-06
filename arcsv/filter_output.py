@@ -110,8 +110,8 @@ def write_arcsv_output(opts, records, header):
 def apply_filters(opts, records, header):
     col_lookup = create_col_lookup(header)
 
-    filtered_types = set(k.lstrip('no') for k, v in opts.items()
-                         if k.startswith('no') and v is True)
+    filtered_types = set(k.lstrip('no_') for k, v in opts.items()
+                         if k.startswith('no_') and v is True)
     if 'simple' in filtered_types:
         filtered_types = filtered_types.union(set(['deletions', 'tandemdups',
                                                    'inversions', 'insertions']))
@@ -128,11 +128,11 @@ def apply_filters(opts, records, header):
         start, end = int(start), int(end)
         span = end - start
         # print('span {0}'.format(span))
-        if span < opts['minspan']:
+        if span < opts['min_span']:
             continue
 
         len_affected = int(sv[col_lookup['len_affected']])
-        if len_affected < opts['minsize']:
+        if len_affected < opts['min_size']:
             continue
 
         # sv type
@@ -146,6 +146,14 @@ def apply_filters(opts, records, header):
         sv_id = sv[col_lookup['id']]
         if re.match('.*_[12]$', sv_id) is not None:
             sv_types_long.add('compoundhet')
+        # split read support
+        supporting_splits = [int(x) for x in sv[col_lookup['sr_support']].split(',')]
+        if min(supporting_splits) < opts['min_sr_support']:
+            continue
+        # discordant paired-end read support
+        supporting_pe = [int(x) for x in sv[col_lookup['pe_support']].split(',')]
+        if min(supporting_pe) < opts['min_pe_support']:
+            continue
 
         # print('sv_types_long {0}'.format(sv_types_long))
         if len(sv_types_long.intersection(filtered_types)) > 0:

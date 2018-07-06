@@ -108,12 +108,18 @@ def add_filter_parser(subparsers):
     parser_filter = subparsers.add_parser('filter-merge',
                                           help='Filter and/or merge ARC-SV output',
                                           formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser_filter.add_argument('--minsize', required=False, type=int, default=0,
+    parser_filter.add_argument('--min_size', required=False, type=int, default=0,
                                help='minimum SV size (according to len_affected, i.e., length '
                                     'of reference sequence affected by the event plus any '
                                     'novel insertions')
-    parser_filter.add_argument('--minspan', required=False, type=int, default=0,
+    parser_filter.add_argument('--min_span', required=False, type=int, default=0,
                                help='minimum SV span (from first to last breakpoint)')
+    parser_filter.add_argument('--min_sr_support', required=False, type=int, default=0,
+                               help='minimum supporting split reads '
+                                    '(required at each breakpoint in case num_sv > 1)')
+    parser_filter.add_argument('--min_pe_support', required=False, type=int, default=0,
+                               help='minimum supporting discordant read pair cluster size '
+                                    '(required at each breakpoint in case num_sv > 1)')
     parser_filter.add_argument('--outdir', required=False, type=str, default='.',
                                help='directory to output filtered SVs')
     parser_filter.add_argument('--outname', required=False, type=str,
@@ -124,13 +130,13 @@ def add_filter_parser(subparsers):
                                help='name of files with SV calls')
     parser_filter.add_argument('--overwrite', action='store_true',
                                help='overwrite existing files')
-    parser_filter.add_argument('--nocomplex', action='store_true')
-    parser_filter.add_argument('--nosimple', action='store_true')
-    parser_filter.add_argument('--nodeletions', action='store_true')
-    parser_filter.add_argument('--notandemdups', action='store_true')
-    parser_filter.add_argument('--noinsertions', action='store_true')
-    parser_filter.add_argument('--noinversions', action='store_true')
-    parser_filter.add_argument('--nocompoundhet', action='store_true')
+    parser_filter.add_argument('--no_complex', action='store_true')
+    parser_filter.add_argument('--no_simple', action='store_true')
+    parser_filter.add_argument('--no_deletions', action='store_true')
+    parser_filter.add_argument('--no_tandemdups', action='store_true')
+    parser_filter.add_argument('--no_insertions', action='store_true')
+    parser_filter.add_argument('--no_inversions', action='store_true')
+    parser_filter.add_argument('--no_compoundhet', action='store_true')
     parser_filter.add_argument('basedir', nargs='*',
                                help='base directory containing the ARC-SV output. Multiple'
                                     ' directories may be specified with wildcards'

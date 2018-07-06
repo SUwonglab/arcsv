@@ -146,7 +146,7 @@ ARC-SV works on a single chromosome at a time. Supposing your output folders are
 ```
 
 # Recommended settings
-arcsv filter-merge --minsize 50 --noinsertions arcsv_chr*
+arcsv filter-merge --min_size 50 --no_insertions arcsv_chr*
 
 # If no filtering is desired
 arcsv filter-merge arcsv_chr*
