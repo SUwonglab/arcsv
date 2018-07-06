@@ -154,7 +154,10 @@ def apply_filters(opts, records, header):
         supporting_pe = [int(x) for x in sv[col_lookup['pe_support']].split(',')]
         if min(supporting_pe) < opts['min_pe_support']:
             continue
-
+        # allele fraction
+        af = float(sv[col_lookup['af']])
+        if af < opts['min_allele_fraction'] or af > opts['max_allele_fraction']:
+            continue
         # print('sv_types_long {0}'.format(sv_types_long))
         if len(sv_types_long.intersection(filtered_types)) > 0:
             continue

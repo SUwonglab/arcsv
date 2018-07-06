@@ -120,6 +120,10 @@ def add_filter_parser(subparsers):
     parser_filter.add_argument('--min_pe_support', required=False, type=int, default=0,
                                help='minimum supporting discordant read pair cluster size '
                                     '(required at each breakpoint in case num_sv > 1)')
+    parser_filter.add_argument('--min_allele_fraction', required=False, type=float, default=0,
+                               help='minimum predicted allele fraction of alternate alleles')
+    parser_filter.add_argument('--max_allele_fraction', required=False, type=float, default=1,
+                               help='maximum predicted allele fraction of alternate alleles')
     parser_filter.add_argument('--outdir', required=False, type=str, default='.',
                                help='directory to output filtered SVs')
     parser_filter.add_argument('--outname', required=False, type=str,
