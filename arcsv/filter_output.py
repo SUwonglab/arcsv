@@ -150,9 +150,15 @@ def apply_filters(opts, records, header):
         supporting_splits = [int(x) for x in sv[col_lookup['sr_support']].split(',')]
         if min(supporting_splits) < opts['min_sr_support']:
             continue
+        if opts['max_sr_support'] is not None and \
+           max(supporting_splits) > opts['max_sr_support']:
+            continue
         # discordant paired-end read support
         supporting_pe = [int(x) for x in sv[col_lookup['pe_support']].split(',')]
         if min(supporting_pe) < opts['min_pe_support']:
+            continue
+        if opts['max_pe_support'] is not None and \
+           max(supporting_pe) > opts['max_pe_support']:
             continue
         # allele fraction
         af = float(sv[col_lookup['af']])
