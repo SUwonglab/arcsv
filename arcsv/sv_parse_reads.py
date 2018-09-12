@@ -404,10 +404,15 @@ def create_blocks(breakpoints, gaps, chrom_name, start, end, verbosity):
 def block_parser_handle_hanging(opts, aln, bam, g, blocks, block_ends, insert_ranges,
                                 cached_dist, map_models, block_idx):
     mate = pysam.AlignedSegment()
-    mate.rname = aln.mrnm
-    mate.pos = aln.mpos
-    mate.mapq = 0
     mate.is_unmapped = aln.mate_is_unmapped
+    # make sure we don't end up with mate.rname == -1 if mate is unmapped
+    if mate.is_unmapped:
+        mate.rname = aln.rname
+        mate.pos = aln.pos
+    else:
+        mate.rname = aln.mrnm
+        mate.pos = aln.mpos
+    mate.mapq = 0
     if opts['use_mate_tags']:
         mate_rlen, mate_qmean = aln.get_tag('ZR'), aln.get_tag('ZQ')
     else:
