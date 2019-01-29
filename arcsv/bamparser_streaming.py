@@ -106,12 +106,12 @@ def parse_bam(opts, reference_files, bamfiles):
 
     bam = BamGroup(bamfiles)
     opts['read_len'] = bam_read_len(bam)
-    bam_has_unmapped = has_unmapped_records(bam)
-    if opts['verbosity'] > 0:
-        if bam_has_unmapped:
-            print('[parse_bam] bam file DOES contain unmapped records')
-        else:
-            print('[parse_bam] bam file DOES NOT contain unmapped records')
+    # bam_has_unmapped = has_unmapped_records(bam)
+    # if opts['verbosity'] > 0:
+    #     if bam_has_unmapped:
+    #         print('[parse_bam] bam file DOES contain unmapped records')
+    #     else:
+    #         print('[parse_bam] bam file DOES NOT contain unmapped records')
 
     if opts['verbosity'] > 0:
         print('\n[parse_bam] extracting approximate library stats')
@@ -474,25 +474,25 @@ def pmf_kernel_smooth(a, xmin, xmax, max_kde_samples):
     return [p/S for p in pmf]
 
 
-def has_unmapped_records(bam, pairs_to_check=10):
-    alignments = bam.fetch_unsorted()
-    # find several reads with mates unmapped
-    hanging = []
-    for aln in alignments:
-        if not (aln.is_unmapped or aln.is_supplementary or
-                aln.is_secondary or aln.is_duplicate) and \
-                aln.mate_is_unmapped:
-            hanging.append(aln)
-            if len(hanging) >= pairs_to_check:
-                break
-    # do all hanging reads have mates?
-    for aln in hanging:
-        alns = bam.fetch_unsorted(bam.getrname(aln.rname), aln.mpos, aln.mpos + 1)
-        if any([a.is_unmapped and a.qname == aln.qname for a in alns]):
-            continue
-        else:
-            return False
-    return True
+# def has_unmapped_records(bam, pairs_to_check=10):
+#     alignments = bam.fetch_unsorted()
+#     # find several reads with mates unmapped
+#     hanging = []
+#     for aln in alignments:
+#         if not (aln.is_unmapped or aln.is_supplementary or
+#                 aln.is_secondary or aln.is_duplicate) and \
+#                 aln.mate_is_unmapped:
+#             hanging.append(aln)
+#             if len(hanging) >= pairs_to_check:
+#                 break
+#     # do all hanging reads have mates?
+#     for aln in hanging:
+#         alns = bam.fetch_unsorted(bam.getrname(aln.rname), aln.mpos, aln.mpos + 1)
+#         if any([a.is_unmapped and a.qname == aln.qname for a in alns]):
+#             continue
+#         else:
+#             return False
+#     return True
 
 
 def bam_read_len(bam, reads_to_check=1000):
