@@ -8,7 +8,7 @@ def sv_affected_len(path, blocks):
     ref_block_num = list(range(n_ref))
     ref_string = ''.join(chr(x) for x in range(ord('A'), ord('A') + n_ref))
 
-    print('ref_string: {0}'.format(ref_string))
+    # print('ref_string: {0}'.format(ref_string))
 
     path_block_num = []
     path_string = ''
@@ -19,7 +19,7 @@ def sv_affected_len(path, blocks):
             path_string += chr(ord('A') + block_num)
         else:                   # reverse orientation
             path_string += chr(ord('A') + block_num + 1000)
-    print('path_string: {0}'.format(path_string))
+    # print('path_string: {0}'.format(path_string))
 
     affected_idx_1, affected_idx_2 = align_strings(ref_string, path_string)
     affected_block_1 = set(ref_block_num[x] for x in affected_idx_1)
@@ -35,7 +35,7 @@ def sv_affected_len(path, blocks):
 def align_strings(s1, s2, match=1000, mismatch=-1, gap=-1):
     s1 = s1 + '$'
     s2 = s2 + '$'
-    print('aln_str\t{0}\t{1}'.format(s1, s2))
+    # print('aln_str\t{0}\t{1}'.format(s1, s2))
     l1, l2 = len(s1), len(s2)
     D = np.zeros((l1 + 1, l2 + 1), dtype=int)
     prev = np.array([[None]*(l2+1)]*(l1+1))
@@ -66,9 +66,9 @@ def align_strings(s1, s2, match=1000, mismatch=-1, gap=-1):
         # print('i = {0}\tj = {1}'.format(i, j))
         # print('prev:\t{0}'.format(prev[i,j]))
         if i == j == 0:
-            print(aligned_1[::-1])
-            print(aligned_2[::-1])
-            print('')
+            # print(aligned_1[::-1])
+            # print(aligned_2[::-1])
+            # print('')
             return
         affected_idx_1, affected_idx_2 = set(), set()
         for (x, y) in prev[i,j]:
