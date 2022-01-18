@@ -47,7 +47,10 @@ def process_discordant_pair(aln1, aln2, chrom, discordant_pairs, min_mapq, ilen,
     if aln1.is_reverse != aln2.is_reverse:
         second = aln1 if (aln1.is_reverse ^ is_rf) else aln2
         first = aln1 if second is aln2 else aln2
-        if ilen > max_insert:
+        if ilen > max_insert and (first.reference_end < second.reference_start):
+            # second check is needed for libraries with huge number of readthroughs,
+            # e.g. with 2 x 150 reads and insert size cutoff < 300
+            # TODO add conditions on other discordant read types?
             dtype = 'Del'
             disc = DiscordantPair(chrom, first.reference_end, second.reference_start,
                                   ilen, first.qname)
