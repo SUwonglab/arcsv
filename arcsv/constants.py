@@ -15,6 +15,9 @@ SPLIT_TYPES = {(SPLIT_FIRST_PLUS | SPLIT_SECOND_PLUS): 'Del+',
                (SPLIT_SECOND_PLUS | SPLIT_LEFT_FIRST): 'InvR+',
                SPLIT_SECOND_PLUS: 'InvR-'}
 
+# KDE insert size distribution smoothing
+KDE_MIN_BW = 2.0
+
 # softclip orientation constants
 LEFT = 0
 RIGHT = 1

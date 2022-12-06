@@ -12,7 +12,7 @@ matplotlib.use('Agg')           # required if X11 display is not present
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
-from arcsv.constants import CIGAR_SOFT_CLIP
+from arcsv.constants import CIGAR_SOFT_CLIP, KDE_MIN_BW
 from arcsv.conditional_mappable_model import process_aggregate_mapstats
 from arcsv.helper import get_chrom_size_from_bam, not_primary, robust_sd, \
     add_time_checkpoint, normpdf, is_read_through, len_without_gaps
@@ -466,7 +466,7 @@ def pmf_kernel_smooth(a, xmin, xmax, max_kde_samples):
 
     pct = np.percentile(a_trunc, (25, 75))
     IQR = pct[1] - pct[0]
-    bw = max(1.0, .785 * IQR / a_trunc.shape[0]**(1/5))
+    bw = max(KDE_MIN_BW, .785 * IQR / a_trunc.shape[0]**(1/5))
 
     kde = KernelDensity(kernel='gaussian', bandwidth=bw, rtol=1e-6).fit(a_trunc)
     pmf = np.exp(kde.score_samples(np.matrix(np.linspace(xmin, xmax, xmax-xmin+1)).T))
