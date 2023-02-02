@@ -53,7 +53,7 @@ ARC-SV and its dependencies can be installed as follows:
 
 ```
 
-git clone https://github.com/jgarthur/arcsv.git
+git clone https://github.com/SUwonglab/arcsv.git
 cd arcsv
 pip3 install --user .
 
