@@ -41,13 +41,18 @@ def run(args):
         opts['region_end'] = end
 
     if opts['cutoff_type'] == 'high':
-        opts['min_junction_support'] = 2        # filter softclip clusters (single orient.)
+        opts['min_softclip_support'] = 2        # filter softclip clusters (single orient.)
         opts['min_bp_support'] = 4              # filter merged breakpoints
         opts['min_edge_support'] = 3            # adjacency graph edge cutoff
     elif opts['cutoff_type'] == 'vhigh':
-        opts['min_junction_support'] = 4
+        opts['min_softclip_support'] = 4
         opts['min_bp_support'] = 4
         opts['min_edge_support'] = 4
+    elif opts['cutoff_type'] == 'highsplit':
+        opts['max_softclip_merge_distance'] = 2
+        opts['min_softclip_support'] = 10
+        opts['min_bp_support'] = 10
+        opts['min_edge_support'] = 3
 
     if opts['allele_fraction_list'] == "":
         opts['allele_fractions_symmetrized'] = []
