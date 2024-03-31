@@ -55,7 +55,8 @@ The installed location of the main script, `arcsv`, must be in your path. The co
 If an isolated environment is desired, or if installing ARC-SV using `pip` is causing problems, it is recommended to use [conda](https://docs.conda.io/projects/conda/en/stable/index.html).
 
 ```
-conda create -n arcsv --strict-channel-priority -c conda-forge -c bioconda python=3 pysam numpy scipy scikit-learn matplotlib python-igraph
+conda create -n arcsv --strict-channel-priority -c conda-forge -c bioconda \
+  python=3 pysam numpy scipy scikit-learn matplotlib python-igraph
 
 cd /path/to/arcsv
 pip3 install .
