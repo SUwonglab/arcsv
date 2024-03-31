@@ -35,18 +35,6 @@ This software was developed in the [Wong Lab](https://web.stanford.edu/group/won
 <!--   <\!-- * [Tests](#tests) -\-> -->
 <!--   <\!-- * [Dependency](#dependency) -\-> -->
 
-# Requirements #
-
-- python 3 (tested with 3.3.2 and 3.5.0)
-- python packages (automatically installed by pip)
-    - matplotlib
-    - numpy
-    - pyinter
-    - pysam
-    - python-igraph
-    - scikit-learn
-    - scipy
-
 # Installation #
 
 ARC-SV and its dependencies can be installed as follows:
@@ -56,13 +44,27 @@ ARC-SV and its dependencies can be installed as follows:
 git clone https://github.com/SUwonglab/arcsv.git
 cd arcsv
 pip3 install --user .
-
 ```
-OS X users with a `brew`ed Python installation should ignore `--user` above.
+
+*OS X users with a `brew`ed Python installation should ignore `--user` above.*
 
 The installed location of the main script, `arcsv`, must be in your path. The correct folder is probably `/usr/bin`, `/usr/local/bin`, or `~/.local/bin`.
 
-## Example installation from scratch ##
+## Example: Using `conda`
+
+If an isolated environment is desired, or if installing ARC-SV using `pip` is causing problems, it is recommended to use [conda](https://docs.conda.io/projects/conda/en/stable/index.html).
+
+```
+conda create -n arcsv --strict-channel-priority -c conda-forge -c bioconda \
+  python=3 pysam numpy scipy scikit-learn matplotlib python-igraph
+
+cd /path/to/arcsv
+pip3 install .
+```
+
+To run ARC-SV in future login sessions, the conda environment must first be activated using `conda activate arcsv`.
+
+## Example: installing system dependencies without `conda` ##
 
 The following commands should install ARC-SV and all dependencies on a fresh copy of Ubuntu:
 
