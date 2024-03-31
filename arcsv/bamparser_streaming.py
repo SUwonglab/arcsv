@@ -1,5 +1,5 @@
 from collections import Counter, defaultdict, OrderedDict
-from sklearn.neighbors.kde import KernelDensity
+from sklearn.neighbors import KernelDensity
 import itertools
 import numpy as np
 import os
@@ -462,15 +462,16 @@ def pmf_kernel_smooth(a, xmin, xmax, max_kde_samples):
     if len(a) > max_kde_samples:
         a = rnd.sample(a, max_kde_samples)
     # Siverman's rule of thumb to choose bandwidth
-    a_trunc = np.matrix([x for x in a if x >= xmin and x <= xmax]).T
+    a_trunc = np.array([x for x in a if x >= xmin and x <= xmax])
 
     pct = np.percentile(a_trunc, (25, 75))
     IQR = pct[1] - pct[0]
     bw = max(1.0, .785 * IQR / a_trunc.shape[0]**(1/5))
 
-    kde = KernelDensity(kernel='gaussian', bandwidth=bw, rtol=1e-6).fit(a_trunc)
-    pmf = np.exp(kde.score_samples(np.matrix(np.linspace(xmin, xmax, xmax-xmin+1)).T))
-    S = sum(pmf)
+    kde = KernelDensity(kernel='gaussian', bandwidth=bw, rtol=1e-6).fit(a_trunc[:, np.newaxis])
+    pmf_range = np.linspace(xmin, xmax, int(np.ceil(xmax-xmin+1)))
+    pmf = np.exp(kde.score_samples(pmf_range[:, np.newaxis]))
+    S = np.sum(pmf)
     return [p/S for p in pmf]
 
 
