@@ -4,7 +4,14 @@ import pysam
 import time
 from math import sqrt, floor, log, erf
 
-from arcsv.constants import LOWQUAL_CHARS, DE_NOVO_SYMBOL, TRANSLOCATION_SYMBOL
+from arcsv.constants import LOWQUAL_CHARS
+
+BLOCK_CHARS = 52
+A_OFFSET = ord('A')
+LOWER_OFFSET = 6  # number of non-alphabet characters between 'Z' and 'a'
+INVERSION_CHAR = "'"
+DE_NOVO_CHAR = '_'
+TRANSLOCATION_CHAR = '='
 
 
 # preliminary checks on reads
@@ -408,19 +415,44 @@ def path_to_rearrangement(path):
     return rearrangement
 
 
-def rearrangement_to_string(rearrangement, start=0, blocks=None):
-    convert = lambda x: chr(65 + x - start) if x != "'" and (x-start) < 26 \
-                        else chr(97 + x - start - 26) if x != "'" \
-                        else "'"
-    if blocks is None:
-        s = ''.join([convert(x) for x in rearrangement])
+def block_idx_to_name(block_idx, start_idx=0, blocks=None) -> str:
+    if block_idx == INVERSION_CHAR:
+        return INVERSION_CHAR
+    if blocks is not None:
+        assert block_idx < len(blocks), "block_idx too large"
+        if blocks[block_idx].is_de_novo:
+            return DE_NOVO_CHAR
+        if blocks[block_idx].is_translocation:
+            return TRANSLOCATION_CHAR
+    mult = (block_idx - start_idx) // BLOCK_CHARS
+    mod = (block_idx - start_idx) % BLOCK_CHARS
+    if mod > 25:
+        # after character chr(65+25) == 'Z', don't do chr(65+26) == '['
+        # instead, chr(65+25+6) == 'a'
+        mod += LOWER_OFFSET
+    if mult == 0:
+        return chr(A_OFFSET + mod)
     else:
-        convert_with_insertion = lambda x, blocks: convert(x) if x == "'" \
-                                                   else DE_NOVO_SYMBOL if blocks[x].is_de_novo \
-                                                   else TRANSLOCATION_SYMBOL if blocks[x].is_translocation \
-                                                   else convert(x)
-        s = ''.join([convert_with_insertion(x, blocks) for x in rearrangement])
-    return s
+        return chr(A_OFFSET + mod) + str(mult)
+
+
+def block_name_to_idx(block_name):
+    if block_name == INVERSION_CHAR:
+        return INVERSION_CHAR
+    if block_name in (DE_NOVO_CHAR, TRANSLOCATION_CHAR):
+        raise ValueError("can't convert '{}' unambiguously to a block index".format(block_name))
+    mod = ord(block_name[0]) - A_OFFSET
+    if mod > 26:
+        mod -= LOWER_OFFSET
+    if len(block_name) == 0:
+        mult = 0
+    else:
+        mult = int(block_name[1:])
+    return BLOCK_CHARS * mult + mod
+
+
+def rearrangement_to_string(rearrangement, start=0, blocks=None):
+    return ''.join(block_idx_to_name(idx, start, blocks) for idx in rearrangement)
 
 
 def is_path_ref(path, blocks):

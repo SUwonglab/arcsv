@@ -18,6 +18,7 @@ def sv_affected_len(path, blocks):
         if i % 2 == 1:          # forward orientation
             path_string += chr(ord('A') + block_num)
         else:                   # reverse orientation
+            # FIXME: replace 1000 with MAX_BLOCKS constant
             path_string += chr(ord('A') + block_num + 1000)
     print('path_string: {0}'.format(path_string))
 
