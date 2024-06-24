@@ -2,7 +2,7 @@ import os
 import re
 import sys
 
-from arcsv.constants import DE_NOVO_SYMBOL
+from arcsv.helper import DE_NOVO_CHAR
 
 
 sv_type_dict = {'DEL': 'deletions', 'INV': 'inversions', 'DUP': 'tandemdups',
@@ -140,7 +140,7 @@ def apply_filters(opts, records, header):
         sv_types_long = set(sv_type_dict[x] for x in sv_types_short)
         # complex insertions are still considered insertions
         rearrangement = sv[col_lookup['rearrangement']]
-        if DE_NOVO_SYMBOL in rearrangement:
+        if DE_NOVO_CHAR in rearrangement:
             sv_types_long.add('insertions')
         # compound het?
         sv_id = sv[col_lookup['id']]

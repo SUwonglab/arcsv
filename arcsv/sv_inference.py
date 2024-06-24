@@ -10,7 +10,7 @@ from collections import Counter
 from math import log, floor
 
 from arcsv.constants import ALTERED_QNAME_MAX_LEN
-from arcsv.helper import GenomeInterval, path_to_string, \
+from arcsv.helper import GenomeInterval, block_idx_to_name, path_to_string, \
     is_path_ref, flip_parity, is_adj_satisfied, get_block_distances_between_nodes
 from arcsv.sv_call_viz import plot_rearrangement
 from arcsv.sv_classify import classify_paths
@@ -327,7 +327,7 @@ def do_inference(opts, reference_files, g, blocks,
             print('[inference] informative reads: {0}'.format(len(inf_reads)))
             print('[inference] blocks:')
             for i in range(0, end - start + 1):
-                print('\t{0}: {1}-{2}'.format(chr(65 + i),
+                print('\t{0}: {1}-{2}'.format(block_idx_to_name(i),
                                               blocks[start + i].start,
                                               blocks[start + i].end))
             print('')

@@ -174,7 +174,7 @@ complextype | complex SV classification
 num_sv | number of simple SVs + complex SV breakpoints in this call
 bp | all breakpoints, i.e. boundaries of the blocks in the "reference" column (including the flanking blocks)
 bp_uncertainty | width of the uncertainty interval around each breakpoint in `bp`. For odd widths, there is 1 bp more uncertainty on the right side of the breakpoint
-reference | configuration of genomic blocks in the reference
+reference | configuration of genomic blocks in the reference. Blocks are named A through Z, then a through z, then A1 through Z1, etc.
 rearrangement | predicted configuration of genomic blocks in the sample. Inverted blocks are followed by a tick mark, e.g., A', and insertions are represented by underscores _
 len_affected | length of reference sequence affected by this rearrangement  (plus the length of any novel insertions). For complex SVs with no novel insertions, this is often smaller than maxbp - minbp, i.e., the "span" of the rearrangement in the reference
 filter | currently, this is `INSERTION` if there is an insertion present, otherwise `PASS`

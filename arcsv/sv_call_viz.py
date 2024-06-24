@@ -9,7 +9,7 @@ from matplotlib.cm import jet
 from matplotlib.collections import PatchCollection
 from matplotlib.patches import Polygon
 
-from arcsv.helper import GenomeInterval
+from arcsv.helper import GenomeInterval, block_idx_to_name
 
 PHI = 1.618
 
@@ -82,7 +82,7 @@ def write_block_labels(text_coords, path, blocks, start):
         if blocks[block].is_insertion():
             letter = '='
         else:
-            letter = chr(65 + block - start)
+            letter = block_idx_to_name(block - start)
         txt = plt.text(x, y, letter,
                        color='white', size=25, ha='center', va='center')
         txt.set_path_effects([path_effects.Stroke(linewidth=3, foreground='black'),
