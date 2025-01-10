@@ -8,8 +8,6 @@ def sv_affected_len(path, blocks):
     ref_block_num = list(range(n_ref))
     ref_string = ''.join(chr(x) for x in range(ord('A'), ord('A') + n_ref))
 
-    print('ref_string: {0}'.format(ref_string))
-
     path_block_num = []
     path_string = ''
     for i in path[1::2]:
@@ -20,7 +18,6 @@ def sv_affected_len(path, blocks):
         else:                   # reverse orientation
             # FIXME: replace 1000 with MAX_BLOCKS constant
             path_string += chr(ord('A') + block_num + 1000)
-    print('path_string: {0}'.format(path_string))
 
     affected_idx_1, affected_idx_2 = align_strings(ref_string, path_string)
     affected_block_1 = set(ref_block_num[x] for x in affected_idx_1)
