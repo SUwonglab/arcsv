@@ -19,6 +19,7 @@ DEFAULT_OPTS = {
     'region_end': None,
     'reference_name': None,
     'random_seed': 204178949,
+    'n_processes': None, # Defaults to n_cpu-1 or 1, whichever is greater
 
     # LIBRARY PARAMETERS (put this somewhere else eventually)
     'nlib': 1,
