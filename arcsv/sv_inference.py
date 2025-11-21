@@ -684,7 +684,6 @@ def get_blocks_within_distance(blocks, idx, width, gap_indices, get_after=True):
 
     return first, last
 
-
 # expand the subgraph so there are at least least "width" base pairs
 # on either flank
 def expand_subgraph(sub, blocks, width, gap_indices):
@@ -1028,9 +1027,6 @@ def compute_likelihood(edges, path, blocks, insert_dists, insert_cdfs, insert_cd
                                                           insert_dists, insert_cdfs,
                                                           insert_cdf_sums,
                                                           hanging_adj_only=True))
-    # total_length = sum([len(blocks[int(floor(path[i]) / 2)]) for i in range(0, len(path), 2) if not (blocks[int(floor(path[i]) / 2)].is_insertion())])
-    # print('block length: {0}'.format(total_length))
-    # print('nc: {0}'.format(lib_norm_consts))
 
     return likelihood, norm_consts, lib_norm_consts, lib_counts
 
