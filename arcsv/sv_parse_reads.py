@@ -185,6 +185,10 @@ class GenomeGraph:
                 if self.graph.es[e]['support'] >= min_support:
                     supported.append(neighbor)
             return supported
+    
+    # Multiprocessing support
+    def to_serializable(self):
+        return SerializableGraph.from_genome_graph(self)
 
     def print_summary(self):
         for i in range(2 * self.size):
@@ -204,6 +208,61 @@ class GenomeGraph:
                     num_un = len(edge['which_hanging']) - num_dist
                     if max(num_un, num_dist) > 0:
                         print('unmapped: {0}\tdistant: {1}'.format(num_un, num_dist))
+
+
+class SerializableGraph:
+    """
+    A lightweight, serializable version of GenomeGraph for use in multiprocessing.
+    This avoids pickling issues with pysam objects.
+    """
+    def __init__(self, graph_data):
+        self.size = graph_data['size']
+        self.edges = graph_data['edges']
+        # Add other needed attributes
+    
+    def supported_neighbors(self, vertex, min_support):
+        """Get neighbors with sufficient support."""
+        neighbors = []
+        for edge in self.edges:
+            if edge['support'] >= min_support:
+                if edge['tuple'][0] == vertex:
+                    neighbors.append(edge['tuple'][1])
+                elif edge['tuple'][1] == vertex:
+                    neighbors.append(edge['tuple'][0])
+        return neighbors
+    
+    def get_edge(self, v1, v2):
+        """Get edge between two vertices."""
+        for edge in self.edges:
+            if (edge['tuple'][0] == v1 and edge['tuple'][1] == v2) or \
+               (edge['tuple'][0] == v2 and edge['tuple'][1] == v1):
+                return edge
+        return {'offset': [], 'which_hanging': [], 'hanging_orientation': []}
+    
+    @classmethod
+    def from_genome_graph(cls, genome_graph):
+        """Create a SerializableGraph from a GenomeGraph instance."""
+        graph_data = {
+            'size': genome_graph.size,
+            'edges': []
+        }
+        
+        # Extract edge data without pysam objects
+        for edge in genome_graph.graph.es:
+            edge_data = {
+                'tuple': edge.tuple,
+                'support': edge['support'],
+                'offset': edge.get('offset', []),
+                'lib': edge.get('lib', []),
+                'adj1': edge.get('adj1', []),
+                'adj2': edge.get('adj2', []),
+                'which_hanging': edge.get('which_hanging', []),
+                'hanging_orientation': edge.get('hanging_orientation', []),
+                'pmapped': edge.get('pmapped', [])
+            }
+            graph_data['edges'].append(edge_data)
+        
+        return cls(graph_data)
 
 
 def is_block_edge(e):

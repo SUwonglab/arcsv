@@ -20,7 +20,7 @@ from arcsv.sv_filter import apply_filters
 from arcsv.sv_inference_insertions import compute_hanging_edge_likelihood, \
     compute_normalizing_constant
 from arcsv.sv_output import sv_output, svout_header_line, splitout_header_line
-from arcsv.sv_parse_reads import get_edge_color, GenomeGraph
+from arcsv.sv_parse_reads import get_edge_color, GenomeGraph  # SerializableGraph will be in here too
 from arcsv.sv_validate import simplify_blocks_diploid, altered_reference_sequence
 from arcsv.vcf import get_vcf_header
 
@@ -42,8 +42,8 @@ def do_inference(opts, reference_files, g, blocks,
     
     # Determine number of processes to use
     # By default, use all available CPUs minus 1 (to keep system responsive)
-    n_processes = opts.get('n_processes', max(1, cpu_count() - 1))
-    
+    n_processes = opts.get('n_processes') or max(1, cpu_count() - 1)
+
     if opts['verbosity'] > 0:
         print(f'[inference] Using {n_processes} parallel processes')
 
@@ -95,9 +95,12 @@ def do_inference(opts, reference_files, g, blocks,
         print('[inference] insertion search width: {0}'.format(insertion_search_width))
         print('')
     
+    # Convert graph to serializable format for parallel processing
+    serializable_graph = g.to_serializable()
+    
     # Insertion testing
     insertion_results = test_insertions_parallel(
-        opts, g, blocks, gap_indices, right_bp, insertion_test_sizes,
+        opts, serializable_graph, blocks, gap_indices, right_bp, insertion_test_sizes,
         insertion_search_width, insert_dists, insert_cdfs, insert_cdf_sums,
         class_probs, rlen_stats, pi_robust, n_processes
     )
@@ -160,9 +163,12 @@ def do_inference(opts, reference_files, g, blocks,
     if opts['verbosity'] > 0:
         print('')
     
+    # Update graph to serializable format after insertions
+    serializable_graph = g.to_serializable()
+    
     # Process subgraphs in parallel
     vcf_out, sv_outputs = process_subgraphs_parallel(
-        opts, g, subgraphs, blocks, left_bp, right_bp,
+        opts, serializable_graph, subgraphs, blocks, left_bp, right_bp,
         insert_dists, insert_cdfs, insert_cdf_sums,
         class_probs, rlen_stats, pi_robust, ref, n_processes
     )
@@ -212,7 +218,7 @@ def do_inference(opts, reference_files, g, blocks,
     return do_inference_insertion_time
 
 
-def test_insertions_parallel(opts, g, blocks, gap_indices, right_bp, 
+def test_insertions_parallel(opts, serializable_graph, blocks, gap_indices, right_bp, 
                             insertion_test_sizes, insertion_search_width,
                             insert_dists, insert_cdfs, insert_cdf_sums,
                             class_probs, rlen_stats, pi_robust, n_processes):
@@ -234,7 +240,7 @@ def test_insertions_parallel(opts, g, blocks, gap_indices, right_bp,
     for b in range(0, len(blocks) - 1):
         block_args.append((
             b, blocks, gap_indices, right_bp, insertion_test_sizes,
-            insertion_search_width, g, insert_dists, insert_cdfs,
+            insertion_search_width, serializable_graph, insert_dists, insert_cdfs,
             insert_cdf_sums, class_probs, rlen_stats, pi_robust,
             opts['verbosity'], opts['min_edge_support']
         ))
@@ -269,11 +275,14 @@ def test_single_insertion(args):
     
     This function is designed to be called by multiprocessing.Pool.
     It takes a tuple of arguments and returns insertion test results.
+    Now uses SerializableGraph instead of GenomeGraph.
     """
     (b, blocks, gap_indices, right_bp, insertion_test_sizes,
      insertion_search_width, g, insert_dists, insert_cdfs,
      insert_cdf_sums, class_probs, rlen_stats, pi_robust,
      verbosity, min_edge_support) = args
+    
+    # Note: g is now a SerializableGraph instance
     
     # Check if this is a gap
     if (b+1) in gap_indices:
@@ -289,8 +298,6 @@ def test_single_insertion(args):
                                               gap_indices)
     
     # hanging edges on left and right
-    # MATE PAIR dependence on the library of course....
-    # probably just using stuff for hanging edge likelihood
     tmp = get_hanging_edges_within_distance(g, blocks, b, lower, upper,
                                             insertion_search_width)
     hanging_left, hanging_right = tmp
@@ -351,7 +358,7 @@ def test_single_insertion(args):
     return (bp_left, bp_right, hanging_left, hanging_right, insertion_len)
 
 
-def process_subgraphs_parallel(opts, g, subgraphs, blocks, left_bp, right_bp,
+def process_subgraphs_parallel(opts, serializable_graph, subgraphs, blocks, left_bp, right_bp,
                                insert_dists, insert_cdfs, insert_cdf_sums,
                                class_probs, rlen_stats, pi_robust, ref, n_processes):
     """
@@ -370,7 +377,7 @@ def process_subgraphs_parallel(opts, g, subgraphs, blocks, left_bp, right_bp,
     subgraph_args = []
     for sub in subgraphs:
         subgraph_args.append((
-            sub, opts, g, blocks, left_bp, right_bp,
+            sub, opts, serializable_graph, blocks, left_bp, right_bp,
             insert_dists, insert_cdfs, insert_cdf_sums,
             class_probs, rlen_stats, pi_robust
         ))
@@ -404,10 +411,14 @@ def process_single_subgraph(args):
     2. Computes likelihoods for each path
     3. Determines the most likely genotype
     4. Classifies and filters structural variants
+    
+    Now uses SerializableGraph instead of GenomeGraph.
     """
     (sub, opts, g, blocks, left_bp, right_bp,
      insert_dists, insert_cdfs, insert_cdf_sums,
      class_probs, rlen_stats, pi_robust) = args
+    
+    # Note: g is now a SerializableGraph instance
     
     start, end = sub[0], sub[1]
     start_in = 2 * start
@@ -478,9 +489,7 @@ def process_single_subgraph(args):
                                               class_probs, rlen_stats, start)
     ref_lhr, ref_nc, ref_lnc, ref_lc = ref_read_likelihoods
     
-    # Compute likelihoods for all paths (POTENTIALLY PARALLELIZABLE)
-    # For now, we'll keep this sequential within each subgraph
-    # but this could be further parallelized if needed
+    # Compute likelihoods for all paths
     lh_out = []
     homozygous_likelihood = []
     heterozygous_likelihood = []
@@ -504,12 +513,12 @@ def process_single_subgraph(args):
         heterozygous_likelihood.append(diploid_likelihood_frac(ref_lhr, lhr, ref_lnc, lnc,
                                                                lc, allele_fraction=0.5,
                                                                pi_robust=pi_robust))
-    
-    # when computing the full heterozygous likelihoods below,
-    # we only need to
+        
+    # computing the full heterozygous likelihoods below,
     inf_reads = [i for i in range(total_reads)
                  if not all([lh_out[j][0][i] == lh_out[0][0][i]
                              for j in range(npaths)])]
+    
     # SPEEDUP don't need to recompute this -- already have lh for all paths
     ref_likelihood = haploid_likelihood(ref_lhr, ref_lnc, ref_lc, pi_robust, inf_reads)
     # ref_likelihood3 = diploid_likelihood(lhr, lhr, lnc, lnc, lc, pi_robust, inf_reads)
@@ -565,8 +574,8 @@ def process_single_subgraph(args):
     
     best = None
     next_best = None
-    best_lh = -np.Inf
-    next_lh = -np.Inf
+    best_lh = -np.inf
+    next_lh = -np.inf
     best_af = None
     which_consider = idx_ordered_unique[:50]  # LATER make this a parameter
     # make sure reference is there:
@@ -693,8 +702,7 @@ def process_single_subgraph(args):
     return vcf_lines, (outlines, splitlines, qname_data, None)
 
 
-# Keep all the original helper functions unchanged
-# (decompose_graph, get_blocks_within_distance, expand_subgraph, etc.)
+# HELPER AND WRAPPER FUNCTIONS
 
 def decompose_graph(opts, g, start_block=None, end_block=None):
     min_edge_support = opts['min_edge_support']
@@ -1049,6 +1057,45 @@ def get_paths_iterative(graph, max_back_count,
         yield -1
 
 
+def extract_graph_data(g):
+    """
+    Extract serializable data from GenomeGraph object.
+    This removes any pysam objects and keeps only the data needed for computation.
+    Necessary because pysam objects are not directly able to be pickled.
+    """
+    graph_data = {
+        'size': g.size,
+        'edges': []
+    }
+    
+    # Extract edge data without pysam objects
+    for edge in g.graph.es:
+        edge_data = {
+            'tuple': edge.tuple,
+            'support': edge['support'],
+            'offset': edge['offset'],
+            'lib': edge['lib'],
+            'adj1': edge['adj1'],
+            'adj2': edge['adj2'],
+            'which_hanging': edge['which_hanging'],
+            'hanging_orientation': edge.get('hanging_orientation', []),
+            'pmapped': edge.get('pmapped', [])
+        }
+        # Don't include any pysam objects
+        graph_data['edges'].append(edge_data)
+    
+    # Extract vertex information
+    graph_data['vertices'] = []
+    for v in g.graph.vs:
+        vertex_data = {
+            'index': v.index,
+            'neighbors': list(v.neighbors())
+        }
+        graph_data['vertices'].append(vertex_data)
+    
+    return graph_data
+
+
 def is_back_edge(edge, graph_size):
     if edge[0] >= 2 * graph_size or edge[1] >= 2 * graph_size:
         return ()
@@ -1192,7 +1239,7 @@ def truncate_string(s, max_length):
         return s[:max_length]
 
 
-# Test functions (unchanged)
+# TEST FUNCTIONS
 def test_decompose_graph():
     g = GenomeGraph(20)
     g.add_ref_path_support(1)

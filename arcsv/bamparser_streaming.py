@@ -348,7 +348,7 @@ def process_splits(aln, splits, bam, min_mapq, mate):
 # Output: none if read pair invalid (mapq or orientation), else insert length
 # Side effects: adds to len_array (checking truncate = True)
 def process_insert_len(pair, len_array, min_mapq, read_len,
-                       truncate=True, maximum_insert_size=np.Inf,
+                       truncate=True, maximum_insert_size=np.inf,
                        lib_is_rf=False, lib_insert_is_inner=False):
     # if not fully_aligned(pair[0]) or \
     #         not fully_aligned(pair[1]) or \
@@ -497,7 +497,7 @@ def pmf_kernel_smooth(a, xmin, xmax, max_kde_samples):
 
 
 def bam_read_len(bam, reads_to_check=1000):
-    rlen = -np.Inf
+    rlen = -np.inf
     nreads = 0
     for aln in bam.fetch_unsorted():
         if aln.is_unmapped or 'H' in aln.cigarstring:

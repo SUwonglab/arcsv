@@ -279,10 +279,10 @@ def cluster_handle_component(component, is_compatible):
 
 # discordant_pairs: list of tuples corresponding to discordant pairs
 # non_gaps: list of intervals where we can place the discordant pairs
-def shuffle_discordant_pairs(discordant_pairs, chrom_len_no_gaps, max_insert_size=np.Inf):
+def shuffle_discordant_pairs(discordant_pairs, chrom_len_no_gaps, max_insert_size=np.inf):
     shuffled = []
     for pair in discordant_pairs:
-        if max_insert_size < np.Inf and pair.insert > max_insert_size:
+        if max_insert_size < np.inf and pair.insert > max_insert_size:
             continue
         pair_len = pair.pos2 - pair.pos1
         # ignoring read length, but doesn't matter for chrom_len >> read_len
@@ -376,7 +376,7 @@ def compute_null_dist(opts, discordant_pairs, dtype,
     if dtype == 'Del':
         max_null_insert = insert_mu * opts['insert_max_mu_multiple']
     else:
-        max_null_insert = np.Inf
+        max_null_insert = np.inf
 
     null_clusters = []
     lr_null_clusters = np.array([], float)
