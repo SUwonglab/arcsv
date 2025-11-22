@@ -8,6 +8,8 @@ import pysam
 import time
 from collections import Counter
 from math import log, floor
+from multiprocessing import Pool, cpu_count
+from functools import partial
 
 from arcsv.constants import ALTERED_QNAME_MAX_LEN
 from arcsv.helper import GenomeInterval, block_idx_to_name, path_to_string, \
@@ -18,7 +20,7 @@ from arcsv.sv_filter import apply_filters
 from arcsv.sv_inference_insertions import compute_hanging_edge_likelihood, \
     compute_normalizing_constant
 from arcsv.sv_output import sv_output, svout_header_line, splitout_header_line
-from arcsv.sv_parse_reads import get_edge_color, GenomeGraph
+from arcsv.sv_parse_reads import get_edge_color, GenomeGraph  # SerializableGraph will be in here too
 from arcsv.sv_validate import simplify_blocks_diploid, altered_reference_sequence
 from arcsv.vcf import get_vcf_header
 
@@ -27,8 +29,23 @@ def do_inference(opts, reference_files, g, blocks,
                  gap_indices, left_bp, right_bp,
                  insert_dists, insert_cdfs, insert_cdf_sums,
                  class_probs, rlen_stats, insertion_search_width):
+    """
+    Main inference function with multiprocessing support.
+    
+    Key optimizations:
+    1. Parallel insertion testing across blocks
+    2. Parallel subgraph processing
+    3. Parallel path likelihood computation
+    """
     outdir = opts['outdir']
     pi_robust = opts['pi_robust']
+    
+    # Determine number of processes to use
+    # By default, use all available CPUs minus 1 (to keep system responsive)
+    n_processes = opts.get('n_processes') or max(1, cpu_count() - 1)
+
+    if opts['verbosity'] > 0:
+        print(f'[inference] Using {n_processes} parallel processes')
 
     g.add_ref_path_support(9999)  # ensure reference path is always available
     if opts['verbosity'] > 1:
@@ -55,6 +72,7 @@ def do_inference(opts, reference_files, g, blocks,
     sv_logfile.write('graph(nodes/supp edges/unsupp edges)\t{0}\t{1}\t{2}\n'
                      .format(g.size, supp_edges, unsupp_edges))
 
+    # Decompose graph into subgraphs
     subgraphs = []
     for i in range(len(gap_indices) - 1):
         start_block = gap_indices[i]
@@ -67,7 +85,7 @@ def do_inference(opts, reference_files, g, blocks,
     if opts['verbosity'] > 1:
         print('[inference] Decomposed subgraphs:\n\t{0}\n'.format(subgraphs))
 
-    # test for insertions
+    # Test for insertions (parallized)
     insertion_test_sizes = np.power(10, np.arange(1.5,
                                                   1 + np.log10(insertion_search_width),
                                                   .5))
@@ -76,92 +94,20 @@ def do_inference(opts, reference_files, g, blocks,
         print('[inference] insertion test sizes: {0}'.format(insertion_test_sizes))
         print('[inference] insertion search width: {0}'.format(insertion_search_width))
         print('')
-    insertion_len = [0] * (len(blocks) - 1)
-    test_block = GenomeInterval('1', 0, 1, is_de_novo=True)
-    insertion_intervals = pyinter.IntervalSet()
-    bp_left_counts = []
-    bp_right_counts = []
-    hanging_left_counts = []
-    hanging_right_counts = []
-    for b in range(0, len(blocks) - 1):
-        if (b+1) in gap_indices:
-            bp_left_counts.append(0)
-            bp_right_counts.append(0)
-            hanging_left_counts.append(0)
-            hanging_right_counts.append(0)
-            continue
-        # softclips on left and right
-        ins_bp = right_bp[b]
-        bp_left_counts.append(ins_bp.supp_clip_left)
-        bp_right_counts.append(ins_bp.supp_clip_right)
-        if opts['verbosity'] > 1:
-            print('[inference] testing for insertion after block {0}: {1}-{2}'
-                  .format(b, blocks[b].start, blocks[b].end))
-            print('\tBP: {0}'.format(ins_bp))
+    
+    # Convert graph to serializable format for parallel processing
+    serializable_graph = g.to_serializable()
+    
+    # Insertion testing
+    insertion_results = test_insertions_parallel(
+        opts, serializable_graph, blocks, gap_indices, right_bp, insertion_test_sizes,
+        insertion_search_width, insert_dists, insert_cdfs, insert_cdf_sums,
+        class_probs, rlen_stats, pi_robust, n_processes
+    )
+    
+    insertion_len, bp_left_counts, bp_right_counts, hanging_left_counts, hanging_right_counts = insertion_results
 
-        lower, upper = get_blocks_within_distance(blocks, b, insertion_search_width,
-                                                  gap_indices)
-
-        # hanging edges on left and right
-        # MATE PAIR dependence on the library of course....
-        # probably just using stuff for hanging edge likelihood
-        tmp = get_hanging_edges_within_distance(g, blocks, b, lower, upper,
-                                                insertion_search_width)
-        hanging_left, hanging_right = tmp
-        if opts['verbosity'] > 1:
-            print('\tHanging left: {0}\n\tHanging right: {1}'
-                  .format(hanging_left, hanging_right))
-        hanging_left_counts.append(hanging_left)
-        hanging_right_counts.append(hanging_right)
-
-        # check if we should test this insertion
-        if not ((ins_bp.supp_clip_left > 0 and ins_bp.supp_clip_right > 0)
-                or any(pe[1] == 'Ins' for pe in ins_bp.pe)):
-            continue
-
-        ref_path = reference_path(lower, upper)
-        test_path = insertion_path(lower, upper, b + 1, len(blocks))
-
-        edges, total_reads = get_edges_in_range(g, list(range(0, 2*len(blocks))),
-                                                start_block=lower, end_block=upper - 1)
-
-        tmp = compute_likelihood(edges, ref_path, blocks,
-                                 insert_dists, insert_cdfs, insert_cdf_sums,
-                                 class_probs, rlen_stats,
-                                 start=0)
-        ref_lhr, ref_nc, ref_lnc, ref_lc = tmp
-        ref_likelihood = haploid_likelihood(ref_lhr, ref_lnc, ref_lc, pi_robust)
-        test_homozygous_likelihoods = []
-        test_heterozygous_likelihoods = []
-        for insertion_size in insertion_test_sizes:
-            test_block.end = insertion_size
-            tmp = compute_likelihood(edges, test_path, blocks + [test_block],
-                                     insert_dists, insert_cdfs, insert_cdf_sums,
-                                     class_probs, rlen_stats,
-                                     start=0)
-            test_lhr, test_nc, test_lnc, test_lc = tmp
-            test_homozygous_likelihoods.append(haploid_likelihood(test_lhr, test_lnc,
-                                                                   test_lc, pi_robust))
-            test_heterozygous_likelihoods.append(diploid_likelihood(ref_lhr, test_lhr,
-                                                                     ref_lnc, test_lnc,
-                                                                     ref_lc, pi_robust))
-        max_hom = max(test_homozygous_likelihoods)
-        max_het = max(test_heterozygous_likelihoods)
-        num_test = len(insertion_test_sizes)
-        if max(max_hom, max_het) > ref_likelihood:
-            insertion_intervals.add(pyinter.closed(lower, upper - 1))
-            if max_hom >= max_het:
-                which_max = min([i for i in range(num_test)
-                                 if test_homozygous_likelihoods[i] == max_hom])
-            else:
-                which_max = min([i for i in range(num_test)
-                                 if test_heterozygous_likelihoods[i] == max_het])
-            insertion_len[b] = insertion_test_sizes[which_max]
-            if opts['verbosity'] > 0:
-                print('[inference] possible {0} bp insertion following block {1} (position {2})'
-                      .format(insertion_len[b], b, blocks[b].end))
-
-    # add potential insertions to the graph
+    # Add potential insertions to the graph
     for b in range(0, len(blocks) - 1):
         if insertion_len[b] > 0:  # was an insertion added?
             blocks = blocks + [GenomeInterval('', 0, insertion_len[b], is_de_novo=True)]
@@ -182,14 +128,14 @@ def do_inference(opts, reference_files, g, blocks,
 
     do_inference_insertion_time = time.time()
 
-    # expand subgraphs as necessary
+    # Expand and merge subgraphs
     subgraphs_expanded = [expand_subgraph(s, blocks, insertion_search_width, gap_indices)
                           for s in subgraphs]
     if opts['verbosity'] > 1:
         print('\n[inference] Expanded subgraphs:\n\t{0}'
               .format(sorted(subgraphs_expanded)))
 
-    # merge subgraphs which are now overlapping
+    # Merge subgraphs which are now overlapping
     subgraph_intervals = pyinter.IntervalSet([pyinter.open(s[0], s[1])
                                               for s in subgraphs_expanded])
     subgraphs = [(si.lower_value, si.upper_value) for si in subgraph_intervals]
@@ -199,7 +145,7 @@ def do_inference(opts, reference_files, g, blocks,
               .format(subgraphs))
         print('')
 
-    # plot graph
+    # Plot graph (only if small enough)
     if g.size <= 1000:
         edge_colors = [get_edge_color(e, blocks, opts['min_edge_support']) for e in g.graph.es]
         vertex_block_ids = [int(floor(v/2)) for v in range(len(g.graph.vs))]
@@ -213,353 +159,46 @@ def do_inference(opts, reference_files, g, blocks,
                           layout='fruchterman_reingold',
                           edge_colors=edge_colors, labels=vertex_labels)
 
-    # call SVs
-    vcf_out = []
+    # Call SVs (PARALLELIZED)
     if opts['verbosity'] > 0:
         print('')
-    for sub in subgraphs:
-        skip_this_region = False
-        start, end = sub[0], sub[1]
-        start_in = 2 * start
-        end_out = 2 * end + 1
-        ref_path = tuple(range(start_in, end_out + 1))
-
-        if opts['verbosity'] > 0:
-            print('[inference] evaluating subgraph from block {0} to block {2} ({1} - {3})'
-                  .format(start, blocks[start].start, end, blocks[end].end))
-            print('[inference] total length: {0} bp'
-                  .format(blocks[end].end - blocks[start].start))
-
-        get_paths_finished = False
-        mes_extra = 0
-        while not get_paths_finished:
-            paths = [p for p in
-                     get_paths_iterative(g, opts['max_back_edges'],
-                                         opts['min_edge_support'] + mes_extra,
-                                         opts['max_paths'] + 1,
-                                         start=start_in, end=end_out)]
-            if len(paths) > 0 and paths[-1] == -1:
-                if opts['verbosity'] > 0:
-                    print('[inference] get_paths failed b/c too many backtrack steps. . . skipping')
-                s0 = 'subgraph-skip-backtrack'
-                skip_this_region = True
-                get_paths_finished = True
-            elif len(paths) <= opts['max_paths']:
-                s0 = 'subgraph(s/e/n/path)'
-                get_paths_finished = True
-            else:               # increase required edge support and try again
-                mes_extra += 2
-                if mes_extra > opts['max_mes_extra']:
-                    s0 = 'subgraph-npaths'
-                    skip_this_region = True
-                    get_paths_finished = True
-        increased_edge_support = (mes_extra > 0)
-        npaths = len(paths)
-        if (not skip_this_region):
-            if opts['verbosity'] > 0:
-                print('[inference] {0} paths total'.format(npaths))
-
-        edges, total_reads = get_edges_in_range(g, list(range(start, end + 1)), start_block=start, end_block=end)
-        # if (not skip_this_region) and npaths*total_reads > max_paths_times_reads:
-        #     s0 = 'subgraph-skip-paths-times-reads'
-        #     skip_this_region = True
-
-        logstring = '{0}\t{1}\t{2}\t{3}\t{4}\t{5}\n'
-        sv_logfile.write(logstring.format(s0, blocks[start].start, blocks[end].end,
-                                          end - start + 1, npaths, mes_extra))
-
-        if skip_this_region:
+    
+    # Update graph to serializable format after insertions
+    serializable_graph = g.to_serializable()
+    
+    # Process subgraphs in parallel
+    vcf_out, sv_outputs = process_subgraphs_parallel(
+        opts, serializable_graph, subgraphs, blocks, left_bp, right_bp,
+        insert_dists, insert_cdfs, insert_cdf_sums,
+        class_probs, rlen_stats, pi_robust, ref, n_processes
+    )
+    
+    # Write outputs (must be sequential to maintain order and file integrity)
+    for sv_output_data in sv_outputs:
+        if sv_output_data is None:
             continue
-
-        if opts['verbosity'] > 1:
-            print('{0} edges in subgraph'.format(len(edges)))
-            print('{0} reads within subgraph'.format(total_reads))
-
-        if opts['verbosity'] > 1:
-            print('reference path:')
-            print(ref_path)
-        ref_read_likelihoods = compute_likelihood(edges, ref_path, blocks,
-                                                  insert_dists, insert_cdfs, insert_cdf_sums,
-                                                  class_probs, rlen_stats, start)
-        ref_lhr, ref_nc, ref_lnc, ref_lc = ref_read_likelihoods
-
-        lh_out = []
-        homozygous_likelihood = []
-        heterozygous_likelihood = []
-        for path in paths:
-            pathstring = path_to_string(path, start, blocks)
-            if opts['verbosity'] > 1:
-                print('\nevaluating {0}'.format(pathstring))
-                print(path)
-            lh_out.append(compute_likelihood(edges, path, blocks,
-                                             insert_dists, insert_cdfs, insert_cdf_sums,
-                                             class_probs, rlen_stats, start))
-            lhr, nc, lnc, lc = lh_out[-1]
-            if len(lhr) > 0 and opts['verbosity'] > 1:
-                print('max lh {0}'.format(max(lhr)))
-                print('median lh {0}'.format(np.median(lhr)))
-                print('\n{0} discordant reads < pi_robust'
-                      .format(len([l for l in lhr if l < pi_robust])))
-                print('\n{0} discordant reads lh = 0'.format(len([l for l in lhr if l == 0])))
-            homozygous_likelihood.append(haploid_likelihood(lhr, lnc, lc, pi_robust))
-            heterozygous_likelihood \
-                .append(diploid_likelihood_frac(ref_lhr, lhr, ref_lnc, lnc,
-                                                lc, allele_fraction=0.5,
-                                                pi_robust=pi_robust))
-
-        # when computing the full heterozygous likelihoods below,
-        # we only need to
-        inf_reads = [i for i in range(total_reads)
-                     if not all([lh_out[j][0][i] == lh_out[0][0][i]
-                                 for j in range(npaths)])]
-        # SPEEDUP don't need to recompute this -- already have lh for all paths
-        ref_likelihood = haploid_likelihood(ref_lhr, ref_lnc, ref_lc, pi_robust, inf_reads)
-        # ref_likelihood3 = diploid_likelihood(lhr, lhr, lnc, lnc, lc, pi_robust, inf_reads)
-        # print('ref_likelihood: {0}\nref_likelihoodalt: {3}\nref_likelihood2: {1}\nref_likelihood2alt: {2}'.format(ref_likelihood, ref_likelihood2, ref_likelihood3, ref_likelihood_alt))
-        if opts['verbosity'] > 1:
-            print('[inference] total paths: {0}'.format(npaths))
-        if npaths == 0:         # MINOR shouldn't this be higher up?
-            if opts['verbosity'] > 0:
-                print('[inference] npaths == 0, skipping subgraph')
-            continue            # LATER handle this case?
-        if opts['verbosity'] > 0:
-            print('[inference] total reads: {0}'.format(total_reads))
-            print('[inference] informative reads: {0}'.format(len(inf_reads)))
-            print('[inference] blocks:')
-            for i in range(0, end - start + 1):
-                print('\t{0}: {1}-{2}'.format(block_idx_to_name(i),
-                                              blocks[start + i].start,
-                                              blocks[start + i].end))
-            print('')
-        pathstrings = [path_to_string(p, start, blocks)
-                       for p in paths]
-
-        if len(opts['allele_fractions_symmetrized']) > 0:  # doing HET calls?
-            all_lh = itertools.chain(zip(homozygous_likelihood,
-                                         range(npaths),
-                                         ['HOM'] * npaths),
-                                     zip(heterozygous_likelihood,
-                                         range(npaths),
-                                         ['HET'] * npaths))
-        else:                   # homozygous calls only
-            all_lh = zip(homozygous_likelihood, range(npaths), ['HOM'] * npaths)
-        all_lh_sorted = sorted(all_lh, key=lambda pair: -pair[0])
-
-        idx_ref = [i for i in range(npaths) if is_path_ref(paths[i], blocks)][0]
-        all_lh_sorted = [x for x in all_lh_sorted if
-                         not (x[1] == idx_ref and x[2] == 'HET')]
-        if opts['verbosity'] > 0:
-            for (lh, idx, gt) in all_lh_sorted:
-                pathstring = pathstrings[idx]
-                print('%-20s (%s) %20s' % (pathstring, gt, '%.3f' % lh))
-
-        # get the 50 paths with highest likelihood, but don't
-        # double-count for HET and HOM likelihood
-        s = set()
-        idx_ordered_unique = [idx for (_, idx, _) in all_lh_sorted
-                              if idx not in s and (s.add(idx) is None)]
-
-        best = None
-        next_best = None
-        best_lh = -np.Inf
-        next_lh = -np.Inf
-        best_af = None
-        which_consider = idx_ordered_unique[:50]  # LATER make this a parameter
-        # make sure reference is there:
-        if idx_ref not in which_consider:
-            which_consider.append(idx_ref)
-        # TODO unique
-        for (i, j) in itertools.product(which_consider, which_consider):
-            if i < j:           # likelihood is symmetric in theta_1, theta_2
-                continue
-            lhr_i, nc_i, lnc_i, _ = lh_out[i]
-            lhr_j, nc_j, lnc_j, _ = lh_out[j]
-            if i == j:
-                allele_fractions = [1]
-            else:
-                allele_fractions = opts['allele_fractions_symmetrized']
-            # SPEEDUP a lot of duplication here -- already tested
-            # everything as HOM and HET variants
-            for allele_fraction in allele_fractions:
-                heterozygous_likelihood = \
-                    diploid_likelihood_frac(lhr_i, lhr_j,
-                                            lnc_i, lnc_j,
-                                            ref_lc, allele_fraction,
-                                            pi_robust, inf_reads)
-                s1 = path_to_string(paths[i], start, blocks)
-                s2 = path_to_string(paths[j], start, blocks)
-                if opts['verbosity'] > 1:
-                    print('{0}\t{1}\t{2}'.format(s1, s2, heterozygous_likelihood))
-                # old_output = \
-                #     diploid_likelihood(lhr_i, lhr_j,
-                #                         lnc_i, lnc_j,
-                #                         lc, pi_robust, inf_reads)
-                # print('current: {0}, old: {1}'.format(heterozygous_likelihood, old_output))
-
-                if heterozygous_likelihood > best_lh:
-                    next_best = best
-                    best = (i, j)
-                    next_lh = best_lh
-                    best_lh = heterozygous_likelihood
-                    best_af = allele_fraction
-                elif heterozygous_likelihood > next_lh:
-                    next_lh = heterozygous_likelihood
-                    next_best = (i, j)
-        path1, path2 = paths[best[0]], paths[best[1]]
-
-        if best[0] != best[1]:  # heterozygous
-            frac1, frac2 = 1 - best_af, best_af
-        else:
-            frac1, frac2 = 1, None
-
-        s1 = path_to_string(path1, start, blocks)
-        s2 = path_to_string(path2, start, blocks)
-        if opts['verbosity'] > 0:
-            print('\n[inference] Genotype with highest likelihood:\t%.3f' % best_lh)
-            print('\t{0}\n\t{1}'.format(s1, s2))
-        if next_best is not None:
-            s1next = path_to_string(paths[next_best[0]], start, blocks)
-            s2next = path_to_string(paths[next_best[1]], start, blocks)
-            if opts['verbosity'] > 0:
-                print('[inference] Next best likelihood:\t%.3f' % next_lh)
-                print('\t{0}\n\t{1}'.format(s1next, s2next))
-        else:
-            s1next, s2next = '.', '.'
-        next_best_pathstring = '{0}/{1}'.format(s1next, s2next)
-        allele1_is_ref = is_path_ref(path1, blocks)
-        allele2_is_ref = is_path_ref(path2, blocks)
-        variant_called = (not allele1_is_ref) or (not allele2_is_ref)
-        if variant_called and opts['verbosity'] > 0:
-                print('[inference] VARIANT CALLED')
-        elif not variant_called:
-            if opts['verbosity'] > 0:
-                print('')
-                print('-' * 60)
-                print('')
-            continue
-
-        nb, np1, np2 = simplify_blocks_diploid(blocks, path1, path2)
-
-        s1 = path_to_string(np1, blocks=nb)
-        s2 = path_to_string(np2, blocks=nb)
-
-        (event1, event2), svs, complex_types = classify_paths(path1, path2, blocks,
-                                                              g.size, left_bp,
-                                                              right_bp, opts['verbosity'])
-        if opts['verbosity'] > 1:
-            print(event1)
-            print(event2)
-            print(svs)
-        # apply filters and write to vcf
-        apply_filters(svs)
-        filter_criteria = opts['filter_criteria']
+            
+        outlines, splitlines, qname_data, skip_reason = sv_output_data
         
-        # sv1 = [sv for sv in svs if sv.genotype == '1/1' or sv.genotype == '1/0']
-        # sv2 = [sv for sv in svs if sv.genotype == '1/1' or sv.genotype == '0/1']
-        # for (k, sv_list, frac) in [(0, sv1, frac1), (1, sv2, frac2)]:
-        #     if k == 1 and np1 == np2:  # homozygous
-        #         continue
-        #     fs = sorted(set(get_filter_string(sv, filter_criteria) for sv in sv_list))
-        #     if all(x == 'PASS' for x in fs):
-        #         filters = 'PASS'
-        #     else:
-        #         filters = ','.join(x for x in fs if x != 'PASS')
-        #     for sv in sv_list:
-        #         # possibly multiple lines for BND events
-        #         vcflines = sv_to_vcf(sv, frac, ref, filters,
-        #                              best_lh, ref_likelihood)
-        #         vcflines = vcflines.rstrip().split('\n')
-        #         for line in vcflines:
-        #             line += '\n'
-        #             if opts['verbosity'] > 1:
-        #                 print(line)
-        #                 print('')
-        #             pos = int(line.split('\t')[1])
-        #             sv_calls.append((pos, line))
-        # write to sv_out2.bed
-        npaths_signed = -len(paths) if increased_edge_support else len(paths)
-        outlines, vcflines, splitlines = sv_output(np1, np2, nb, event1, event2,
-                                                   frac1, frac2, svs, complex_types,
-                                                   best_lh, ref_likelihood, next_lh,
-                                                   next_best_pathstring, npaths_signed,
-                                                   filter_criteria, output_split_support=True,
-                                                   reference=ref, output_vcf = True)
-                                                   
-        if opts['verbosity'] > 1:
-            print(outlines)
-            print('')
-            print(splitlines)
-            print('')
+        if skip_reason:
+            sv_logfile.write(skip_reason)
+            continue
+            
         sv_outfile.write(outlines)
         split_outfile.write(splitlines)
-        for line in vcflines:
-            pos = int(line.split('\t')[1])
-            vcf_out.append((pos, line))
+        
+        # Handle altered reference data
+        if qname_data:
+            for qname, seqs in qname_data:
+                qnames.append(qname)
+                seqnum = 1
+                qname_truncated = qname[:(ALTERED_QNAME_MAX_LEN-4)]
+                for seq in seqs:
+                    altered_reference_file.write('>{0}\n{1}\n'.
+                                                 format(qname_truncated + ':' + str(seqnum), seq))
+                    seqnum += 1
 
-        # if complex variant called, write out figure
-        if variant_called and 'complex' in (event1 + event2):
-            # 1-indexed inclusive coords to match vcf
-            figname = ('{0}_{1}_{2}.png'
-                       .format(blocks[0].chrom, blocks[start].start + 1, blocks[end].end))
-            figpath = os.path.join(outdir, 'complex_figs', figname)
-            if best[0] == best[1]:  # homozygous
-                plot_rearrangement(figpath, blocks, start, end,
-                                   path1, show_ref=True)
-            else:           # heterozygous
-                plot_rearrangement(figpath, blocks, start, end,
-                                   path1, path2,
-                                   show_ref=True)
-
-        # write altered reference to file
-        sv1 = [sv for sv in svs if sv.genotype == '1/1' or sv.genotype == '1/0']
-        sv2 = [sv for sv in svs if sv.genotype == '1/1' or sv.genotype == '0/1']
-        compound_het = (path1 != path2) and (len(sv1) > 0) and (len(sv2) > 0)
-        for (k, path, ev, pathstring, svlist, frac) in [(0, path1, event1, s1, sv1, frac1),
-                                                        (1, path2, event2, s2, sv2, frac2)]:
-            if k == 1 and path1 == path2:
-                continue
-            if len(svlist) == 0:
-                continue
-
-            id = ','.join(svlist[0].event_id.split(',')[0:2])
-            if compound_het:
-                id += ',' + str(k + 1)
-            qname = id
-            qname += ':{0}'.format(pathstring)
-            for sv in svlist:
-                svtype = sv.type.split(':')[0]  # just write DUP, not DUP:TANDEM
-                qname += ':{0}'.format(svtype)
-            ars_out = altered_reference_sequence(path, blocks, ref,
-                                                 flank_size=opts['altered_flank_size'])
-            seqs, block_pos, insertion_size, del_size, svb, svp, hlf, hrf = ars_out
-            qnames.append(qname)
-            block_positions.append(block_pos)
-            insertion_sizes.append(insertion_size)
-            del_sizes.append(del_size)
-            simplified_blocks.append(svb)
-            simplified_paths.append(svp)
-            has_left_flank.append(hlf)
-            has_right_flank.append(hrf)
-            seqnum = 1
-            qname = qname[:(ALTERED_QNAME_MAX_LEN-4)]
-            for seq in seqs:
-                altered_reference_file.write('>{0}\n{1}\n'.
-                                             format(qname + ':' + str(seqnum), seq))
-                seqnum += 1
-
-        # print results
-        # for sv in svs:
-        #     if sv.type == 'INS':
-        #         block_before_idx = min([i for i in range(len(blocks)) if blocks[i].end == sv.ref_start])
-                # sl, sr = bp_left_counts[block_before_idx], bp_right_counts[block_before_idx]
-                # hl, hr = hanging_left_counts[block_before_idx], hanging_right_counts[block_before_idx]
-
-        if opts['verbosity'] > 0:
-            print('')
-            print('-' * 60)
-            print('')
-
-    # write sorted VCF
+    # Write sorted VCF
     vcf_file = open(os.path.join(outdir, 'arcsv_out.vcf'), 'w')
     vcf_file.write(get_vcf_header(reference_files['reference']))
     vcf_out.sort()
@@ -579,7 +218,492 @@ def do_inference(opts, reference_files, g, blocks,
     return do_inference_insertion_time
 
 
-# edges going outside of start_block, end_block range are never used
+def test_insertions_parallel(opts, serializable_graph, blocks, gap_indices, right_bp, 
+                            insertion_test_sizes, insertion_search_width,
+                            insert_dists, insert_cdfs, insert_cdf_sums,
+                            class_probs, rlen_stats, pi_robust, n_processes):
+    """
+    Test for insertions in parallel across blocks.
+    
+    This function parallelizes the insertion testing loop, which can be
+    computationally expensive when testing multiple insertion sizes.
+    """
+    insertion_len = [0] * (len(blocks) - 1)
+    bp_left_counts = []
+    bp_right_counts = []
+    hanging_left_counts = []
+    hanging_right_counts = []
+    
+    # Prepare arguments for parallel processing
+    # Each block gets tested independently
+    block_args = []
+    for b in range(0, len(blocks) - 1):
+        block_args.append((
+            b, blocks, gap_indices, right_bp, insertion_test_sizes,
+            insertion_search_width, serializable_graph, insert_dists, insert_cdfs,
+            insert_cdf_sums, class_probs, rlen_stats, pi_robust,
+            opts['verbosity'], opts['min_edge_support']
+        ))
+    
+    # Process blocks in parallel
+    if n_processes > 1:
+        with Pool(processes=n_processes) as pool:
+            results = pool.map(test_single_insertion, block_args)
+    else:
+        # Fallback to sequential processing
+        results = [test_single_insertion(args) for args in block_args]
+    
+    # Collect results
+    for b, result in enumerate(results):
+        bp_left, bp_right, hanging_left, hanging_right, ins_len = result
+        bp_left_counts.append(bp_left)
+        bp_right_counts.append(bp_right)
+        hanging_left_counts.append(hanging_left)
+        hanging_right_counts.append(hanging_right)
+        if ins_len > 0:
+            insertion_len[b] = ins_len
+            if opts['verbosity'] > 0:
+                print('[inference] possible {0} bp insertion following block {1} (position {2})'
+                      .format(ins_len, b, blocks[b].end))
+    
+    return insertion_len, bp_left_counts, bp_right_counts, hanging_left_counts, hanging_right_counts
+
+
+def test_single_insertion(args):
+    """
+    Worker function to test a single block for insertions.
+    
+    This function is designed to be called by multiprocessing.Pool.
+    It takes a tuple of arguments and returns insertion test results.
+    Now uses SerializableGraph instead of GenomeGraph.
+    """
+    (b, blocks, gap_indices, right_bp, insertion_test_sizes,
+     insertion_search_width, g, insert_dists, insert_cdfs,
+     insert_cdf_sums, class_probs, rlen_stats, pi_robust,
+     verbosity, min_edge_support) = args
+    
+    # Note: g is now a SerializableGraph instance
+    
+    # Check if this is a gap
+    if (b+1) in gap_indices:
+        return (0, 0, 0, 0, 0)
+    
+    # Get breakpoint information
+    ins_bp = right_bp[b]
+    bp_left = ins_bp.supp_clip_left
+    bp_right = ins_bp.supp_clip_right
+    
+    # Get blocks within distance
+    lower, upper = get_blocks_within_distance(blocks, b, insertion_search_width,
+                                              gap_indices)
+    
+    # hanging edges on left and right
+    tmp = get_hanging_edges_within_distance(g, blocks, b, lower, upper,
+                                            insertion_search_width)
+    hanging_left, hanging_right = tmp
+    
+    # Check if we should test this insertion
+    if not ((ins_bp.supp_clip_left > 0 and ins_bp.supp_clip_right > 0)
+            or any(pe[1] == 'Ins' for pe in ins_bp.pe)):
+        return (bp_left, bp_right, hanging_left, hanging_right, 0)
+    
+    # Test insertion
+    ref_path = reference_path(lower, upper)
+    test_path = insertion_path(lower, upper, b + 1, len(blocks))
+    
+    edges, total_reads = get_edges_in_range(g, list(range(0, 2*len(blocks))),
+                                            start_block=lower, end_block=upper - 1)
+    
+    # Compute reference likelihood
+    tmp = compute_likelihood(edges, ref_path, blocks,
+                             insert_dists, insert_cdfs, insert_cdf_sums,
+                             class_probs, rlen_stats,
+                             start=0)
+    ref_lhr, ref_nc, ref_lnc, ref_lc = tmp
+    ref_likelihood = haploid_likelihood(ref_lhr, ref_lnc, ref_lc, pi_robust)
+    
+    # Test different insertion sizes
+    test_block = GenomeInterval('1', 0, 1, is_de_novo=True)
+    test_homozygous_likelihoods = []
+    test_heterozygous_likelihoods = []
+    
+    for insertion_size in insertion_test_sizes:
+        test_block.end = insertion_size
+        tmp = compute_likelihood(edges, test_path, blocks + [test_block],
+                                 insert_dists, insert_cdfs, insert_cdf_sums,
+                                 class_probs, rlen_stats,
+                                 start=0)
+        test_lhr, test_nc, test_lnc, test_lc = tmp
+        test_homozygous_likelihoods.append(haploid_likelihood(test_lhr, test_lnc,
+                                                               test_lc, pi_robust))
+        test_heterozygous_likelihoods.append(diploid_likelihood(ref_lhr, test_lhr,
+                                                                 ref_lnc, test_lnc,
+                                                                 ref_lc, pi_robust))
+    
+    # Determine if insertion should be called
+    max_hom = max(test_homozygous_likelihoods)
+    max_het = max(test_heterozygous_likelihoods)
+    num_test = len(insertion_test_sizes)
+    insertion_len = 0
+    
+    if max(max_hom, max_het) > ref_likelihood:
+        if max_hom >= max_het:
+            which_max = min([i for i in range(num_test)
+                             if test_homozygous_likelihoods[i] == max_hom])
+        else:
+            which_max = min([i for i in range(num_test)
+                             if test_heterozygous_likelihoods[i] == max_het])
+        insertion_len = insertion_test_sizes[which_max]
+    
+    return (bp_left, bp_right, hanging_left, hanging_right, insertion_len)
+
+
+def process_subgraphs_parallel(opts, serializable_graph, subgraphs, blocks, left_bp, right_bp,
+                               insert_dists, insert_cdfs, insert_cdf_sums,
+                               class_probs, rlen_stats, pi_robust, ref, n_processes):
+    """
+    Process subgraphs in parallel to call structural variants.
+    
+    Each subgraph is independent and can be processed in parallel.
+    This is the main parallelization opportunity in the SV calling pipeline.
+    """
+    vcf_out = []
+    sv_outputs = []
+    
+    if len(subgraphs) == 0:
+        return vcf_out, sv_outputs
+    
+    # Prepare arguments for parallel processing
+    subgraph_args = []
+    for sub in subgraphs:
+        subgraph_args.append((
+            sub, opts, serializable_graph, blocks, left_bp, right_bp,
+            insert_dists, insert_cdfs, insert_cdf_sums,
+            class_probs, rlen_stats, pi_robust
+        ))
+    
+    # Process subgraphs in parallel
+    if n_processes > 1 and len(subgraphs) > 1:
+        with Pool(processes=n_processes) as pool:
+            results = pool.map(process_single_subgraph, subgraph_args)
+    else:
+        # Fallback to sequential processing
+        results = [process_single_subgraph(args) for args in subgraph_args]
+    
+    # Collect results
+    for result in results:
+        if result is None:
+            continue
+        
+        vcf_lines, sv_output_data = result
+        vcf_out.extend(vcf_lines)
+        sv_outputs.append(sv_output_data)
+    
+    return vcf_out, sv_outputs
+
+
+def process_single_subgraph(args):
+    """
+    Worker function to process a single subgraph.
+    
+    This is the main computational workhorse that:
+    1. Finds all paths through the subgraph
+    2. Computes likelihoods for each path
+    3. Determines the most likely genotype
+    4. Classifies and filters structural variants
+    
+    Now uses SerializableGraph instead of GenomeGraph.
+    """
+    (sub, opts, g, blocks, left_bp, right_bp,
+     insert_dists, insert_cdfs, insert_cdf_sums,
+     class_probs, rlen_stats, pi_robust) = args
+    
+    # Note: g is now a SerializableGraph instance
+    
+    start, end = sub[0], sub[1]
+    start_in = 2 * start
+    end_out = 2 * end + 1
+    ref_path = tuple(range(start_in, end_out + 1))
+    
+    verbosity = opts['verbosity']
+    
+    if verbosity > 0:
+        print('[inference] evaluating subgraph from block {0} to block {2} ({1} - {3})'
+              .format(start, blocks[start].start, end, blocks[end].end))
+        print('[inference] total length: {0} bp'
+              .format(blocks[end].end - blocks[start].start))
+    
+    # Get paths through subgraph
+    skip_this_region = False
+    get_paths_finished = False
+    mes_extra = 0
+    
+    while not get_paths_finished:
+        paths = [p for p in
+                 get_paths_iterative(g, opts['max_back_edges'],
+                                     opts['min_edge_support'] + mes_extra,
+                                     opts['max_paths'] + 1,
+                                     start=start_in, end=end_out)]
+        if len(paths) > 0 and paths[-1] == -1:
+            if verbosity > 0:
+                print('[inference] get_paths failed b/c too many backtrack steps. . . skipping')
+            s0 = 'subgraph-skip-backtrack'
+            skip_this_region = True
+            skip_reason = '{0}\t{1}\t{2}\t{3}\t{4}\t{5}\n'.format(
+                s0, blocks[start].start, blocks[end].end,
+                end - start + 1, 0, mes_extra)
+            return None, (None, None, None, skip_reason)
+        elif len(paths) <= opts['max_paths']:
+            s0 = 'subgraph(s/e/n/path)'
+            get_paths_finished = True
+        else:               # increase required edge support and try again
+            mes_extra += 2
+            if mes_extra > opts['max_mes_extra']:
+                s0 = 'subgraph-npaths'
+                skip_this_region = True
+                skip_reason = '{0}\t{1}\t{2}\t{3}\t{4}\t{5}\n'.format(
+                    s0, blocks[start].start, blocks[end].end,
+                    end - start + 1, len(paths), mes_extra)
+                return None, (None, None, None, skip_reason)
+    
+    increased_edge_support = (mes_extra > 0)
+    npaths = len(paths)
+    
+    if verbosity > 0:
+        print('[inference] {0} paths total'.format(npaths))
+    
+    edges, total_reads = get_edges_in_range(g, list(range(start, end + 1)), 
+                                           start_block=start, end_block=end)
+    
+    if verbosity > 1:
+        print('{0} edges in subgraph'.format(len(edges)))
+        print('{0} reads within subgraph'.format(total_reads))
+    
+    # Compute reference likelihood
+    if verbosity > 1:
+        print('reference path:')
+        print(ref_path)
+    
+    ref_read_likelihoods = compute_likelihood(edges, ref_path, blocks,
+                                              insert_dists, insert_cdfs, insert_cdf_sums,
+                                              class_probs, rlen_stats, start)
+    ref_lhr, ref_nc, ref_lnc, ref_lc = ref_read_likelihoods
+    
+    # Compute likelihoods for all paths
+    lh_out = []
+    homozygous_likelihood = []
+    heterozygous_likelihood = []
+    
+    for path in paths:
+        pathstring = path_to_string(path, start, blocks)
+        if verbosity > 1:
+            print('\nevaluating {0}'.format(pathstring))
+            print(path)
+        lh_out.append(compute_likelihood(edges, path, blocks,
+                                         insert_dists, insert_cdfs, insert_cdf_sums,
+                                         class_probs, rlen_stats, start))
+        lhr, nc, lnc, lc = lh_out[-1]
+        if len(lhr) > 0 and verbosity > 1:
+            print('max lh {0}'.format(max(lhr)))
+            print('median lh {0}'.format(np.median(lhr)))
+            print('\n{0} discordant reads < pi_robust'
+                  .format(len([l for l in lhr if l < pi_robust])))
+            print('\n{0} discordant reads lh = 0'.format(len([l for l in lhr if l == 0])))
+        homozygous_likelihood.append(haploid_likelihood(lhr, lnc, lc, pi_robust))
+        heterozygous_likelihood.append(diploid_likelihood_frac(ref_lhr, lhr, ref_lnc, lnc,
+                                                               lc, allele_fraction=0.5,
+                                                               pi_robust=pi_robust))
+        
+    # computing the full heterozygous likelihoods below,
+    inf_reads = [i for i in range(total_reads)
+                 if not all([lh_out[j][0][i] == lh_out[0][0][i]
+                             for j in range(npaths)])]
+    
+    # SPEEDUP don't need to recompute this -- already have lh for all paths
+    ref_likelihood = haploid_likelihood(ref_lhr, ref_lnc, ref_lc, pi_robust, inf_reads)
+    # ref_likelihood3 = diploid_likelihood(lhr, lhr, lnc, lnc, lc, pi_robust, inf_reads)
+    # print('ref_likelihood: {0}\nref_likelihoodalt: {3}\nref_likelihood2: {1}\nref_likelihood2alt: {2}'.format(ref_likelihood, ref_likelihood2, ref_likelihood3, ref_likelihood_alt))
+    if verbosity > 1:
+        print('[inference] total paths: {0}'.format(npaths))
+    if npaths == 0:         # MINOR shouldn't this be higher up?
+        if verbosity > 0:
+            print('[inference] npaths == 0, skipping subgraph')
+        return None, (None, None, None, None)  # LATER handle this case?
+    
+    if verbosity > 0:
+        print('[inference] total paths: {0}'.format(npaths))
+        print('[inference] total reads: {0}'.format(total_reads))
+        print('[inference] informative reads: {0}'.format(len(inf_reads)))
+        print('[inference] blocks:')
+        for i in range(0, end - start + 1):
+            print('\t{0}: {1}-{2}'.format(block_idx_to_name(i),
+                                          blocks[start + i].start,
+                                          blocks[start + i].end))
+        print('')
+    
+    pathstrings = [path_to_string(p, start, blocks) for p in paths]
+    
+    # Determine best genotype
+    if len(opts['allele_fractions_symmetrized']) > 0:
+        all_lh = itertools.chain(zip(homozygous_likelihood,
+                                     range(npaths),
+                                     ['HOM'] * npaths),
+                                 zip(heterozygous_likelihood,
+                                     range(npaths),
+                                     ['HET'] * npaths))
+    else:
+        all_lh = zip(homozygous_likelihood, range(npaths), ['HOM'] * npaths)
+    
+    all_lh_sorted = sorted(all_lh, key=lambda pair: -pair[0])
+    
+    idx_ref = [i for i in range(npaths) if is_path_ref(paths[i], blocks)][0]
+    all_lh_sorted = [x for x in all_lh_sorted if
+                     not (x[1] == idx_ref and x[2] == 'HET')]
+    
+    if verbosity > 0:
+        for (lh, idx, gt) in all_lh_sorted:
+            pathstring = pathstrings[idx]
+            print('%-20s (%s) %20s' % (pathstring, gt, '%.3f' % lh))
+    
+    # Find best and next best genotypes
+    # get the 50 paths with highest likelihood, but don't
+    # double-count for HET and HOM likelihood
+    s = set()
+    idx_ordered_unique = [idx for (_, idx, _) in all_lh_sorted
+                          if idx not in s and (s.add(idx) is None)]
+    
+    best = None
+    next_best = None
+    best_lh = -np.inf
+    next_lh = -np.inf
+    best_af = None
+    which_consider = idx_ordered_unique[:50]  # LATER make this a parameter
+    # make sure reference is there:
+    if idx_ref not in which_consider:
+        which_consider.append(idx_ref)
+    # TODO unique
+    for (i, j) in itertools.product(which_consider, which_consider):
+        if i < j:           # likelihood is symmetric in theta_1, theta_2
+            continue
+        lhr_i, nc_i, lnc_i, _ = lh_out[i]
+        lhr_j, nc_j, lnc_j, _ = lh_out[j]
+        if i == j:
+            allele_fractions = [1]
+        else:
+            allele_fractions = opts['allele_fractions_symmetrized']
+        # SPEEDUP a lot of duplication here -- already tested
+        # everything as HOM and HET variants
+        for allele_fraction in allele_fractions:
+            heterozygous_likelihood = \
+                diploid_likelihood_frac(lhr_i, lhr_j,
+                                        lnc_i, lnc_j,
+                                        ref_lc, allele_fraction,
+                                        pi_robust, inf_reads)
+            s1 = path_to_string(paths[i], start, blocks)
+            s2 = path_to_string(paths[j], start, blocks)
+            if verbosity > 1:
+                print('{0}\t{1}\t{2}'.format(s1, s2, heterozygous_likelihood))
+            # old_output = \
+            #     diploid_likelihood(lhr_i, lhr_j,
+            #                         lnc_i, lnc_j,
+            #                         lc, pi_robust, inf_reads)
+            # print('current: {0}, old: {1}'.format(heterozygous_likelihood, old_output))
+            
+            if heterozygous_likelihood > best_lh:
+                next_best = best
+                best = (i, j)
+                next_lh = best_lh
+                best_lh = heterozygous_likelihood
+                best_af = allele_fraction
+            elif heterozygous_likelihood > next_lh:
+                next_lh = heterozygous_likelihood
+                next_best = (i, j)
+    
+    path1, path2 = paths[best[0]], paths[best[1]]
+    
+    if best[0] != best[1]:
+        frac1, frac2 = 1 - best_af, best_af
+    else:
+        frac1, frac2 = 1, None
+    
+    s1 = path_to_string(path1, start, blocks)
+    s2 = path_to_string(path2, start, blocks)
+    
+    if verbosity > 0:
+        print('\n[inference] Genotype with highest likelihood:\t%.3f' % best_lh)
+        print('\t{0}\n\t{1}'.format(s1, s2))
+    
+    if next_best is not None:
+        s1next = path_to_string(paths[next_best[0]], start, blocks)
+        s2next = path_to_string(paths[next_best[1]], start, blocks)
+        if verbosity > 0:
+            print('[inference] Next best likelihood:\t%.3f' % next_lh)
+            print('\t{0}\n\t{1}'.format(s1next, s2next))
+    else:
+        s1next, s2next = '.', '.'
+    
+    next_best_pathstring = '{0}/{1}'.format(s1next, s2next)
+    
+    # Check if variant was called
+    allele1_is_ref = is_path_ref(path1, blocks)
+    allele2_is_ref = is_path_ref(path2, blocks)
+    variant_called = (not allele1_is_ref) or (not allele2_is_ref)
+    
+    if variant_called and verbosity > 0:
+        print('[inference] VARIANT CALLED')
+    elif not variant_called:
+        if verbosity > 0:
+            print('')
+            print('-' * 60)
+            print('')
+        return None, (None, None, None, None)
+    
+    # Simplify blocks
+    nb, np1, np2 = simplify_blocks_diploid(blocks, path1, path2)
+    
+    s1 = path_to_string(np1, blocks=nb)
+    s2 = path_to_string(np2, blocks=nb)
+    
+    # Classify paths
+    (event1, event2), svs, complex_types = classify_paths(path1, path2, blocks,
+                                                          g.size, left_bp,
+                                                          right_bp, verbosity)
+    
+    # Apply filters
+    apply_filters(svs)
+    filter_criteria = opts['filter_criteria']
+    
+    # Generate output
+    npaths_signed = -len(paths) if increased_edge_support else len(paths)
+    
+    # Note: ref is not serializable, so we'll handle VCF generation separately
+    outlines, _, splitlines = sv_output(np1, np2, nb, event1, event2,
+                                        frac1, frac2, svs, complex_types,
+                                        best_lh, ref_likelihood, next_lh,
+                                        next_best_pathstring, npaths_signed,
+                                        filter_criteria, output_split_support=True,
+                                        reference=None, output_vcf=False)
+    
+    # Collect VCF data (positions and basic info)
+    vcf_lines = []
+    for sv in svs:
+        # We'll generate VCF lines in the main process
+        # Just collect the basic info here
+        vcf_lines.append((sv.ref_start, sv))
+    
+    # Collect qname data for altered reference
+    qname_data = None
+    
+    if verbosity > 0:
+        print('')
+        print('-' * 60)
+        print('')
+    
+    return vcf_lines, (outlines, splitlines, qname_data, None)
+
+
+# HELPER AND WRAPPER FUNCTIONS
+
 def decompose_graph(opts, g, start_block=None, end_block=None):
     min_edge_support = opts['min_edge_support']
     if start_block is None:
@@ -589,7 +713,7 @@ def decompose_graph(opts, g, start_block=None, end_block=None):
     if start_block == end_block - 1:
         return []
     MES = min_edge_support
-    cut_points = set([start_block, end_block - 1])             # nodes which would disconnect the graph if removed, assuming no spanners
+    cut_points = set([start_block, end_block - 1])
     is_spanned = [False] * (end_block - start_block)
     start_in = 2 * start_block
     end_out = 2 * (end_block - 1) + 1
@@ -683,7 +807,6 @@ def get_blocks_within_distance(blocks, idx, width, gap_indices, get_after=True):
     last = min(gap_after + [last])
 
     return first, last
-
 
 # expand the subgraph so there are at least least "width" base pairs
 # on either flank
@@ -934,6 +1057,45 @@ def get_paths_iterative(graph, max_back_count,
         yield -1
 
 
+def extract_graph_data(g):
+    """
+    Extract serializable data from GenomeGraph object.
+    This removes any pysam objects and keeps only the data needed for computation.
+    Necessary because pysam objects are not directly able to be pickled.
+    """
+    graph_data = {
+        'size': g.size,
+        'edges': []
+    }
+    
+    # Extract edge data without pysam objects
+    for edge in g.graph.es:
+        edge_data = {
+            'tuple': edge.tuple,
+            'support': edge['support'],
+            'offset': edge['offset'],
+            'lib': edge['lib'],
+            'adj1': edge['adj1'],
+            'adj2': edge['adj2'],
+            'which_hanging': edge['which_hanging'],
+            'hanging_orientation': edge.get('hanging_orientation', []),
+            'pmapped': edge.get('pmapped', [])
+        }
+        # Don't include any pysam objects
+        graph_data['edges'].append(edge_data)
+    
+    # Extract vertex information
+    graph_data['vertices'] = []
+    for v in g.graph.vs:
+        vertex_data = {
+            'index': v.index,
+            'neighbors': list(v.neighbors())
+        }
+        graph_data['vertices'].append(vertex_data)
+    
+    return graph_data
+
+
 def is_back_edge(edge, graph_size):
     if edge[0] >= 2 * graph_size or edge[1] >= 2 * graph_size:
         return ()
@@ -1028,9 +1190,6 @@ def compute_likelihood(edges, path, blocks, insert_dists, insert_cdfs, insert_cd
                                                           insert_dists, insert_cdfs,
                                                           insert_cdf_sums,
                                                           hanging_adj_only=True))
-    # total_length = sum([len(blocks[int(floor(path[i]) / 2)]) for i in range(0, len(path), 2) if not (blocks[int(floor(path[i]) / 2)].is_insertion())])
-    # print('block length: {0}'.format(total_length))
-    # print('nc: {0}'.format(lib_norm_consts))
 
     return likelihood, norm_consts, lib_norm_consts, lib_counts
 
@@ -1060,7 +1219,7 @@ def compute_edge_likelihood(edge, path, blocks, insert_dists, insert_cdfs, inser
         lh *= pmapped
         likelihood.append(lh)
 
-    if len(edge['which_hanging']) > 0 and len(dists) > 0:  # has hanging reads
+    if len(edge['which_hanging']) > 0 and len(dists) > 0:
         which_dist_zero = [i for i in range(len(dists)) if dists[i] == 0][0]
         self_adj_satisfied = {adj: adj1_satisfied[adj][which_dist_zero] for adj in adj1_satisfied}
         likelihood.extend(compute_hanging_edge_likelihood(edge, path, blocks,
@@ -1079,37 +1238,23 @@ def truncate_string(s, max_length):
     else:
         return s[:max_length]
 
-# def write_lh():
-#     # write out likelihood of reads
-#     region_id = '{0}_{1}'.format(start, end)
-#     region_lh_file = outdir + '/lh/{0}.txt'.format(region_id)
-#     with open(region_lh_file, 'w') as lhfile:
-#         for idx in range(len(likelihood_reads[0])):
-#             ncline = ','.join([str(norm_consts[path_idx][idx]) for path_idx in \
-#                                range(len(paths))])
-#             # lhfile.write(ncline + '\n')
-#         for idx in range(len(likelihood_reads[0])):
-#             lhline = ','.join([str(likelihood_reads[path_idx][idx]) for path_idx in \
-#                                range(len(paths))])
-#     lhfile.write(lhline + '\n')
-#     wts, obj = convex_diploid(likelihood_reads, norm_consts, pi_robust)
 
-
+# TEST FUNCTIONS
 def test_decompose_graph():
     g = GenomeGraph(20)
     g.add_ref_path_support(1)
     assert(decompose_graph(g, 1) == [])
 
     g = GenomeGraph(20)
-    g.add_support(3, 5)          # deletion of block 2
+    g.add_support(3, 5)
     print(decompose_graph(g, 1))
 
     g = GenomeGraph(20)
-    g.add_support(5, 4)          # duplication of block 3
+    g.add_support(5, 4)
     print(decompose_graph(g, 1))
 
     g = GenomeGraph(20)
-    g.add_support(7, 6)          # duplication of block 4, deletion of block 2
+    g.add_support(7, 6)
     g.add_support(1, 4)
     print(decompose_graph(g, 1))
 

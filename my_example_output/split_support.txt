@@ -1,0 +1,1 @@
+sv_id	bp	reference	rearrangement	sv_bp	support_type	qname	bp_idx	bp1	bp2	bp_orientation	qname	strand	seq	mapq	mate_seq	mate_mapq	mate_has_split
