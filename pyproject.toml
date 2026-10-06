@@ -51,6 +51,7 @@ arcsv = "arcsv.cli:main"
 
 [project.urls]
 Repository = "https://github.com/SUwonglab/arcsv"
+Publication = "https://doi.org/10.1016/j.cell.2024.09.014"
 Issues = "https://github.com/SUwonglab/arcsv/issues"
 Changelog = "https://github.com/SUwonglab/arcsv/blob/master/CHANGELOG.md"
 

@@ -1,6 +1,12 @@
 # ARC-SV: Automated Reconstruction of Complex Structural Variants #
 
-ARC-SV is a structural variant caller for paired-end, whole-genome sequencing data. For methodological details, please see our preprint: [https://doi.org/10.1101/200170].
+ARC-SV is a structural variant caller for paired-end, whole-genome sequencing data. It detects complex structural variants, i.e., localized rearrangements of multiple DNA segments, and reconstructs their structure using a likelihood model of the read alignments.
+
+If you use ARC-SV, please cite:
+
+> Zhou B, Arthur JG, Guo H, et al. Detection and analysis of complex structural variation in human genomes across populations and in brains of donors with psychiatric disorders. *Cell* 187(23):6687–6706.e25 (2024). https://doi.org/10.1016/j.cell.2024.09.014
+
+For a detailed account of the method and its design choices, including breakpoint detection, the adjacency graph, the likelihood model, and sequence-based validation of SV calls, see Joseph Arthur's PhD thesis: *Detection and validation of genomic structural variation from DNA sequencing data*, Stanford University (2018). https://purl.stanford.edu/nd423xg8489
 
 This software was developed in the [Wong Lab](https://web.stanford.edu/group/wonglab/) at Stanford University with funding from the NSF Grant DGE-114747 and NIH grants T32-GM096982, P50-HG007735, and R01-HG007834.
 

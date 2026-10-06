@@ -43,8 +43,10 @@ All notable user-facing changes are recorded here.
 
 ### Documentation
 
-- Add installation instructions using conda, and development instructions
-  covering tests and CI.
+- Cite the ARC-SV publication (Zhou, Arthur, et al., *Cell* 2024) and link
+  the PhD thesis describing the method in detail.
+- Recommend installing with pipx or a virtual environment; add conda
+  instructions and development instructions covering tests and CI.
 
 ## 0.9.6 - 2018-07-09
 
