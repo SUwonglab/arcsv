@@ -6,9 +6,10 @@ This software was developed in the [Wong Lab](https://web.stanford.edu/group/won
 
 # Table of Contents #
 
-   * [Requirements](#requirements)
    * [Installation](#installation)
-      * [Example installation from scratch](#example-installation-from-scratch)
+      * [Using pipx (recommended)](#using-pipx-recommended)
+      * [Using a virtual environment](#using-a-virtual-environment)
+      * [Using conda](#using-conda)
       * [Getting reference resources](#getting-reference-resources)
    * [Usage](#usage)
       * [Calling SVs](#calling-svs)
@@ -38,59 +39,48 @@ This software was developed in the [Wong Lab](https://web.stanford.edu/group/won
 
 # Installation #
 
-ARC-SV and its dependencies can be installed as follows:
+ARC-SV requires Python 3.9 or later on Linux or macOS. Windows is not supported because pysam does not support it.
+
+## Using pipx (recommended) ##
+
+[pipx](https://pipx.pypa.io/) installs ARC-SV into its own isolated environment and puts the `arcsv` command on your `PATH`:
 
 ```
-
 git clone https://github.com/SUwonglab/arcsv.git
 cd arcsv
-pip3 install --user .
+pipx install .
 ```
 
-*OS X users with a `brew`ed Python installation should ignore `--user` above.*
+pipx is available from most package managers, e.g. `sudo apt install pipx` (Ubuntu/Debian) or `brew install pipx` (macOS). Run `pipx ensurepath` once afterwards so the `arcsv` command is found.
 
-The installed location of the main script, `arcsv`, must be in your path. The correct folder is probably `/usr/bin`, `/usr/local/bin`, or `~/.local/bin`.
+With [uv](https://docs.astral.sh/uv/), `uv tool install .` does the same.
 
-## Example: Using `conda`
+## Using a virtual environment ##
 
-If an isolated environment is desired, or if installing ARC-SV using `pip` is causing problems, it is recommended to use [conda](https://docs.conda.io/projects/conda/en/stable/index.html).
+```
+git clone https://github.com/SUwonglab/arcsv.git
+cd arcsv
+python3 -m venv .venv
+source .venv/bin/activate
+pip install .
+```
+
+The `arcsv` command is available while the environment is active. In a new session, activate it again with `source .venv/bin/activate`.
+
+## Using conda ##
+
+If installing ARC-SV with `pip` is causing problems, you can use [conda](https://docs.conda.io/projects/conda/en/stable/index.html) for the dependencies:
 
 ```
 conda create -n arcsv --strict-channel-priority -c conda-forge -c bioconda \
-  python=3 pysam numpy scipy scikit-learn matplotlib python-igraph
+  "python>=3.9" pysam numpy scikit-learn matplotlib python-igraph
 
+conda activate arcsv
 cd /path/to/arcsv
-pip3 install .
+pip install .
 ```
 
-To run ARC-SV in future login sessions, the conda environment must first be activated using `conda activate arcsv`.
-
-## Example: installing system dependencies without `conda` ##
-
-The following commands should install ARC-SV and all dependencies on a fresh copy of Ubuntu:
-
-```
-
-# update packages
-sudo apt-get update
-
-# install pip and setuptools
-sudo apt install python3-pip
-pip3 install -U pip setuptools
-
-# extra requirements needed for igraph
-sudo apt install libxml2-dev zlib1g-dev
-
-# arcsv setup
-sudo apt install git
-git clone https://github.com/jgarthur/arcsv.git
-cd arcsv
-pip3 install --user .
-
-# add this to your .bash_profile
-export PATH="~/.local/bin/:$PATH"
-
-```
+To run ARC-SV in future login sessions, first activate the environment with `conda activate arcsv`.
 
 ## Getting reference resources ##
 
@@ -208,5 +198,6 @@ CI (`.github/workflows/ci.yml`) runs on pushes to master and on pull requests:
 - the tests against the lowest supported versions of each dependency
 - lint
 - a check that the package builds with valid metadata
+- the Installation instructions above (pipx and a virtual environment), followed by the example
 
 A separate workflow (`latest-dependencies.yml`) runs the tests against the newest dependency releases twice a month, ignoring the lockfile.

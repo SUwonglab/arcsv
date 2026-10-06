@@ -63,6 +63,29 @@ jobs:
       - name: Run tests
         run: uv run --no-sync python -m pytest
 
+  readme-install:
+    name: README installation
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # follows the Installation and "Running the example" sections of README.md
+    # with the system Python and the runner's preinstalled pipx
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install with pipx
+        run: pipx install .
+      - name: Run the example
+        run: |
+          arcsv call -i example/input.bam -r 20:0-250000 -o my_example_output \
+            -R example/reference.fa -G example/gaps.bed
+          diff my_example_output/arcsv_out.tab example/expected_output.tab
+      - name: Install into a virtual environment
+        run: |
+          python3 -m venv .venv
+          .venv/bin/pip install .
+          .venv/bin/arcsv call --version
+
   lint:
     name: Lint
     runs-on: ubuntu-latest
