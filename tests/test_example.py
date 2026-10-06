@@ -1,0 +1,23 @@
+import os
+import subprocess
+import sys
+
+from conftest import REPO
+
+EXAMPLE = REPO / 'example'
+
+
+def test_example_matches_expected_output(tmp_path):
+    outdir = tmp_path / 'arcsv_out'
+    cmd = [sys.executable, str(REPO / 'bin' / 'arcsv'), 'call',
+           '-i', str(EXAMPLE / 'input.bam'),
+           '-r', '20:0-250000',
+           '-R', str(EXAMPLE / 'reference.fa'),
+           '-G', str(EXAMPLE / 'gaps.bed'),
+           '-o', str(outdir)]
+    env = dict(os.environ, PYTHONPATH=str(REPO))
+    result = subprocess.run(cmd, env=env, capture_output=True, text=True)
+    assert result.returncode == 0, result.stdout[-2000:] + result.stderr[-2000:]
+
+    expected = (EXAMPLE / 'expected_output.tab').read_text()
+    assert (outdir / 'arcsv_out.tab').read_text() == expected

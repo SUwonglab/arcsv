@@ -30,5 +30,8 @@ setup(
         'igraph>=0.10',         # formerly published as python-igraph
         'pyinter'
     ],
+    extras_require={
+        'dev': ['pytest', 'ruff==0.16.10'],
+    },
     scripts=['bin/arcsv']
 )

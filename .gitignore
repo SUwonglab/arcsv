@@ -9,3 +9,7 @@ dist/
 *.fa
 *.fa.*
 .#*
+
+.DS_Store
+__pycache__/
+.venv/
