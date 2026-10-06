@@ -4,14 +4,17 @@ from math import ceil, floor, sqrt
 
 from arcsv.helper import get_chrom_size, get_ucsc_name
 
+
 # uses dictionary instead of array
 class SparseSignalTrack(object):
-    valid_types = ['int', 'array']
+    valid_types = ["int", "array"]
 
-    def __init__(self, chrom_name, signal_type='int'):
+    def __init__(self, chrom_name, signal_type="int"):
         self.chrom_name = chrom_name
         if signal_type not in self.valid_types:
-            raise ValueError('signal_type is invalid, choose from ' + str(self.valid_types))
+            raise ValueError(
+                "signal_type is invalid, choose from " + str(self.valid_types)
+            )
         self.signal_type = signal_type
         self.signal = {}
 
@@ -22,8 +25,10 @@ class SparseSignalTrack(object):
         new_track = SparseSignalTrack(self.chrom_name, self.signal_type)
         all_keys = set(self.signal.keys()).union(set(other.signal.keys()))
         new_signal = {}
-        d = 0 if new_track.signal_type == 'int' else []
-        new_signal = {k: self.signal.get(k, d) + other.signal.get(k, d) for k in all_keys}
+        d = 0 if new_track.signal_type == "int" else []
+        new_signal = {
+            k: self.signal.get(k, d) + other.signal.get(k, d) for k in all_keys
+        }
         new_track.signal = new_signal
         return new_track
 
@@ -31,40 +36,43 @@ class SparseSignalTrack(object):
         if other == 0:
             return self
         else:
-            raise TypeError(f'addition of SparseSignalTrack and {type(other)} not supported')
+            raise TypeError(
+                f"addition of SparseSignalTrack and {type(other)} not supported"
+            )
 
-    def add(self, location, value = 1):
-        if self.signal_type == 'int':
+    def add(self, location, value=1):
+        if self.signal_type == "int":
             self.signal[location] = self.signal.get(location, 0) + value
-        elif self.signal_type == 'array':
+        elif self.signal_type == "array":
             self.signal[location] = self.signal.get(location, []) + [value]
 
     def add_all(self, locations):
         for loc in locations:
-            self.add(location = loc, value = 1)
+            self.add(location=loc, value=1)
 
     def windowed_signal(self, location, window):
         # loc_high - loc_low + 1 = window
         loc_low = location - int(ceil((window - 1) / 2.0))
         loc_high = location + int(floor((window - 1) / 2.0))
-        if self.signal_type == 'int':
+        if self.signal_type == "int":
             sig = 0
-        elif self.signal_type == 'array':
+        elif self.signal_type == "array":
             sig = []
         for i in range(loc_low, loc_high + 1):
-            if self.signal_type == 'int':
+            if self.signal_type == "int":
                 sig += self.signal.get(i, 0)
-            elif self.signal_type == 'array':
+            elif self.signal_type == "array":
                 sig.extend(self.signal.get(i, []))
         return sig
 
-    def write_bed(self, fileprefix, type = 'count', every = 1, window = 1,
-                  mu = None, sigma = None):
+    def write_bed(
+        self, fileprefix, type="count", every=1, window=1, mu=None, sigma=None
+    ):
         if every > window:
-            print('Warning: sliding window size less than sliding amount')
-        file = open(fileprefix + '.bed', 'w')
+            print("Warning: sliding window size less than sliding amount")
+        file = open(fileprefix + ".bed", "w")
         if len(self) == 0:
-            file.write('\n')
+            file.write("\n")
             file.close()
             return
         minloc = min(list(self.signal.keys()))
@@ -74,28 +82,32 @@ class SparseSignalTrack(object):
             if windowed == [] or windowed == 0:
                 continue
             if every > 1:
-                loc_low = loc - int(floor(every/2.0))
-                loc_high = loc + int(ceil(every/2.0))
+                loc_low = loc - int(floor(every / 2.0))
+                loc_high = loc + int(ceil(every / 2.0))
             else:
                 loc_low = loc
                 loc_high = loc + 1
-            if self.signal_type == 'int' and type != 'count':
-                raise ValueError('invalid type argument.')
-            elif self.signal_type == 'int':
-                value = windowed/float(window)
-            elif type == 'count': # signal_type == 'array'
-                value = len(windowed)/float(window)
-            elif type == 'mean':
+            if self.signal_type == "int" and type != "count":
+                raise ValueError("invalid type argument.")
+            elif self.signal_type == "int":
+                value = windowed / float(window)
+            elif type == "count":  # signal_type == 'array'
+                value = len(windowed) / float(window)
+            elif type == "mean":
                 value = np.mean(windowed)
-            elif type == 'zscore':
+            elif type == "zscore":
                 value = zscore(windowed, mu, sigma)
-            file.write(f'{self.chrom_name}\t{loc_low}\t{loc_high}\t{value}\n')
+            file.write(f"{self.chrom_name}\t{loc_low}\t{loc_high}\t{value}\n")
         file.close()
 
-    def write_bigwig(self, fileprefix, type = 'count', every = 1, window = 1,
-                     mu = None, sigma = None):
+    def write_bigwig(
+        self, fileprefix, type="count", every=1, window=1, mu=None, sigma=None
+    ):
         self.write_bed(fileprefix, type, every, window, mu, sigma)
-        os.system(f'bedGraphToBigWig {fileprefix}.bed /scratch/PI/whwong/svproject/reference/hg19.chrom.sizes {fileprefix}.bigwig')
+        os.system(
+            f"bedGraphToBigWig {fileprefix}.bed /scratch/PI/whwong/svproject/reference/hg19.chrom.sizes {fileprefix}.bigwig"
+        )
+
 
 # not used
 class SignalTrack(object):
@@ -116,7 +128,7 @@ class SignalTrack(object):
     #     else:
     #         self.signal[idx] += value
 
-    def append(self, location, value = 1):
+    def append(self, location, value=1):
         idx = self.get_index(location)
         if self.signal[idx] is None:
             self.signal[idx] = [value]
@@ -154,34 +166,49 @@ class SignalTrack(object):
     # type 1:mean
     # type 2:z scores
     # currently every = 1 is required
-    def write_file(self, filename, type = 'count',
-                   every = 1, window = 1, mu = None, sigma = None):
-        file = open(filename, 'w')
+    def write_file(
+        self, filename, type="count", every=1, window=1, mu=None, sigma=None
+    ):
+        file = open(filename, "w")
         for idx in range(0, self.len, every):
             windowed = self.windowed_signal(idx, window)
             if windowed == []:
                 continue
-            if type == 'count':
-                value = len(windowed)/float(window)
-            if type == 'mean':
+            if type == "count":
+                value = len(windowed) / float(window)
+            if type == "mean":
                 value = np.mean(windowed)
-            if type == 'zscore':
+            if type == "zscore":
                 value = zscore(windowed, mu, sigma)
             location = self.get_location(idx)
-            file.write(f'{self.chrom_name}\t{location}\t{location + 1}\t{value}\n')
+            file.write(f"{self.chrom_name}\t{location}\t{location + 1}\t{value}\n")
         file.close()
 
-def zscore(L, mu, sigma):
-    return (np.mean(L) - float(mu))/(float(sigma)/sqrt(len(L)))
 
-def write_trackdb(file, libname, trackname, extension, tracktype,
-                  itemRgb = False, heightPixels = None, color = None,
-                  visibility = None, viewMin = None, viewMax = None):
-    out = (f"track {libname}-{trackname}\n"
-           f"bigDataUrl {libname}-{trackname}.{extension}\n"
-           f"shortLabel {libname}-{trackname}\n"
-           f"longLabel {libname}-{trackname}\n"
-           f"type {tracktype}\n")
+def zscore(L, mu, sigma):
+    return (np.mean(L) - float(mu)) / (float(sigma) / sqrt(len(L)))
+
+
+def write_trackdb(
+    file,
+    libname,
+    trackname,
+    extension,
+    tracktype,
+    itemRgb=False,
+    heightPixels=None,
+    color=None,
+    visibility=None,
+    viewMin=None,
+    viewMax=None,
+):
+    out = (
+        f"track {libname}-{trackname}\n"
+        f"bigDataUrl {libname}-{trackname}.{extension}\n"
+        f"shortLabel {libname}-{trackname}\n"
+        f"longLabel {libname}-{trackname}\n"
+        f"type {tracktype}\n"
+    )
     if visibility:
         out += f"visibility {visibility}\n"
     if itemRgb:
@@ -193,15 +220,16 @@ def write_trackdb(file, libname, trackname, extension, tracktype,
     if viewMin is not None and viewMax is not None:
         out += f"viewLimits {viewMin}:{viewMax}\n"
         out += f"viewLimitsMax {min(viewMin - 20, 0)}:{10 * viewMax}\n"
-    if color == 'orange':
+    if color == "orange":
         out += "color 240,162,29\n"
-    elif color == 'magenta':
+    elif color == "magenta":
         out += "color 240,29,222\n"
     out += "\n"
     file.write(out)
 
-def write_array_bed(arr, chrom_name, fileprefix, start = None, end = None):
-    file = open(fileprefix + '.bed', 'w')
+
+def write_array_bed(arr, chrom_name, fileprefix, start=None, end=None):
+    file = open(fileprefix + ".bed", "w")
     ucsc_chrom = get_ucsc_name(chrom_name)
     if start is None:
         start = 0
@@ -209,31 +237,37 @@ def write_array_bed(arr, chrom_name, fileprefix, start = None, end = None):
         # VIZ need to specify reference
         end = get_chrom_size(chrom_name) - 1
     for i in range(start, end):
-        file.write(f'{ucsc_chrom}\t{i}\t{i+1}\t{arr[i]}\n')
+        file.write(f"{ucsc_chrom}\t{i}\t{i + 1}\t{arr[i]}\n")
     file.close()
 
-def write_array_bigwig(arr, chrom_name, fileprefix, start = None, end = None, delete_bed = False):
+
+def write_array_bigwig(
+    arr, chrom_name, fileprefix, start=None, end=None, delete_bed=False
+):
     write_array_bed(arr, chrom_name, fileprefix, start, end)
-    os.system(f'bedGraphToBigWig {fileprefix}.bed /scratch/PI/whwong/svproject/reference/hg19.chrom.sizes {fileprefix}.bigwig')
+    os.system(
+        f"bedGraphToBigWig {fileprefix}.bed /scratch/PI/whwong/svproject/reference/hg19.chrom.sizes {fileprefix}.bigwig"
+    )
     if delete_bed:
-        os.system(f'rm {fileprefix}.bed')
+        os.system(f"rm {fileprefix}.bed")
+
 
 def testsignal():
-    s = SignalTrack('chr1', 0, 100)
-    s.append(0,10)
-    s.append(0,15)
-    s.append(0,14)
+    s = SignalTrack("chr1", 0, 100)
+    s.append(0, 10)
+    s.append(0, 15)
+    s.append(0, 14)
 
-    s.write_file('zscore.txt', type='zscore', mu=11, sigma = 4)
-    s.write_file('mean.txt', type='mean')
-    s.write_file('val.txt')
+    s.write_file("zscore.txt", type="zscore", mu=11, sigma=4)
+    s.write_file("mean.txt", type="mean")
+    s.write_file("val.txt")
+
 
 def testsparsesignal():
-    s = SparseSignalTrack(chrom_name='chr1', signal_type='int')
+    s = SparseSignalTrack(chrom_name="chr1", signal_type="int")
     s.add(0)
     s.add(1)
     s.add(100)
-    s.write_file('sparse11.txt', every = 1, window = 1)
-    s.write_file('sparse13.txt', every = 1, window = 3)
-    s.write_file('sparse1-10.txt', every=1, window=10)
-
+    s.write_file("sparse11.txt", every=1, window=1)
+    s.write_file("sparse13.txt", every=1, window=3)
+    s.write_file("sparse1-10.txt", every=1, window=10)

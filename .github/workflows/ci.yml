@@ -104,6 +104,8 @@ jobs:
         run: uv sync --frozen --extra test
       - name: Run lint
         run: uv run --frozen ruff check --output-format=github .
+      - name: Check formatting
+        run: uv run --frozen ruff format --check .
 
   package:
     name: Package

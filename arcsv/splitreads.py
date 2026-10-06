@@ -2,19 +2,24 @@ import os
 import pysam
 import re
 
-from arcsv.constants import SPLIT_FIRST_PLUS, SPLIT_SECOND_PLUS, \
-    SPLIT_OVERLAP, SPLIT_TYPES, SPLIT_LEFT_FIRST
+from arcsv.constants import (
+    SPLIT_FIRST_PLUS,
+    SPLIT_SECOND_PLUS,
+    SPLIT_OVERLAP,
+    SPLIT_TYPES,
+    SPLIT_LEFT_FIRST,
+)
 from arcsv.helper import get_ucsc_name
 
 
 def valid_split(aln, bam, min_mapq, max_splits=1):
-    if (not aln.has_tag('SA')) or aln.mapq < min_mapq:
+    if (not aln.has_tag("SA")) or aln.mapq < min_mapq:
         return False
-    SA = aln.get_tag('SA')
-    nsplits = len(SA.split(';')) - 1
+    SA = aln.get_tag("SA")
+    nsplits = len(SA.split(";")) - 1
     if nsplits > max_splits:
         return False
-    SA_split = SA.strip(';').split(',')
+    SA_split = SA.strip(";").split(",")
     supp_mapq = int(SA_split[4])
     if supp_mapq < min_mapq:
         return False
@@ -26,10 +31,17 @@ def valid_split(aln, bam, min_mapq, max_splits=1):
 
 # LATER move this to helper.py and use for pe support as well
 class SupportingSplit:
-    def __init__(self, aln,
-                 bp1_chrom, bp1, bp2_chrom, bp2,
-                 split_type, mate=None,
-                 mate_has_split=False):
+    def __init__(
+        self,
+        aln,
+        bp1_chrom,
+        bp1,
+        bp2_chrom,
+        bp2,
+        split_type,
+        mate=None,
+        mate_has_split=False,
+    ):
         self.aln = aln
         self.bp1_chrom = bp1_chrom
         self.bp1 = bp1
@@ -40,17 +52,25 @@ class SupportingSplit:
         self.mate_has_split = mate_has_split
 
     def __repr__(self):
-        qname_numbered = self.aln.qname + ('_1' if self.aln.is_read1 else '_2')
-        return f'({qname_numbered}, {self.split_type})'
+        qname_numbered = self.aln.qname + ("_1" if self.aln.is_read1 else "_2")
+        return f"({qname_numbered}, {self.split_type})"
 
     def __str__(self):
-        qname_numbered = self.aln.qname + ('_1' if self.aln.is_read1 else '_2')
-        return f'({qname_numbered}, {self.split_type})'
+        qname_numbered = self.aln.qname + ("_1" if self.aln.is_read1 else "_2")
+        return f"({qname_numbered}, {self.split_type})"
 
     def __hash__(self):
-        return hash((self.aln, self.mate,
-                     self.bp1_chrom, self.bp1, self.bp2_chrom, self.bp2,
-                     self.split_type))
+        return hash(
+            (
+                self.aln,
+                self.mate,
+                self.bp1_chrom,
+                self.bp1,
+                self.bp2_chrom,
+                self.bp2,
+                self.split_type,
+            )
+        )
 
     @property
     def seq(self):
@@ -68,14 +88,14 @@ class SupportingSplit:
 def parse_splits(aln, bam, min_mapq, mate, max_splits=1):
     if not valid_split(aln, bam, min_mapq, max_splits):
         return None
-    SA = aln.get_tag('SA')
+    SA = aln.get_tag("SA")
 
     # parse SA tag information
     supp = pysam.AlignedSegment()
-    SA_split = SA.strip(';').split(',')
+    SA_split = SA.strip(";").split(",")
     supp.rname = bam.gettid(SA_split[0])
     supp.pos = int(SA_split[1]) - 1  # pysam coordinates are 0-based
-    supp.is_reverse = True if SA_split[2] == '-' else False
+    supp.is_reverse = True if SA_split[2] == "-" else False
     supp.cigarstring = SA_split[3]
     supp.mapq = int(SA_split[4])
 
@@ -97,7 +117,7 @@ def parse_splits(aln, bam, min_mapq, mate, max_splits=1):
     right_coords = get_query_coords(right)
 
     # is segment with leftmost-mapping base first in the read?
-    is_leftfirst = (left_coords[0] < right_coords[0])
+    is_leftfirst = left_coords[0] < right_coords[0]
     if is_leftfirst:
         first = left
         last = right
@@ -105,26 +125,30 @@ def parse_splits(aln, bam, min_mapq, mate, max_splits=1):
         first = right
         last = left
     if left_coords[0] == right_coords[0]:
-        print('left_coords[0] == right_coords[0]')
+        print("left_coords[0] == right_coords[0]")
         print(aln)
         print(supp)
-        print('\n')
+        print("\n")
         return None
     is_firstplus = not first.is_reverse
     is_secondplus = not last.is_reverse
 
     if is_firstplus == is_secondplus:
-        if is_firstplus:        # >>>--- --->>> del vs --->>> >>>--- dup
+        if is_firstplus:  # >>>--- --->>> del vs --->>> >>>--- dup
             is_overlap = not (first.reference_end < last.reference_start)
-        else:                   # <<<--- ---<<< del vs ---<<< <<<--- dup
+        else:  # <<<--- ---<<< del vs ---<<< <<<--- dup
             is_overlap = not (last.reference_end < first.reference_start)
-        split_flag = ((is_firstplus * SPLIT_FIRST_PLUS)
-                      + (is_secondplus * SPLIT_SECOND_PLUS)
-                      + (is_overlap * SPLIT_OVERLAP))
+        split_flag = (
+            (is_firstplus * SPLIT_FIRST_PLUS)
+            + (is_secondplus * SPLIT_SECOND_PLUS)
+            + (is_overlap * SPLIT_OVERLAP)
+        )
     else:
-        split_flag = ((is_firstplus * SPLIT_FIRST_PLUS)
-                      + (is_secondplus * SPLIT_SECOND_PLUS)
-                      + (is_leftfirst * SPLIT_LEFT_FIRST))
+        split_flag = (
+            (is_firstplus * SPLIT_FIRST_PLUS)
+            + (is_secondplus * SPLIT_SECOND_PLUS)
+            + (is_leftfirst * SPLIT_LEFT_FIRST)
+        )
     split_type = SPLIT_TYPES[split_flag]
 
     # get breakpoint coordinates
@@ -136,20 +160,24 @@ def parse_splits(aln, bam, min_mapq, mate, max_splits=1):
         last_ref.reverse()
 
     if all([b is None for b in first_ref]):
-        print(f'first_ref: {str(first_ref)}')
-        print('first/last')
+        print(f"first_ref: {str(first_ref)}")
+        print("first/last")
         print(first)
         print(last)
         return None
     if all([b is None for b in last_ref]):
-        print(f'last_ref: {str(last_ref)}')
-        print('first/last')
+        print(f"last_ref: {str(last_ref)}")
+        print("first/last")
         print(first)
         print(last)
         return None
 
-    first_end_idx = max_not_none(first_ref)  # index of last aligned base on first segment
-    last_start_idx = min_not_none(last_ref)  # index of first aligned base on last segment
+    first_end_idx = max_not_none(
+        first_ref
+    )  # index of last aligned base on first segment
+    last_start_idx = min_not_none(
+        last_ref
+    )  # index of first aligned base on last segment
 
     # bp will occupy positions bp_first_start_idx to first_end_idx (inclusive)
     bp_first_start_idx = min(first_end_idx, last_start_idx - 1)
@@ -179,9 +207,10 @@ def parse_splits(aln, bam, min_mapq, mate, max_splits=1):
         bp1 = bp_last
         bp2 = bp_first
 
-    if (bp1[1] - bp1[0] >= len(left.get_reference_positions())
-       or bp2[1] - bp2[0] >= len(right.get_reference_positions())):
-        print('invalid split detected (overlap == total mapped portion)')
+    if bp1[1] - bp1[0] >= len(left.get_reference_positions()) or bp2[1] - bp2[0] >= len(
+        right.get_reference_positions()
+    ):
+        print("invalid split detected (overlap == total mapped portion)")
         print(left)
         print(bp1)
         print(right)
@@ -197,24 +226,22 @@ def parse_splits(aln, bam, min_mapq, mate, max_splits=1):
     #     qname += '_2'
 
     if bp1[0] <= bp2[0]:
-        return SupportingSplit(aln, bp1_rname, bp1, bp2_rname, bp2,
-                               split_type, mate)
+        return SupportingSplit(aln, bp1_rname, bp1, bp2_rname, bp2, split_type, mate)
         # return qname, aln.get_tag('RG'), aln.mapq, bp1_rname, bp1, bp2_rname, bp2, split_type
     elif bp2[0] < bp1[0]:
-        return SupportingSplit(aln, bp2_rname, bp2, bp1_rname, bp1,
-                               split_type, mate)
+        return SupportingSplit(aln, bp2_rname, bp2, bp1_rname, bp1, split_type, mate)
         # return qname, aln.get_tag('RG'), aln.mapq, bp2_rname, bp2, bp1_rname, bp1, split_type
 
 
 def parse_cigar(aln):
-    ops = re.split('[0-9]+', aln.cigarstring)[1:]
-    oplens = re.split('[MIDNSHP=X]', aln.cigarstring)[:-1]
+    ops = re.split("[0-9]+", aln.cigarstring)[1:]
+    oplens = re.split("[MIDNSHP=X]", aln.cigarstring)[:-1]
     return (ops, oplens)
 
 
 def get_query_coords(aln):
     if aln.cigarstring is None:
-        raise ValueError('get_coords: cigarstring was type None')
+        raise ValueError("get_coords: cigarstring was type None")
     ops, lengths = parse_cigar(aln)
     if aln.is_reverse:
         lengths.reverse()
@@ -227,25 +254,27 @@ def get_query_coords(aln):
     for i in range(len(ops)):
         op = ops[i]
         n = int(lengths[i])
-        if op == 'M':
+        if op == "M":
             end += n + pendingI
             pendingI = 0
             seenM = True
-        elif op == 'H' or op == 'S':
+        elif op == "H" or op == "S":
             if first:
                 start += n
                 end += n
-        elif op == 'I':
+        elif op == "I":
             if seenM:
-                pendingI = n    # to handle cases like 50M25I25S, where I should be S
-            else:               # insertion before any mapped bases <=> soft-clipped
+                pendingI = n  # to handle cases like 50M25I25S, where I should be S
+            else:  # insertion before any mapped bases <=> soft-clipped
                 start += n
                 end += n
         # elif op == 'D', do nothing
-        elif op != 'D':
-            raise Warning('Unrecognized CIGAR operation. Are you using BWA MEM alignments?')
+        elif op != "D":
+            raise Warning(
+                "Unrecognized CIGAR operation. Are you using BWA MEM alignments?"
+            )
         first = False
-    return (start, end - 1)     # using 1-index, closed interval
+    return (start, end - 1)  # using 1-index, closed interval
 
 
 def min_not_none(a):
@@ -260,27 +289,40 @@ def max_not_none(a):
 
 def splits_are_mirrored(s1, s2):
     # equivalence classes where split types are equivalent if the same up to reversal/mirroring
-    mirrored_split = {'Del+': 0, 'Del-': 0,
-                      'Dup+': 1, 'Dup-': 1,
-                      'InvL+': 2, 'InvL-': 2,
-                      'InvR+': 3, 'InvR-': 3}
-    return (s1.bp1_chrom == s2.bp1_chrom
-            and s1.bp1 == s2.bp1
-            and s1.bp2_chrom == s2.bp2_chrom
-            and s1.bp2 == s2.bp2
-            and mirrored_split[s1.split_type] == mirrored_split[s2.split_type])
+    mirrored_split = {
+        "Del+": 0,
+        "Del-": 0,
+        "Dup+": 1,
+        "Dup-": 1,
+        "InvL+": 2,
+        "InvL-": 2,
+        "InvR+": 3,
+        "InvR-": 3,
+    }
+    return (
+        s1.bp1_chrom == s2.bp1_chrom
+        and s1.bp1 == s2.bp1
+        and s1.bp2_chrom == s2.bp2_chrom
+        and s1.bp2 == s2.bp2
+        and mirrored_split[s1.split_type] == mirrored_split[s2.split_type]
+    )
 
 
 # DEPRECATED splits are now SupportingSplit
 def split_to_bed12(split):
-    cols = {'Del+': '180,30,0', 'Del-': '180,30,0',
-            'Dup+': '80,170,0', 'Dup-': '80,170,0',
-            'InvL': '0,100,190', 'InvR': '0,190,190'}
+    cols = {
+        "Del+": "180,30,0",
+        "Del-": "180,30,0",
+        "Dup+": "80,170,0",
+        "Dup-": "80,170,0",
+        "InvL": "0,100,190",
+        "InvR": "0,190,190",
+    }
     qname = split[0]
     rg = split[1]
     mapq = split[2]
     split_type = split[7]
-    split_name = split_type + '_' + rg + '_' + qname
+    split_name = split_type + "_" + rg + "_" + qname
     col = cols[split_type[0:4]]
     bp1_chrom = get_ucsc_name(split[3])
     bp2_chrom = get_ucsc_name(split[5])
@@ -289,23 +331,29 @@ def split_to_bed12(split):
     if bp1_chrom != bp2_chrom or bp1_end >= bp2_start + 1:
         # ucsc doesn't support overlapping blocks or different chromosomes
         def bed_line(chrom, start, end):
-            return (f'{chrom}\t{start}\t{end}\t{split_name}\t{mapq}\t+'
-                    f'\t{start}\t{end}\t{col}\t1\t{end - start}\t0\n')
-        return (bed_line(bp1_chrom, bp1_start, bp1_end)
-                + bed_line(bp2_chrom, bp2_start, bp2_end))
+            return (
+                f"{chrom}\t{start}\t{end}\t{split_name}\t{mapq}\t+"
+                f"\t{start}\t{end}\t{col}\t1\t{end - start}\t0\n"
+            )
+
+        return bed_line(bp1_chrom, bp1_start, bp1_end) + bed_line(
+            bp2_chrom, bp2_start, bp2_end
+        )
     else:
         # compute blocks
         block1_len = bp1_end - bp1_start
         block2_len = bp2_end - bp2_start
         block1_start = 0
         block2_start = bp2_start - bp1_start
-        return (f'{bp1_chrom}\t{bp1_start}\t{bp2_end}\t{split_name}\t{mapq}\t+'
-                f'\t{bp1_start}\t{bp2_end}\t{col}\t2\t{block1_len},{block2_len},'
-                f'\t{block1_start},{block2_start}\n')
+        return (
+            f"{bp1_chrom}\t{bp1_start}\t{bp2_end}\t{split_name}\t{mapq}\t+"
+            f"\t{bp1_start}\t{bp2_end}\t{col}\t2\t{block1_len},{block2_len},"
+            f"\t{block1_start},{block2_start}\n"
+        )
 
 
 def write_splits_bed(splits, fileprefix, write_track_header=True):
-    file = open(fileprefix + '.bed', 'w')
+    file = open(fileprefix + ".bed", "w")
     if write_track_header:
         file.write('track name="split reads" description="split reads" itemRgb="On"\n')
     for spl in splits:
@@ -315,8 +363,9 @@ def write_splits_bed(splits, fileprefix, write_track_header=True):
 
 def write_splits_bigbed(splits, fileprefix):
     write_splits_bed(splits, fileprefix, write_track_header=False)
-    os.system(f'sort -k1,1 -k2,2n {fileprefix}.bed > tmpsorted')
-    os.system(f'mv tmpsorted {fileprefix}.bed')
-    os.system(f'bedToBigBed -type=bed12 {fileprefix}.bed '
-              f'/scratch/PI/whwong/svproject/reference/hg19.chrom.sizes {fileprefix}.bb'
-              )
+    os.system(f"sort -k1,1 -k2,2n {fileprefix}.bed > tmpsorted")
+    os.system(f"mv tmpsorted {fileprefix}.bed")
+    os.system(
+        f"bedToBigBed -type=bed12 {fileprefix}.bed "
+        f"/scratch/PI/whwong/svproject/reference/hg19.chrom.sizes {fileprefix}.bb"
+    )
