@@ -25,19 +25,25 @@ def inverted_pair_to_bed12(ipair):
     if left_coord[1] >= right_coord[0]:
         # ucsc doesn't support overlapping blocks
         def bed_line(start, end):
-            return (f'{chrom}\t{start}\t{end}\t{strand}/{strand}\t0'
-                    f'\t{strand}\t{start}\t{end}\t0\t1\t{end - start}\t0\n')
-        return (bed_line(left_coord[0], left_coord[1] + 1)
-                + bed_line(right_coord[0], right_coord[1] + 1))
+            return (
+                f'{chrom}\t{start}\t{end}\t{strand}/{strand}\t0'
+                f'\t{strand}\t{start}\t{end}\t0\t1\t{end - start}\t0\n'
+            )
+
+        return bed_line(left_coord[0], left_coord[1] + 1) + bed_line(
+            right_coord[0], right_coord[1] + 1
+        )
     else:
         block1_len = left_coord[1] - left_coord[0] + 1
         block2_len = right_coord[1] - right_coord[0] + 1
         block1_start = 0
         block2_start = right_coord[0] - left_coord[0]
         start, end = left_coord[0], right_coord[1] + 1
-        return (f'{chrom}\t{start}\t{end}\t{strand}/{strand}\t0\t{strand}'
-                f'\t{start}\t{end}\t0\t2\t{block1_len},{block2_len},'
-                f'\t{block1_start},{block2_start}\n')
+        return (
+            f'{chrom}\t{start}\t{end}\t{strand}/{strand}\t0\t{strand}'
+            f'\t{start}\t{end}\t0\t2\t{block1_len},{block2_len},'
+            f'\t{block1_start},{block2_start}\n'
+        )
 
 
 def write_inverted_pairs_bed(ipairs, fileprefix):
@@ -51,6 +57,7 @@ def write_inverted_pairs_bigbed(ipairs, fileprefix):
     write_inverted_pairs_bed(ipairs, fileprefix)
     os.system(f'sort -k1,1 -k2,2n {fileprefix}.bed > tmpsorted')
     os.system(f'mv tmpsorted {fileprefix}.bed')
-    os.system(f'bedToBigBed -type=bed12 {fileprefix}.bed'
-              f'/scratch/PI/whwong/svproject/reference/hg19.chrom.sizes {fileprefix}.bb'
-              )
+    os.system(
+        f'bedToBigBed -type=bed12 {fileprefix}.bed'
+        f'/scratch/PI/whwong/svproject/reference/hg19.chrom.sizes {fileprefix}.bb'
+    )

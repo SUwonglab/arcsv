@@ -7,8 +7,19 @@ from collections import defaultdict
 
 
 class SoftclipCluster:
-    def __init__(self, is_right, pos, bases_clipped, bases_mapped,
-                 num_reads, num_reads_exact, sum_mapq, num_minus, num_plus, which_libs):
+    def __init__(
+        self,
+        is_right,
+        pos,
+        bases_clipped,
+        bases_mapped,
+        num_reads,
+        num_reads_exact,
+        sum_mapq,
+        num_minus,
+        num_plus,
+        which_libs,
+    ):
         self.is_right = is_right
         self.pos = pos
         self.bases_clipped = bases_clipped
@@ -21,17 +32,29 @@ class SoftclipCluster:
         self.which_libs = which_libs
 
     def __str__(self):
-        return (f'(is_right {self.is_right} pos {self.pos} nclipped {self.bases_clipped} nmapped {self.bases_mapped} nreads {self.num_reads} '
-                f'nexact {self.num_reads_exact} mapq {self.sum_mapq} strand - {self.num_minus} + {self.num_plus} libs {self.which_libs})'
-                )
+        return (
+            f'(is_right {self.is_right} pos {self.pos} nclipped {self.bases_clipped} nmapped {self.bases_mapped} nreads {self.num_reads} '
+            f'nexact {self.num_reads_exact} mapq {self.sum_mapq} strand - {self.num_minus} + {self.num_plus} libs {self.which_libs})'
+        )
 
     def __repr__(self):
         return str(self)
 
     def __hash__(self):
-        return hash((self.is_right, self.pos, self.bases_clipped, self.bases_mapped,
-                     self.num_reads, self.num_reads_exact, self.sum_mapq,
-                     self.num_minus, self.num_plus, self.which_libs))
+        return hash(
+            (
+                self.is_right,
+                self.pos,
+                self.bases_clipped,
+                self.bases_mapped,
+                self.num_reads,
+                self.num_reads_exact,
+                self.sum_mapq,
+                self.num_minus,
+                self.num_plus,
+                self.which_libs,
+            )
+        )
 
 
 def process_softclip(opts, pair, pair_split_found, softclips, lib_idx):
@@ -39,10 +62,14 @@ def process_softclip(opts, pair, pair_split_found, softclips, lib_idx):
     min_clipped_bases = opts['min_clipped_bases']
     min_clipped_qual = opts['min_clipped_qual']
     lowqual_trim_extra = opts['lowqual_trim_extra']
-    for (aln, split_found) in zip(pair, pair_split_found):
-        if aln is None or aln.is_unmapped or \
-           aln.mapq < min_mapq or not_primary(aln) or \
-           split_found:
+    for aln, split_found in zip(pair, pair_split_found):
+        if (
+            aln is None
+            or aln.is_unmapped
+            or aln.mapq < min_mapq
+            or not_primary(aln)
+            or split_found
+        ):
             continue
 
         # count number of phred qual > 2 clipped bases and adjust nclip
@@ -58,21 +85,32 @@ def process_softclip(opts, pair, pair_split_found, softclips, lib_idx):
             if nclip[o] < min_clipped_bases:
                 continue
             if o == LEFT:
-                med_qual = np.median(aln.query_qualities[lowqual[o]:(lowqual[o]+nclip[o])])
+                med_qual = np.median(
+                    aln.query_qualities[lowqual[o] : (lowqual[o] + nclip[o])]
+                )
             else:
-                med_qual = np.median(aln.query_qualities[(-lowqual[o]-nclip[o]):(-lowqual[o] or None)])
+                med_qual = np.median(
+                    aln.query_qualities[
+                        (-lowqual[o] - nclip[o]) : (-lowqual[o] or None)
+                    ]
+                )
             if med_qual < min_clipped_qual:
                 continue
             this_nclip = nclip[o]
             this_pos = pos[o]
             this_nmapped = aln.query_alignment_end - aln.query_alignment_start
-            sc = SoftclipCluster(is_right=(o == RIGHT), pos=this_pos,
-                                 bases_clipped=this_nclip, bases_mapped=this_nmapped,
-                                 num_reads=1, num_reads_exact=1,
-                                 sum_mapq=aln.mapq,
-                                 num_minus=int(aln.is_reverse),
-                                 num_plus=1-int(aln.is_reverse),
-                                 which_libs=(1 << lib_idx))
+            sc = SoftclipCluster(
+                is_right=(o == RIGHT),
+                pos=this_pos,
+                bases_clipped=this_nclip,
+                bases_mapped=this_nmapped,
+                num_reads=1,
+                num_reads_exact=1,
+                sum_mapq=aln.mapq,
+                num_minus=int(aln.is_reverse),
+                num_plus=1 - int(aln.is_reverse),
+                which_libs=(1 << lib_idx),
+            )
             softclips[o][this_pos].append(sc)
 
 
@@ -81,7 +119,7 @@ def process_softclip(opts, pair, pair_split_found, softclips, lib_idx):
 def softclip_cluster_mergefun(locs, softclips, min_support_filter=None):
     # print('[softclip_cluster_mergefun] merging:\n' + '\n'.join(str(sc) for sc in softclips))
     is_right = softclips[0].is_right
-    assert(all(s.is_right == is_right) for s in softclips)
+    assert (all(s.is_right == is_right) for s in softclips)
     num_reads = sum(s.num_reads for s in softclips)
 
     pos_mapq = defaultdict(list)
@@ -109,13 +147,21 @@ def softclip_cluster_mergefun(locs, softclips, min_support_filter=None):
     for s in softclips:
         which_libs = which_libs | s.which_libs
 
-    sc_merged = SoftclipCluster(is_right, consensus_pos,
-                                bases_clipped, bases_mapped,
-                                num_reads, num_reads_exact,
-                                sum_mapq, num_minus, num_plus, which_libs)
+    sc_merged = SoftclipCluster(
+        is_right,
+        consensus_pos,
+        bases_clipped,
+        bases_mapped,
+        num_reads,
+        num_reads_exact,
+        sum_mapq,
+        num_minus,
+        num_plus,
+        which_libs,
+    )
     # print('[softclip_cluster_mergefun] merged:\n' + str(sc_merged))
     if min_support_filter is None or num_reads >= min_support_filter:
-        return ((consensus_pos, sc_merged), )
+        return ((consensus_pos, sc_merged),)
     else:
         # didn't pass filter, return empty container
         return tuple()
@@ -131,7 +177,9 @@ def write_softclips_bed(softclips, fileprefix, chrom_name):
         locs = list(softclips[orientation].keys())
         locs.sort()
         for loc in locs:
-            line = (f'{chrom_name}\t{loc}\t{loc + 1}\t{len(softclips[orientation][loc])}\n')
+            line = (
+                f'{chrom_name}\t{loc}\t{loc + 1}\t{len(softclips[orientation][loc])}\n'
+            )
             file.write(line)
         file.close()
     return fn
@@ -141,8 +189,10 @@ def write_softclips_bigwig(softclips, fileprefix, chrom_name, delete_bed=False):
     bed_out = write_softclips_bed(softclips, fileprefix, chrom_name)
     for bedfile in bed_out:
         fn = bedfile.rstrip('.bed')
-        os.system(f'bedGraphToBigWig {fn}.bed /scratch/PI/whwong/svproject/'
-                  f'reference/hg19.chrom.sizes {fn}.bigwig')
+        os.system(
+            f'bedGraphToBigWig {fn}.bed /scratch/PI/whwong/svproject/'
+            f'reference/hg19.chrom.sizes {fn}.bigwig'
+        )
         if delete_bed:
             os.system(f'rm {bedfile}')
 
@@ -212,17 +262,17 @@ def write_softclips_bigwig(softclips, fileprefix, chrom_name, delete_bed=False):
 #     softclips[RIGHT][sc3.pos_right] = [sc3]
 #     print(softclips)
 
-    # out = merge_softclips(softclips)
-    # expected = [('CCAAAAAATTGCCAT', np.asarray([20, 20, 60, 40, 60, 40, 60, 60, 60, 60, 60, 60, 60, 60, 60]).astype('float'), LEFT, 14, 6), ('AAATTGCCATCCCA', np.asarray([40, 40, 60, 60, 60, 60, 60, 40, 60, 60, 40, 60, 20, 20]).astype('float'), RIGHT, 24, 3)]
-    # for i in range(len(out)):
-    #     for j in range(len(out[i])):
-    #         if type(out[i][j]) == type(np.asarray([0])):
-    #             assert((out[i][j] == expected[i][j]).all())
-    #         else:
-    #             assert(out[i][j] == expected[i][j])
-    # print(out[0])
-    # print(expected[0])
-    # print(out[1])
-    # print(expected[1])
-    # # assert(out[0] == ('AAATTGCCATCCCA', 13, 23, RIGHT))
-    # # assert(out[1] == ('CCAAAAAATTGCCAT', 13, 13, LEFT))
+# out = merge_softclips(softclips)
+# expected = [('CCAAAAAATTGCCAT', np.asarray([20, 20, 60, 40, 60, 40, 60, 60, 60, 60, 60, 60, 60, 60, 60]).astype('float'), LEFT, 14, 6), ('AAATTGCCATCCCA', np.asarray([40, 40, 60, 60, 60, 60, 60, 40, 60, 60, 40, 60, 20, 20]).astype('float'), RIGHT, 24, 3)]
+# for i in range(len(out)):
+#     for j in range(len(out[i])):
+#         if type(out[i][j]) == type(np.asarray([0])):
+#             assert((out[i][j] == expected[i][j]).all())
+#         else:
+#             assert(out[i][j] == expected[i][j])
+# print(out[0])
+# print(expected[0])
+# print(out[1])
+# print(expected[1])
+# # assert(out[0] == ('AAATTGCCATCCCA', 13, 23, RIGHT))
+# # assert(out[1] == ('CCAAAAAATTGCCAT', 13, 13, LEFT))

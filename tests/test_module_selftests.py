@@ -3,6 +3,7 @@
 Only the ones that still pass are listed. Others are stale (old function
 signatures) or depend on files outside the repository.
 """
+
 import importlib
 
 import pytest
@@ -26,7 +27,8 @@ SELF_TESTS = [
 ]
 
 
-@pytest.mark.parametrize('module, name', SELF_TESTS,
-                         ids=[f'{m}.{n}' for (m, n) in SELF_TESTS])
+@pytest.mark.parametrize(
+    'module, name', SELF_TESTS, ids=[f'{m}.{n}' for (m, n) in SELF_TESTS]
+)
 def test_module_selftest(module, name):
     getattr(importlib.import_module('arcsv.' + module), name)()

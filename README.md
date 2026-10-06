@@ -194,6 +194,7 @@ Development uses [uv](https://docs.astral.sh/uv/). `uv.lock` pins the exact depe
 ```
 uv sync --extra test             # create .venv with ARC-SV (editable) and test tools
 uv run ruff check .              # lint (configured in pyproject.toml)
+uv run ruff format .             # format
 uv run pytest                    # unit tests + end-to-end check of example/ against expected_output.tab
 ```
 
@@ -202,7 +203,7 @@ Without uv, `pip install -e '.[test]'` works too.
 CI (`.github/workflows/ci.yml`) runs on pushes to master and on pull requests:
 - the tests on Python 3.9 and 3.14 (Linux) and 3.14 (macOS)
 - the tests against the lowest supported versions of each dependency
-- lint
+- lint and formatting
 - a check that the package builds with valid metadata
 - the Installation instructions above (pipx and a virtual environment), followed by the example
 

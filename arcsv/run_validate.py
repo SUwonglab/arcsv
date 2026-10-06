@@ -6,16 +6,35 @@ from sv_validate_alignment import score_alignments
 
 # parse arguments
 def get_args():
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
     parser.add_argument('-b', '--bam_name', type=str, default='altered.bam')
     parser.add_argument('-c', '--chromosome', type=str, help='GRCh37 chromosome name')
-    parser.add_argument('-d', '--install_dir', type=str, default='/home/jgarthur/sv/src')
-    parser.add_argument('-O', '--output_dir', type=str, default='/home/jgarthur/sv/parser-out')
-    parser.add_argument('-R', '--reference_name', type=str, default='grch37', help='huref; grch37; longreads')
+    parser.add_argument(
+        '-d', '--install_dir', type=str, default='/home/jgarthur/sv/src'
+    )
+    parser.add_argument(
+        '-O', '--output_dir', type=str, default='/home/jgarthur/sv/parser-out'
+    )
+    parser.add_argument(
+        '-R',
+        '--reference_name',
+        type=str,
+        default='grch37',
+        help='huref; grch37; longreads',
+    )
     parser.add_argument('-v', '--verbosity', type=int, default=1)
     args = parser.parse_args()
     print(f'[run_sv] args: \n{args}\n')
-    return args.bam_name, args.chromosome, args.install_dir, args.output_dir, args.reference_name, args.verbosity
+    return (
+        args.bam_name,
+        args.chromosome,
+        args.install_dir,
+        args.output_dir,
+        args.reference_name,
+        args.verbosity,
+    )
 
 
 bam_name, chromosome, install_dir, output_dir, reference_name, verbosity = get_args()
@@ -28,9 +47,10 @@ exec(open(sva_path).read())
 bamfile = os.path.join(output_dir, bam_name)
 pklfile = os.path.join(output_dir, 'altered.pkl')
 
-print(f'score_alignments({bamfile}, {pklfile}, chrom = {chromosome}, ref = {reference_name}')
+print(
+    f'score_alignments({bamfile}, {pklfile}, chrom = {chromosome}, ref = {reference_name}'
+)
 
-score_alignments(bamfile, pklfile,
-                 chrom=chromosome,
-                 ref=reference_name,
-                 verbosity=verbosity)
+score_alignments(
+    bamfile, pklfile, chrom=chromosome, ref=reference_name, verbosity=verbosity
+)

@@ -50,8 +50,11 @@ def is_read_through(opts, pair):
     read_through_slop = opts['read_through_slop']
     if pair[0].is_reverse == pair[1].is_reverse:
         return False
-    elif pair[0].rname != pair[1].rname or \
-            pair[0].cigarstring is None or pair[1].cigarstring is None:
+    elif (
+        pair[0].rname != pair[1].rname
+        or pair[0].cigarstring is None
+        or pair[1].cigarstring is None
+    ):
         return False
     elif pair[0].has_tag('SA') or pair[1].has_tag('SA'):
         return False
@@ -59,7 +62,9 @@ def is_read_through(opts, pair):
         plus, minus = pair[0], pair[1]
     else:
         plus, minus = pair[1], pair[0]
-    start_close = abs(pair[0].reference_start - pair[1].reference_start) <= read_through_slop
+    start_close = (
+        abs(pair[0].reference_start - pair[1].reference_start) <= read_through_slop
+    )
     end_close = abs(pair[0].reference_end - pair[1].reference_end) <= read_through_slop
     plus_clipped = (len(plus.seq) - plus.query_alignment_end) > 0
     minus_clipped = minus.query_alignment_start > 0
@@ -75,8 +80,7 @@ def get_ucsc_name(chrom):
 
 def get_chrom_size(chrom_name, refname):
     ref = pysam.FastaFile(refname)
-    i = min(i for i in range(ref.nreferences) if
-            ref.references[i] == chrom_name)
+    i = min(i for i in range(ref.nreferences) if ref.references[i] == chrom_name)
     return ref.lengths[i]
 
 
@@ -100,8 +104,7 @@ def len_without_gaps(chrom_name, start, end, gapsfile):
 
 
 def get_chrom_size_from_bam(chrom_name, bam):
-    i = min(i for i in range(bam.nreferences) if
-            bam.references[i] == chrom_name)
+    i = min(i for i in range(bam.nreferences) if bam.references[i] == chrom_name)
     return bam.lengths[i]
 
 
@@ -119,26 +122,31 @@ class SoftClip:
     is_double_clip = False
 
     def __str__(self):
-        return (f'{self.qname}\t{int(self.loc)}\t{self.strand}\t{int(self.mapq)}\t'
-                f'{int(self.num_clipped)}\t{int(self.is_right)}\t'
-                f'{int(self.med_clipped_qual)}\t{int(self.min_clipped_qual)}\t'
-                f'{int(self.any_ambiguous_clipped)}\t{int(self.med_mapped_qual)}\t'
-                f'{int(self.is_double_clip)}')
+        return (
+            f'{self.qname}\t{int(self.loc)}\t{self.strand}\t{int(self.mapq)}\t'
+            f'{int(self.num_clipped)}\t{int(self.is_right)}\t'
+            f'{int(self.med_clipped_qual)}\t{int(self.min_clipped_qual)}\t'
+            f'{int(self.any_ambiguous_clipped)}\t{int(self.med_mapped_qual)}\t'
+            f'{int(self.is_double_clip)}'
+        )
 
 
 # sc_array - list of SoftClip objects
 def print_softclips(sc_list, filename):
     with open(filename, 'w') as file:
-        file.write('qname\trg\tloc\tstrand\tmapq\tnclip\tisright\tmedq\t'
-                   'minq\tambig\tmedmappedq\tdouble\n')
+        file.write(
+            'qname\trg\tloc\tstrand\tmapq\tnclip\tisright\tmedq\t'
+            'minq\tambig\tmedmappedq\tdouble\n'
+        )
         for sc in sc_list:
             file.write(str(sc) + '\n')
 
 
 # LATER can use this lots more places
 class GenomeInterval:
-    def __init__(self, chrom, start, end, is_de_novo=False, is_translocation=False,
-                 is_gap=False):
+    def __init__(
+        self, chrom, start, end, is_de_novo=False, is_translocation=False, is_gap=False
+    ):
         self.chrom = chrom
         self.start = start
         self.end = end
@@ -206,7 +214,7 @@ def merge_nearby(objects, mergefun, type='integer', max_distance=5):
         return {}
     if type == 'integer':
         dist = lambda x, y: abs(x - y)
-    elif type == 'interval':    # closed intervals
+    elif type == 'interval':  # closed intervals
         dist = lambda x, y: max(x[0] - y[1], y[0] - x[1], 0)
 
     locations = list(objects.keys())
@@ -250,39 +258,69 @@ def merge_nearby(objects, mergefun, type='integer', max_distance=5):
 
 
 def reverse_complement(seq):
-    COMP_DICT = {'A': 'T', 'T': 'A', 'C': 'G', 'G': 'C', 'N': 'N',
-                 'R': 'Y', 'Y': 'R', 'W': 'W', 'S': 'S', 'M': 'K',
-                 'K': 'M', 'B': 'V', 'V': 'B', 'D': 'H', 'H': 'D',
-                 'a': 't', 't': 'a', 'c': 'g', 'g': 'c', 'n': 'n',
-                 'r': 'y', 'y': 'r', 'w': 'w', 's': 's', 'm': 'k',
-                 'k': 'm', 'b': 'v', 'v': 'b', 'd': 'h', 'h': 'd'}
+    COMP_DICT = {
+        'A': 'T',
+        'T': 'A',
+        'C': 'G',
+        'G': 'C',
+        'N': 'N',
+        'R': 'Y',
+        'Y': 'R',
+        'W': 'W',
+        'S': 'S',
+        'M': 'K',
+        'K': 'M',
+        'B': 'V',
+        'V': 'B',
+        'D': 'H',
+        'H': 'D',
+        'a': 't',
+        't': 'a',
+        'c': 'g',
+        'g': 'c',
+        'n': 'n',
+        'r': 'y',
+        'y': 'r',
+        'w': 'w',
+        's': 's',
+        'm': 'k',
+        'k': 'm',
+        'b': 'v',
+        'v': 'b',
+        'd': 'h',
+        'h': 'd',
+    }
     return ''.join(COMP_DICT[seq[i]] for i in range(len(seq) - 1, -1, -1))
 
 
 def robust_sd(x):
-    return (np.percentile(x, 75) - np.percentile(x, 25))/1.35
+    return (np.percentile(x, 75) - np.percentile(x, 25)) / 1.35
 
 
 def fetch_seq(ref, ctg, start, end, truncate=False, pad_N=False, is_reverse=False):
     if truncate:
         start, end = max(0, start), max(0, end)
-        length = [pair[1] for pair in zip(ref.references, ref.lengths) if pair[0] == ctg][0]
+        length = [
+            pair[1] for pair in zip(ref.references, ref.lengths) if pair[0] == ctg
+        ][0]
         start, end = min(length, start), min(length, end)
     elif pad_N:
-        length = [pair[1] for pair in zip(ref.references, ref.lengths) if pair[0] == ctg][0]
+        length = [
+            pair[1] for pair in zip(ref.references, ref.lengths) if pair[0] == ctg
+        ][0]
         if end <= 0:
-            pad_left, pad_right = end-start, 0
+            pad_left, pad_right = end - start, 0
             start, end = 0, 0
         elif start >= length:
-            pad_left, pad_right = 0, end-start
+            pad_left, pad_right = 0, end - start
             start, end = length, length
         else:
-            pad_left = max(0, 0-start)
-            pad_right = max(0, end-length)
+            pad_left = max(0, 0 - start)
+            pad_right = max(0, end - length)
             start, end = max(0, start), min(end, length)
     seq = ref.fetch(ctg, start, end).upper()
     if pad_N:
-        seq = ('N'*pad_left) + seq + ('N'*pad_right)
+        seq = ('N' * pad_left) + seq + ('N' * pad_right)
     if is_reverse:
         seq = reverse_complement(seq)
     return seq
@@ -296,12 +334,12 @@ def time_to_str(seconds):
 
 
 def normcdf(x, mu=0, sigma=1):
-    z = (x - mu)/sigma
-    return .5 + .5*erf(z/sqrt(2))
+    z = (x - mu) / sigma
+    return 0.5 + 0.5 * erf(z / sqrt(2))
 
 
 def normpdf(x, mu=0, sigma=1):
-    return -1/(2*sigma**2)*(x - mu)**2 - log(sigma) - 1/2 * log(2*np.pi)
+    return -1 / (2 * sigma**2) * (x - mu) ** 2 - log(sigma) - 1 / 2 * log(2 * np.pi)
 
 
 # blocks/paths
@@ -312,9 +350,9 @@ def block_distance(path, blocks, i, j, use_gaps=True):
         return 0
     dist = 0
 
-    if path[i] % 2 == i % 2:    # block is in positive orientation
+    if path[i] % 2 == i % 2:  # block is in positive orientation
         dist += len(blocks[floor(path[i] / 2)])
-    if path[j] % 2 != j % 2:    # block is in negative orientation
+    if path[j] % 2 != j % 2:  # block is in negative orientation
         dist += len(blocks[floor(path[j] / 2)])
 
     start = i + 2 if i % 2 == 0 else i + 1
@@ -336,12 +374,12 @@ def block_gap(blocks, i):
     idx = floor(i / 2)
     if blocks[idx].is_insertion():
         return 0
-    elif i % 2 == 1:              # right side of block
+    elif i % 2 == 1:  # right side of block
         if idx + 1 < len(blocks) and not blocks[idx + 1].is_insertion():
             return blocks[idx + 1].start - blocks[idx].end
         else:
             return 0
-    else:                       # left side of block
+    else:  # left side of block
         if idx > 0:
             return blocks[idx].start - blocks[idx - 1].end
         else:
@@ -363,8 +401,9 @@ def get_block_distances_between_nodes(path, blocks, v1, v2, adj1, adj2):
             if (i - j) % 2 == 1:
                 distance = block_distance(path, blocks, min(i, j), max(i, j))
                 distances.append(distance)
-                for adj_set, adj_dict, start in \
-                        zip((adj1, adj2), (adj1_satisfied, adj2_satisfied), (i, j)):
+                for adj_set, adj_dict, start in zip(
+                    (adj1, adj2), (adj1_satisfied, adj2_satisfied), (i, j)
+                ):
                     for a in adj_set:
                         if a is None or is_adj_satisfied(a, path, start):
                             adj_dict[a].append(True)
@@ -376,10 +415,12 @@ def get_block_distances_between_nodes(path, blocks, v1, v2, adj1, adj2):
 # check if a is a sublist of path beginning at i (in either direction)
 def is_adj_satisfied(a, path, i):
     # forwards
-    if i + len(a) <= len(path) and a == tuple(path[i:(i+len(a))]):
+    if i + len(a) <= len(path) and a == tuple(path[i : (i + len(a))]):
         return True
     # backwards
-    if i + 1 - len(a) >= 0 and tuple(reversed(a)) == tuple(path[(i+1-len(a)):i+1]):
+    if i + 1 - len(a) >= 0 and tuple(reversed(a)) == tuple(
+        path[(i + 1 - len(a)) : i + 1]
+    ):
         return True
     # not found
     return False
@@ -450,8 +491,9 @@ def rearrangement_to_string(rearrangement, start=0, blocks=None):
 
 
 def is_path_ref(path, blocks):
-    return (path == tuple(range(path[0], path[0] + len(path)))) and \
-        not any(blocks[floor(path[i]/2)].is_insertion() for i in range(0, len(path), 2))
+    return (path == tuple(range(path[0], path[0] + len(path)))) and not any(
+        blocks[floor(path[i] / 2)].is_insertion() for i in range(0, len(path), 2)
+    )
 
 
 def flip_parity(i):
@@ -485,18 +527,21 @@ def add_time_checkpoint(opts, name):
 def print_time_checkpoints(opts):
     start_time = opts['time_checkpoints'][0][0]
     prev_time = opts['time_checkpoints'][0][0]
-    for (t, name) in opts['time_checkpoints'][1:]:
+    for t, name in opts['time_checkpoints'][1:]:
         elapsed = t - prev_time
         cumulative = t - start_time
-        print(f'[timer]\t{name}\telapsed\t{time_to_str(elapsed)}\tcumulative\t{time_to_str(cumulative)}')
+        print(
+            f'[timer]\t{name}\telapsed\t{time_to_str(elapsed)}\tcumulative\t{time_to_str(cumulative)}'
+        )
         prev_time = t
 
 
 def test_merge_nearby():
-    a = {0: [0],  1: [1, 1], 6: [6], -1: [-1], 20: [20]}
+    a = {0: [0], 1: [1, 1], 6: [6], -1: [-1], 20: [20]}
 
     def mergefun(locs, objs):
         return ((min(locs), max(locs)), objs)
+
     print(merge_nearby(a, mergefun))
 
     a = {(0, 0): [0], (5, 6): [5, 6], (-10, -9): [-10, -9]}
@@ -505,34 +550,39 @@ def test_merge_nearby():
         m = min([loc[0] for loc in locs])
         M = max([loc[1] for loc in locs])
         return ((m, M), objs)
+
     print(merge_nearby(a, mergefun, type='interval'))
 
 
 #  test cases: no insertion blocks, some insertion blocks, edge cases within those
 def test_block_gap():
-    blocks = [GenomeInterval(1, 0, 10),
-              GenomeInterval(1, 15, 25),
-              GenomeInterval(1, 25, 35),
-              GenomeInterval(1, 1000, 2000, True)]
+    blocks = [
+        GenomeInterval(1, 0, 10),
+        GenomeInterval(1, 15, 25),
+        GenomeInterval(1, 25, 35),
+        GenomeInterval(1, 1000, 2000, True),
+    ]
     truth = [0, 5, 5, 0, 0, 0]
     for i in range(6):
         print(f'{i}: {block_gap(blocks, i)}')
-        assert(block_gap(blocks, i) == truth[i])
+        assert block_gap(blocks, i) == truth[i]
 
 
 def test_block_distance():
-    blocks = [GenomeInterval(1, 0, 100),
-              GenomeInterval(1, 100, 200),
-              GenomeInterval(1, 250, 300),
-              GenomeInterval(1, 400, 500)]
-    path = [0, 1, 2, 3, 4, 5, 6, 7]        # ref
+    blocks = [
+        GenomeInterval(1, 0, 100),
+        GenomeInterval(1, 100, 200),
+        GenomeInterval(1, 250, 300),
+        GenomeInterval(1, 400, 500),
+    ]
+    path = [0, 1, 2, 3, 4, 5, 6, 7]  # ref
     ij = [(1, 2), (1, 4), (1, 6), (6, 7)]
     truth = [100, 250, 400, 0]
     for k in range(len(ij)):
         i, j = ij[k]
         print(ij[k])
         print(block_distance(path, blocks, i, j))
-        assert(block_distance(path, blocks, i, j) == truth[k])
+        assert block_distance(path, blocks, i, j) == truth[k]
 
     ij = [(0, 1), (0, 3), (0, 5), (0, 7)]
     truth = [0, -100, -250, -400]
@@ -540,7 +590,7 @@ def test_block_distance():
         i, j = ij[k]
         print(ij[k])
         print(block_distance(path, blocks, i, j))
-        assert(block_distance(path, blocks, i, j) == truth[k])
+        assert block_distance(path, blocks, i, j) == truth[k]
 
     # deletion
     path = [0, 1, 2, 3, 6, 7]
@@ -550,7 +600,7 @@ def test_block_distance():
         i, j = ij[k]
         print(ij[k])
         print(block_distance(path, blocks, i, j))
-        assert(block_distance(path, blocks, i, j) == truth[k])
+        assert block_distance(path, blocks, i, j) == truth[k]
 
     # inversion
     path = [0, 1, 2, 3, 5, 4, 6, 7]
@@ -560,7 +610,7 @@ def test_block_distance():
         i, j = ij[k]
         print(ij[k])
         print(block_distance(path, blocks, i, j))
-        assert(block_distance(path, blocks, i, j) == truth[k])
+        assert block_distance(path, blocks, i, j) == truth[k]
 
     # insertion
     path = [0, 1, 2, 3, 8, 9, 4, 5, 6, 7]
@@ -571,7 +621,7 @@ def test_block_distance():
         i, j = ij[k]
         print(ij[k])
         print(block_distance(path, blocks, i, j))
-        assert(block_distance(path, blocks, i, j) == truth[k])
+        assert block_distance(path, blocks, i, j) == truth[k]
 
     # duplication
     path = [0, 1, 2, 3, 2, 3, 4, 5, 4, 5, 6, 7]
@@ -581,4 +631,4 @@ def test_block_distance():
         i, j = ij[k]
         print(ij[k])
         print(block_distance(path, blocks, i, j))
-        assert(block_distance(path, blocks, i, j) == truth[k])
+        assert block_distance(path, blocks, i, j) == truth[k]

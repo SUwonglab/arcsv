@@ -5,8 +5,13 @@ import sys
 from arcsv.helper import DE_NOVO_CHAR
 
 
-sv_type_dict = {'DEL': 'deletions', 'INV': 'inversions', 'DUP': 'tandemdups',
-                'INS': 'insertions', 'BND': 'complex'}
+sv_type_dict = {
+    'DEL': 'deletions',
+    'INV': 'inversions',
+    'DUP': 'tandemdups',
+    'INS': 'insertions',
+    'BND': 'complex',
+}
 
 
 def filter_arcsv_output(args):
@@ -17,7 +22,9 @@ def filter_arcsv_output(args):
     # print('opts\n\t{0}'.format(opts))
 
     if len(opts['basedir']) == 0:
-        sys.stderr.write('\nError: No directories found matching basedir argument (use -h for help)\n')
+        sys.stderr.write(
+            '\nError: No directories found matching basedir argument (use -h for help)\n'
+        )
         sys.exit(1)
 
     # print(opts['basedir'])
@@ -26,8 +33,9 @@ def filter_arcsv_output(args):
 
     outfile = os.path.join(opts['outdir'], opts['outname'])
     if not opts['overwrite'] and os.path.exists(outfile):
-        sys.stderr.write(f'\nError: Output file {outfile} exists but --overwrite was not set\n'
-                         )
+        sys.stderr.write(
+            f'\nError: Output file {outfile} exists but --overwrite was not set\n'
+        )
         sys.exit(1)
 
     header = None
@@ -38,8 +46,10 @@ def filter_arcsv_output(args):
             header = out
 
     if header is None:
-        sys.stderr.write(f'\nNo input files named {opts["inputname"]} found in the directories '
-                         'specified (check --inputname)\n')
+        sys.stderr.write(
+            f'\nNo input files named {opts["inputname"]} found in the directories '
+            'specified (check --inputname)\n'
+        )
         sys.exit(1)
 
     if len(arcsv_records) == 0:
@@ -111,11 +121,13 @@ def write_arcsv_output(opts, records, header):
 def apply_filters(opts, records, header):
     col_lookup = create_col_lookup(header)
 
-    filtered_types = set(k.lstrip('no_') for k, v in opts.items()
-                         if k.startswith('no_') and v is True)
+    filtered_types = set(
+        k.lstrip('no_') for k, v in opts.items() if k.startswith('no_') and v is True
+    )
     if 'simple' in filtered_types:
-        filtered_types = filtered_types.union(set(['deletions', 'tandemdups',
-                                                   'inversions', 'insertions']))
+        filtered_types = filtered_types.union(
+            set(['deletions', 'tandemdups', 'inversions', 'insertions'])
+        )
         filtered_types.remove('simple')
 
     # print(filtered_types)
@@ -151,15 +163,19 @@ def apply_filters(opts, records, header):
         supporting_splits = [int(x) for x in sv[col_lookup['sr_support']].split(',')]
         if min(supporting_splits) < opts['min_sr_support']:
             continue
-        if opts['max_sr_support'] is not None and \
-           max(supporting_splits) > opts['max_sr_support']:
+        if (
+            opts['max_sr_support'] is not None
+            and max(supporting_splits) > opts['max_sr_support']
+        ):
             continue
         # discordant paired-end read support
         supporting_pe = [int(x) for x in sv[col_lookup['pe_support']].split(',')]
         if min(supporting_pe) < opts['min_pe_support']:
             continue
-        if opts['max_pe_support'] is not None and \
-           max(supporting_pe) > opts['max_pe_support']:
+        if (
+            opts['max_pe_support'] is not None
+            and max(supporting_pe) > opts['max_pe_support']
+        ):
             continue
         # allele fraction
         af = float(sv[col_lookup['af']])

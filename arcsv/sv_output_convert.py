@@ -10,8 +10,15 @@ from arcsv.sv_output import do_sv_processing
 from arcsv.sv_parse_reads import create_blocks
 
 
-def svelter_convert(svelterfile, outdir, reffile, filter_gaps=False, refgapfile=None,
-                    flank_size=1000, verbosity=0):
+def svelter_convert(
+    svelterfile,
+    outdir,
+    reffile,
+    filter_gaps=False,
+    refgapfile=None,
+    flank_size=1000,
+    verbosity=0,
+):
     os.system(f'mkdir -p {outdir}')
     # collect all bps
     # all_bp = []
@@ -89,14 +96,25 @@ def svelter_convert(svelterfile, outdir, reffile, filter_gaps=False, refgapfile=
         slop_left, slop_right = flank_size, flank_size
         start = bp[0] - slop_left
         end = bp[-1] + slop_right
-        cbout = create_blocks(breakpoints, pyinter.IntervalSet(), chrom, start, end, verbosity)
+        cbout = create_blocks(
+            breakpoints, pyinter.IntervalSet(), chrom, start, end, verbosity
+        )
         blocks, _, left_bp, right_bp = cbout
         svelter_strings = toks[5].split('/')
         paths = [svelter_string_to_path(x, len(blocks)) for x in svelter_strings]
         score = float(toks[6])
 
-        this_data = (paths, blocks, left_bp, right_bp, score, 'PASS',
-                     id_extra, None, None)  # no extra INFO/FORMAT tags like VCF vase
+        this_data = (
+            paths,
+            blocks,
+            left_bp,
+            right_bp,
+            score,
+            'PASS',
+            id_extra,
+            None,
+            None,
+        )  # no extra INFO/FORMAT tags like VCF vase
         data.append(this_data)
     log.write(f'skipped_seen\t{skipped_seen}\n')
     log.write(f'skipped_refgap\t{skipped_refgap}\n')
@@ -107,8 +125,16 @@ def svelter_convert(svelterfile, outdir, reffile, filter_gaps=False, refgapfile=
     log.close()
 
 
-def generic_vcf_convert(vcffile, outdir, reffile, filter_gaps=False, refgapfile=None,
-                        caller=None, flank_size=1000, verbosity=0):
+def generic_vcf_convert(
+    vcffile,
+    outdir,
+    reffile,
+    filter_gaps=False,
+    refgapfile=None,
+    caller=None,
+    flank_size=1000,
+    verbosity=0,
+):
     os.system(f'mkdir -p {outdir}')
 
     log = open(os.path.join(outdir, f'convert_{vcffile}.log'), 'w')
@@ -116,7 +142,7 @@ def generic_vcf_convert(vcffile, outdir, reffile, filter_gaps=False, refgapfile=
     svtype_skipped = {}
     seen_coords_count = {}
     skipped_refgap = 0
-    write_extra = False         # need to write FORMAT or INFO to file?
+    write_extra = False  # need to write FORMAT or INFO to file?
 
     with open(vcffile, 'r') as vcf:
         toks_list = [line.rstrip().split('\t') for line in vcf if line[0] != '#']
@@ -161,7 +187,7 @@ def generic_vcf_convert(vcffile, outdir, reffile, filter_gaps=False, refgapfile=
                 cipos = (0, homlen)
                 ciend = (0, homlen)
         else:
-            if 'CIPOS95' in tagd:   # LUMPY
+            if 'CIPOS95' in tagd:  # LUMPY
                 tmp = tagd['CIPOS95'].split(',')
                 cipos = (int(tmp[0]), int(tmp[1]))
             elif 'CIPOS' in tagd:
@@ -169,7 +195,7 @@ def generic_vcf_convert(vcffile, outdir, reffile, filter_gaps=False, refgapfile=
                 cipos = (int(tmp[0]), int(tmp[1]))
             else:
                 cipos = (0, 0)
-            if 'CIEND95' in tagd:   # LUMPY
+            if 'CIEND95' in tagd:  # LUMPY
                 tmp = tagd['CIEND95'].split(',')
                 ciend = (int(tmp[0]), int(tmp[1]))
             elif 'CIEND' in tagd:
@@ -185,12 +211,22 @@ def generic_vcf_convert(vcffile, outdir, reffile, filter_gaps=False, refgapfile=
             tmpd = {a: b for (a, b) in (p.split(':') for p in tmp)}
             tagd['INV_PLUS'] = tmpd['++']
             tagd['INV_MINUS'] = tmpd['--']
-        tagd_used = ('SR', 'PE', 'SVTYPE', 'SVMETHOD', 'END', 'STRANDS',
-                     'SVLEN', 'HOMSEQ', 'CONSENSUS', 'CHR2')
+        tagd_used = (
+            'SR',
+            'PE',
+            'SVTYPE',
+            'SVMETHOD',
+            'END',
+            'STRANDS',
+            'SVLEN',
+            'HOMSEQ',
+            'CONSENSUS',
+            'CHR2',
+        )
         tagd_extra = {k: v for (k, v) in tagd.items() if k not in tagd_used}
 
         tags2 = {k: v for (k, v) in zip(format.split(':'), sample1.split(':'))}
-        if 'AD' in tags2:       # pindel
+        if 'AD' in tags2:  # pindel
             split_support = int(tags2['AD'].split(',')[1])
 
         gt = tags2['GT']
@@ -204,7 +240,7 @@ def generic_vcf_convert(vcffile, outdir, reffile, filter_gaps=False, refgapfile=
         elif gt in ('0/1', '1/0', '0|1', '1|0'):
             is_het = True
         else:
-            assert(gt in ('1/1', '1|1'))
+            assert gt in ('1/1', '1|1')
             is_het = False
 
         tags2_used = ('AD', 'SR', 'PE', 'SU')
@@ -252,9 +288,11 @@ def generic_vcf_convert(vcffile, outdir, reffile, filter_gaps=False, refgapfile=
         elif svtype != 'INS':
             # if (cipos[1] != -cipos[0] or ciend[1] != -ciend[0]) and \
             #    (pos + cipos[1] < end + ciend[0]):
-            if (pos + cipos[1] < end + ciend[0]):
-                bp = [(pos + cipos[0], pos + cipos[1]),
-                      (end + ciend[0], end + ciend[1])]
+            if pos + cipos[1] < end + ciend[0]:
+                bp = [
+                    (pos + cipos[0], pos + cipos[1]),
+                    (end + ciend[0], end + ciend[1]),
+                ]
             else:
                 bp = [(pos, pos), (end, end)]
                 filterstring += ':BPOVERLAP'
@@ -277,7 +315,9 @@ def generic_vcf_convert(vcffile, outdir, reffile, filter_gaps=False, refgapfile=
         slop_left, slop_right = flank_size, flank_size
         start = bp[0][0] - slop_left
         end = bp[-1][1] + slop_right
-        cbout = create_blocks(breakpoints, pyinter.IntervalSet(), chrom, start, end, verbosity)
+        cbout = create_blocks(
+            breakpoints, pyinter.IntervalSet(), chrom, start, end, verbosity
+        )
         blocks, _, left_bp, right_bp = cbout
 
         if svtype == 'INS':
@@ -294,8 +334,17 @@ def generic_vcf_convert(vcffile, outdir, reffile, filter_gaps=False, refgapfile=
             id_extra = ''
         seen_coords_count[coords] = scc + 1
 
-        this_data = (paths, blocks, left_bp, right_bp, score, filterstring,
-                     id_extra, tagd_extra, tags2_extra)
+        this_data = (
+            paths,
+            blocks,
+            left_bp,
+            right_bp,
+            score,
+            filterstring,
+            id_extra,
+            tagd_extra,
+            tags2_extra,
+        )
         data.append(this_data)
     for svtype, count in svtype_skipped.items():
         log.write(f'skipped_svtype\t{svtype}\t{count}\n')
@@ -311,16 +360,16 @@ def svelter_string_to_path(string, nblocks):
     i = 0
     while i < len(string):
         b = 1 + (ord(string[i]) - ord('a'))
-        is_reverse = (i < len(string) - 1) and string[i+1] == '^'
+        is_reverse = (i < len(string) - 1) and string[i + 1] == '^'
         if is_reverse:
-            path.extend([2*b + 1, 2*b])
+            path.extend([2 * b + 1, 2 * b])
         else:
-            path.extend([2*b, 2*b + 1])
+            path.extend([2 * b, 2 * b + 1])
         if is_reverse:
             i += 2
         else:
             i += 1
-    path.extend([2 * (nblocks-1), 2 * (nblocks-1) + 1])
+    path.extend([2 * (nblocks - 1), 2 * (nblocks - 1) + 1])
     return tuple(path)
 
 

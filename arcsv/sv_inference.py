@@ -10,23 +10,43 @@ from collections import Counter
 from math import log, floor
 
 from arcsv.constants import ALTERED_QNAME_MAX_LEN
-from arcsv.helper import GenomeInterval, block_idx_to_name, path_to_string, \
-    is_path_ref, flip_parity, is_adj_satisfied, get_block_distances_between_nodes
+from arcsv.helper import (
+    GenomeInterval,
+    block_idx_to_name,
+    path_to_string,
+    is_path_ref,
+    flip_parity,
+    is_adj_satisfied,
+    get_block_distances_between_nodes,
+)
 from arcsv.sv_call_viz import plot_rearrangement
 from arcsv.sv_classify import classify_paths
 from arcsv.sv_filter import apply_filters
-from arcsv.sv_inference_insertions import compute_hanging_edge_likelihood, \
-    compute_normalizing_constant
+from arcsv.sv_inference_insertions import (
+    compute_hanging_edge_likelihood,
+    compute_normalizing_constant,
+)
 from arcsv.sv_output import sv_output, svout_header_line, splitout_header_line
 from arcsv.sv_parse_reads import get_edge_color, GenomeGraph
 from arcsv.sv_validate import simplify_blocks_diploid, altered_reference_sequence
 from arcsv.vcf import get_vcf_header
 
 
-def do_inference(opts, reference_files, g, blocks,
-                 gap_indices, left_bp, right_bp,
-                 insert_dists, insert_cdfs, insert_cdf_sums,
-                 class_probs, rlen_stats, insertion_search_width):
+def do_inference(
+    opts,
+    reference_files,
+    g,
+    blocks,
+    gap_indices,
+    left_bp,
+    right_bp,
+    insert_dists,
+    insert_cdfs,
+    insert_cdf_sums,
+    class_probs,
+    rlen_stats,
+    insertion_search_width,
+):
     outdir = opts['outdir']
     pi_robust = opts['pi_robust']
 
@@ -49,16 +69,24 @@ def do_inference(opts, reference_files, g, blocks,
 
     ref = pysam.FastaFile(reference_files['reference'])
 
-    supp_edges = len([e for e in g.graph.es if e['support'] >= opts['min_edge_support']])
-    unsupp_edges = len([e for e in g.graph.es if e['support'] < opts['min_edge_support']
-                        and e['support'] > 0])
-    sv_logfile.write(f'graph(nodes/supp edges/unsupp edges)\t{g.size}\t{supp_edges}\t{unsupp_edges}\n'
-                     )
+    supp_edges = len(
+        [e for e in g.graph.es if e['support'] >= opts['min_edge_support']]
+    )
+    unsupp_edges = len(
+        [
+            e
+            for e in g.graph.es
+            if e['support'] < opts['min_edge_support'] and e['support'] > 0
+        ]
+    )
+    sv_logfile.write(
+        f'graph(nodes/supp edges/unsupp edges)\t{g.size}\t{supp_edges}\t{unsupp_edges}\n'
+    )
 
     subgraphs = []
     for i in range(len(gap_indices) - 1):
         start_block = gap_indices[i]
-        end_block = gap_indices[i+1]
+        end_block = gap_indices[i + 1]
         if opts['verbosity'] > 1:
             print(f'[inference] calling decompose {start_block} {end_block}')
         s = decompose_graph(opts, g, start_block, end_block)
@@ -68,9 +96,9 @@ def do_inference(opts, reference_files, g, blocks,
         print(f'[inference] Decomposed subgraphs:\n\t{subgraphs}\n')
 
     # test for insertions
-    insertion_test_sizes = np.power(10, np.arange(1.5,
-                                                  1 + np.log10(insertion_search_width),
-                                                  .5))
+    insertion_test_sizes = np.power(
+        10, np.arange(1.5, 1 + np.log10(insertion_search_width), 0.5)
+    )
     insertion_test_sizes = insertion_test_sizes.astype('int')
     if opts['verbosity'] > 0:
         print(f'[inference] insertion test sizes: {insertion_test_sizes}')
@@ -84,7 +112,7 @@ def do_inference(opts, reference_files, g, blocks,
     hanging_left_counts = []
     hanging_right_counts = []
     for b in range(0, len(blocks) - 1):
-        if (b+1) in gap_indices:
+        if (b + 1) in gap_indices:
             bp_left_counts.append(0)
             bp_right_counts.append(0)
             hanging_left_counts.append(0)
@@ -95,78 +123,111 @@ def do_inference(opts, reference_files, g, blocks,
         bp_left_counts.append(ins_bp.supp_clip_left)
         bp_right_counts.append(ins_bp.supp_clip_right)
         if opts['verbosity'] > 1:
-            print(f'[inference] testing for insertion after block {b}: {blocks[b].start}-{blocks[b].end}'
-                  )
+            print(
+                f'[inference] testing for insertion after block {b}: {blocks[b].start}-{blocks[b].end}'
+            )
             print(f'\tBP: {ins_bp}')
 
-        lower, upper = get_blocks_within_distance(blocks, b, insertion_search_width,
-                                                  gap_indices)
+        lower, upper = get_blocks_within_distance(
+            blocks, b, insertion_search_width, gap_indices
+        )
 
         # hanging edges on left and right
         # MATE PAIR dependence on the library of course....
         # probably just using stuff for hanging edge likelihood
-        tmp = get_hanging_edges_within_distance(g, blocks, b, lower, upper,
-                                                insertion_search_width)
+        tmp = get_hanging_edges_within_distance(
+            g, blocks, b, lower, upper, insertion_search_width
+        )
         hanging_left, hanging_right = tmp
         if opts['verbosity'] > 1:
-            print(f'\tHanging left: {hanging_left}\n\tHanging right: {hanging_right}'
-                  )
+            print(f'\tHanging left: {hanging_left}\n\tHanging right: {hanging_right}')
         hanging_left_counts.append(hanging_left)
         hanging_right_counts.append(hanging_right)
 
         # check if we should test this insertion
-        if not ((ins_bp.supp_clip_left > 0 and ins_bp.supp_clip_right > 0)
-                or any(pe[1] == 'Ins' for pe in ins_bp.pe)):
+        if not (
+            (ins_bp.supp_clip_left > 0 and ins_bp.supp_clip_right > 0)
+            or any(pe[1] == 'Ins' for pe in ins_bp.pe)
+        ):
             continue
 
         ref_path = reference_path(lower, upper)
         test_path = insertion_path(lower, upper, b + 1, len(blocks))
 
-        edges, total_reads = get_edges_in_range(g, list(range(0, 2*len(blocks))),
-                                                start_block=lower, end_block=upper - 1)
+        edges, total_reads = get_edges_in_range(
+            g, list(range(0, 2 * len(blocks))), start_block=lower, end_block=upper - 1
+        )
 
-        tmp = compute_likelihood(edges, ref_path, blocks,
-                                 insert_dists, insert_cdfs, insert_cdf_sums,
-                                 class_probs, rlen_stats,
-                                 start=0)
+        tmp = compute_likelihood(
+            edges,
+            ref_path,
+            blocks,
+            insert_dists,
+            insert_cdfs,
+            insert_cdf_sums,
+            class_probs,
+            rlen_stats,
+            start=0,
+        )
         ref_lhr, ref_nc, ref_lnc, ref_lc = tmp
         ref_likelihood = haploid_likelihood(ref_lhr, ref_lnc, ref_lc, pi_robust)
         test_homozygous_likelihoods = []
         test_heterozygous_likelihoods = []
         for insertion_size in insertion_test_sizes:
             test_block.end = insertion_size
-            tmp = compute_likelihood(edges, test_path, blocks + [test_block],
-                                     insert_dists, insert_cdfs, insert_cdf_sums,
-                                     class_probs, rlen_stats,
-                                     start=0)
+            tmp = compute_likelihood(
+                edges,
+                test_path,
+                blocks + [test_block],
+                insert_dists,
+                insert_cdfs,
+                insert_cdf_sums,
+                class_probs,
+                rlen_stats,
+                start=0,
+            )
             test_lhr, test_nc, test_lnc, test_lc = tmp
-            test_homozygous_likelihoods.append(haploid_likelihood(test_lhr, test_lnc,
-                                                                   test_lc, pi_robust))
-            test_heterozygous_likelihoods.append(diploid_likelihood(ref_lhr, test_lhr,
-                                                                     ref_lnc, test_lnc,
-                                                                     ref_lc, pi_robust))
+            test_homozygous_likelihoods.append(
+                haploid_likelihood(test_lhr, test_lnc, test_lc, pi_robust)
+            )
+            test_heterozygous_likelihoods.append(
+                diploid_likelihood(
+                    ref_lhr, test_lhr, ref_lnc, test_lnc, ref_lc, pi_robust
+                )
+            )
         max_hom = max(test_homozygous_likelihoods)
         max_het = max(test_heterozygous_likelihoods)
         num_test = len(insertion_test_sizes)
         if max(max_hom, max_het) > ref_likelihood:
             insertion_intervals.add(pyinter.closed(lower, upper - 1))
             if max_hom >= max_het:
-                which_max = min([i for i in range(num_test)
-                                 if test_homozygous_likelihoods[i] == max_hom])
+                which_max = min(
+                    [
+                        i
+                        for i in range(num_test)
+                        if test_homozygous_likelihoods[i] == max_hom
+                    ]
+                )
             else:
-                which_max = min([i for i in range(num_test)
-                                 if test_heterozygous_likelihoods[i] == max_het])
+                which_max = min(
+                    [
+                        i
+                        for i in range(num_test)
+                        if test_heterozygous_likelihoods[i] == max_het
+                    ]
+                )
             insertion_len[b] = insertion_test_sizes[which_max]
             if opts['verbosity'] > 0:
-                print(f'[inference] possible {insertion_len[b]} bp insertion following block {b} (position {blocks[b].end})'
-                      )
+                print(
+                    f'[inference] possible {insertion_len[b]} bp insertion following block {b} (position {blocks[b].end})'
+                )
 
     # add potential insertions to the graph
     for b in range(0, len(blocks) - 1):
         if insertion_len[b] > 0:  # was an insertion added?
             blocks = blocks + [GenomeInterval('', 0, insertion_len[b], is_de_novo=True)]
 
-            subgraphs.append((b, b+1))
+            subgraphs.append((b, b + 1))
 
             g.graph.add_vertex()
             g.graph.add_vertex()
@@ -183,35 +244,44 @@ def do_inference(opts, reference_files, g, blocks,
     do_inference_insertion_time = time.time()
 
     # expand subgraphs as necessary
-    subgraphs_expanded = [expand_subgraph(s, blocks, insertion_search_width, gap_indices)
-                          for s in subgraphs]
+    subgraphs_expanded = [
+        expand_subgraph(s, blocks, insertion_search_width, gap_indices)
+        for s in subgraphs
+    ]
     if opts['verbosity'] > 1:
-        print(f'\n[inference] Expanded subgraphs:\n\t{sorted(subgraphs_expanded)}'
-              )
+        print(f'\n[inference] Expanded subgraphs:\n\t{sorted(subgraphs_expanded)}')
 
     # merge subgraphs which are now overlapping
-    subgraph_intervals = pyinter.IntervalSet([pyinter.open(s[0], s[1])
-                                              for s in subgraphs_expanded])
+    subgraph_intervals = pyinter.IntervalSet(
+        [pyinter.open(s[0], s[1]) for s in subgraphs_expanded]
+    )
     subgraphs = [(si.lower_value, si.upper_value) for si in subgraph_intervals]
-    subgraphs.sort()            # interval set not sorted
+    subgraphs.sort()  # interval set not sorted
     if opts['verbosity'] > 1:
-        print(f'\n[inference] Merged subgraphs:\n\t{subgraphs}'
-              )
+        print(f'\n[inference] Merged subgraphs:\n\t{subgraphs}')
         print('')
 
     # plot graph
     if g.size <= 1000:
-        edge_colors = [get_edge_color(e, blocks, opts['min_edge_support']) for e in g.graph.es]
-        vertex_block_ids = [int(floor(v/2)) for v in range(len(g.graph.vs))]
+        edge_colors = [
+            get_edge_color(e, blocks, opts['min_edge_support']) for e in g.graph.es
+        ]
+        vertex_block_ids = [int(floor(v / 2)) for v in range(len(g.graph.vs))]
         vertex_block_is_in = [v % 2 == 0 for v in range(len(g.graph.vs))]
-        vertex_labels = [f'{v} - {blocks[id].start if ii else blocks[id].end}'
-                         
-                         for (v, id, ii) in
-                         zip(range(len(g.graph.vs)), vertex_block_ids, vertex_block_is_in)]
-        g.graph.write_svg(fname=os.path.join(outdir, 'adjacency_graph.svg'),
-                          width=4000, height=4000,
-                          layout='fruchterman_reingold',
-                          edge_colors=edge_colors, labels=vertex_labels)
+        vertex_labels = [
+            f'{v} - {blocks[id].start if ii else blocks[id].end}'
+            for (v, id, ii) in zip(
+                range(len(g.graph.vs)), vertex_block_ids, vertex_block_is_in
+            )
+        ]
+        g.graph.write_svg(
+            fname=os.path.join(outdir, 'adjacency_graph.svg'),
+            width=4000,
+            height=4000,
+            layout='fruchterman_reingold',
+            edge_colors=edge_colors,
+            labels=vertex_labels,
+        )
 
     # call SVs
     vcf_out = []
@@ -225,47 +295,61 @@ def do_inference(opts, reference_files, g, blocks,
         ref_path = tuple(range(start_in, end_out + 1))
 
         if opts['verbosity'] > 0:
-            print(f'[inference] evaluating subgraph from block {start} to block {end} ({blocks[start].start} - {blocks[end].end})'
-                  )
-            print(f'[inference] total length: {blocks[end].end - blocks[start].start} bp'
-                  )
+            print(
+                f'[inference] evaluating subgraph from block {start} to block {end} ({blocks[start].start} - {blocks[end].end})'
+            )
+            print(
+                f'[inference] total length: {blocks[end].end - blocks[start].start} bp'
+            )
 
         get_paths_finished = False
         mes_extra = 0
         while not get_paths_finished:
-            paths = [p for p in
-                     get_paths_iterative(g, opts['max_back_edges'],
-                                         opts['min_edge_support'] + mes_extra,
-                                         opts['max_paths'] + 1,
-                                         start=start_in, end=end_out)]
+            paths = [
+                p
+                for p in get_paths_iterative(
+                    g,
+                    opts['max_back_edges'],
+                    opts['min_edge_support'] + mes_extra,
+                    opts['max_paths'] + 1,
+                    start=start_in,
+                    end=end_out,
+                )
+            ]
             if len(paths) > 0 and paths[-1] == -1:
                 if opts['verbosity'] > 0:
-                    print('[inference] get_paths failed b/c too many backtrack steps. . . skipping')
+                    print(
+                        '[inference] get_paths failed b/c too many backtrack steps. . . skipping'
+                    )
                 s0 = 'subgraph-skip-backtrack'
                 skip_this_region = True
                 get_paths_finished = True
             elif len(paths) <= opts['max_paths']:
                 s0 = 'subgraph(s/e/n/path)'
                 get_paths_finished = True
-            else:               # increase required edge support and try again
+            else:  # increase required edge support and try again
                 mes_extra += 2
                 if mes_extra > opts['max_mes_extra']:
                     s0 = 'subgraph-npaths'
                     skip_this_region = True
                     get_paths_finished = True
-        increased_edge_support = (mes_extra > 0)
+        increased_edge_support = mes_extra > 0
         npaths = len(paths)
-        if (not skip_this_region):
+        if not skip_this_region:
             if opts['verbosity'] > 0:
                 print(f'[inference] {npaths} paths total')
 
-        edges, total_reads = get_edges_in_range(g, list(range(start, end + 1)), start_block=start, end_block=end)
+        edges, total_reads = get_edges_in_range(
+            g, list(range(start, end + 1)), start_block=start, end_block=end
+        )
         # if (not skip_this_region) and npaths*total_reads > max_paths_times_reads:
         #     s0 = 'subgraph-skip-paths-times-reads'
         #     skip_this_region = True
 
-        sv_logfile.write(f'{s0}\t{blocks[start].start}\t{blocks[end].end}\t'
-                         f'{end - start + 1}\t{npaths}\t{mes_extra}\n')
+        sv_logfile.write(
+            f'{s0}\t{blocks[start].start}\t{blocks[end].end}\t'
+            f'{end - start + 1}\t{npaths}\t{mes_extra}\n'
+        )
 
         if skip_this_region:
             continue
@@ -277,9 +361,17 @@ def do_inference(opts, reference_files, g, blocks,
         if opts['verbosity'] > 1:
             print('reference path:')
             print(ref_path)
-        ref_read_likelihoods = compute_likelihood(edges, ref_path, blocks,
-                                                  insert_dists, insert_cdfs, insert_cdf_sums,
-                                                  class_probs, rlen_stats, start)
+        ref_read_likelihoods = compute_likelihood(
+            edges,
+            ref_path,
+            blocks,
+            insert_dists,
+            insert_cdfs,
+            insert_cdf_sums,
+            class_probs,
+            rlen_stats,
+            start,
+        )
         ref_lhr, ref_nc, ref_lnc, ref_lc = ref_read_likelihoods
 
         lh_out = []
@@ -290,71 +382,96 @@ def do_inference(opts, reference_files, g, blocks,
             if opts['verbosity'] > 1:
                 print(f'\nevaluating {pathstring}')
                 print(path)
-            lh_out.append(compute_likelihood(edges, path, blocks,
-                                             insert_dists, insert_cdfs, insert_cdf_sums,
-                                             class_probs, rlen_stats, start))
+            lh_out.append(
+                compute_likelihood(
+                    edges,
+                    path,
+                    blocks,
+                    insert_dists,
+                    insert_cdfs,
+                    insert_cdf_sums,
+                    class_probs,
+                    rlen_stats,
+                    start,
+                )
+            )
             lhr, nc, lnc, lc = lh_out[-1]
             if len(lhr) > 0 and opts['verbosity'] > 1:
                 print(f'max lh {max(lhr)}')
                 print(f'median lh {np.median(lhr)}')
-                print(f'\n{len([l for l in lhr if l < pi_robust])} discordant reads < pi_robust'
-                      )
+                print(
+                    f'\n{len([l for l in lhr if l < pi_robust])} discordant reads < pi_robust'
+                )
                 print(f'\n{len([l for l in lhr if l == 0])} discordant reads lh = 0')
             homozygous_likelihood.append(haploid_likelihood(lhr, lnc, lc, pi_robust))
-            heterozygous_likelihood \
-                .append(diploid_likelihood_frac(ref_lhr, lhr, ref_lnc, lnc,
-                                                lc, allele_fraction=0.5,
-                                                pi_robust=pi_robust))
+            heterozygous_likelihood.append(
+                diploid_likelihood_frac(
+                    ref_lhr,
+                    lhr,
+                    ref_lnc,
+                    lnc,
+                    lc,
+                    allele_fraction=0.5,
+                    pi_robust=pi_robust,
+                )
+            )
 
         # when computing the full heterozygous likelihoods below,
         # we only need to
-        inf_reads = [i for i in range(total_reads)
-                     if not all([lh_out[j][0][i] == lh_out[0][0][i]
-                                 for j in range(npaths)])]
+        inf_reads = [
+            i
+            for i in range(total_reads)
+            if not all([lh_out[j][0][i] == lh_out[0][0][i] for j in range(npaths)])
+        ]
         # SPEEDUP don't need to recompute this -- already have lh for all paths
-        ref_likelihood = haploid_likelihood(ref_lhr, ref_lnc, ref_lc, pi_robust, inf_reads)
+        ref_likelihood = haploid_likelihood(
+            ref_lhr, ref_lnc, ref_lc, pi_robust, inf_reads
+        )
         # ref_likelihood3 = diploid_likelihood(lhr, lhr, lnc, lnc, lc, pi_robust, inf_reads)
         # print('ref_likelihood: {0}\nref_likelihoodalt: {3}\nref_likelihood2: {1}\nref_likelihood2alt: {2}'.format(ref_likelihood, ref_likelihood2, ref_likelihood3, ref_likelihood_alt))
         if opts['verbosity'] > 1:
             print(f'[inference] total paths: {npaths}')
-        if npaths == 0:         # MINOR shouldn't this be higher up?
+        if npaths == 0:  # MINOR shouldn't this be higher up?
             if opts['verbosity'] > 0:
                 print('[inference] npaths == 0, skipping subgraph')
-            continue            # LATER handle this case?
+            continue  # LATER handle this case?
         if opts['verbosity'] > 0:
             print(f'[inference] total reads: {total_reads}')
             print(f'[inference] informative reads: {len(inf_reads)}')
             print('[inference] blocks:')
             for i in range(0, end - start + 1):
-                print(f'\t{block_idx_to_name(i)}: {blocks[start + i].start}-{blocks[start + i].end}')
+                print(
+                    f'\t{block_idx_to_name(i)}: {blocks[start + i].start}-{blocks[start + i].end}'
+                )
             print('')
-        pathstrings = [path_to_string(p, start, blocks)
-                       for p in paths]
+        pathstrings = [path_to_string(p, start, blocks) for p in paths]
 
         if len(opts['allele_fractions_symmetrized']) > 0:  # doing HET calls?
-            all_lh = itertools.chain(zip(homozygous_likelihood,
-                                         range(npaths),
-                                         ['HOM'] * npaths),
-                                     zip(heterozygous_likelihood,
-                                         range(npaths),
-                                         ['HET'] * npaths))
-        else:                   # homozygous calls only
+            all_lh = itertools.chain(
+                zip(homozygous_likelihood, range(npaths), ['HOM'] * npaths),
+                zip(heterozygous_likelihood, range(npaths), ['HET'] * npaths),
+            )
+        else:  # homozygous calls only
             all_lh = zip(homozygous_likelihood, range(npaths), ['HOM'] * npaths)
         all_lh_sorted = sorted(all_lh, key=lambda pair: -pair[0])
 
         idx_ref = [i for i in range(npaths) if is_path_ref(paths[i], blocks)][0]
-        all_lh_sorted = [x for x in all_lh_sorted if
-                         not (x[1] == idx_ref and x[2] == 'HET')]
+        all_lh_sorted = [
+            x for x in all_lh_sorted if not (x[1] == idx_ref and x[2] == 'HET')
+        ]
         if opts['verbosity'] > 0:
-            for (lh, idx, gt) in all_lh_sorted:
+            for lh, idx, gt in all_lh_sorted:
                 pathstring = pathstrings[idx]
                 print(f'{pathstring:<20} ({gt}) {lh:>20.3f}')
 
         # get the 50 paths with highest likelihood, but don't
         # double-count for HET and HOM likelihood
         s = set()
-        idx_ordered_unique = [idx for (_, idx, _) in all_lh_sorted
-                              if idx not in s and (s.add(idx) is None)]
+        idx_ordered_unique = [
+            idx
+            for (_, idx, _) in all_lh_sorted
+            if idx not in s and (s.add(idx) is None)
+        ]
 
         best = None
         next_best = None
@@ -366,8 +483,8 @@ def do_inference(opts, reference_files, g, blocks,
         if idx_ref not in which_consider:
             which_consider.append(idx_ref)
         # TODO unique
-        for (i, j) in itertools.product(which_consider, which_consider):
-            if i < j:           # likelihood is symmetric in theta_1, theta_2
+        for i, j in itertools.product(which_consider, which_consider):
+            if i < j:  # likelihood is symmetric in theta_1, theta_2
                 continue
             lhr_i, nc_i, lnc_i, _ = lh_out[i]
             lhr_j, nc_j, lnc_j, _ = lh_out[j]
@@ -378,11 +495,16 @@ def do_inference(opts, reference_files, g, blocks,
             # SPEEDUP a lot of duplication here -- already tested
             # everything as HOM and HET variants
             for allele_fraction in allele_fractions:
-                heterozygous_likelihood = \
-                    diploid_likelihood_frac(lhr_i, lhr_j,
-                                            lnc_i, lnc_j,
-                                            ref_lc, allele_fraction,
-                                            pi_robust, inf_reads)
+                heterozygous_likelihood = diploid_likelihood_frac(
+                    lhr_i,
+                    lhr_j,
+                    lnc_i,
+                    lnc_j,
+                    ref_lc,
+                    allele_fraction,
+                    pi_robust,
+                    inf_reads,
+                )
                 s1 = path_to_string(paths[i], start, blocks)
                 s2 = path_to_string(paths[j], start, blocks)
                 if opts['verbosity'] > 1:
@@ -427,7 +549,7 @@ def do_inference(opts, reference_files, g, blocks,
         allele2_is_ref = is_path_ref(path2, blocks)
         variant_called = (not allele1_is_ref) or (not allele2_is_ref)
         if variant_called and opts['verbosity'] > 0:
-                print('[inference] VARIANT CALLED')
+            print('[inference] VARIANT CALLED')
         elif not variant_called:
             if opts['verbosity'] > 0:
                 print('')
@@ -440,9 +562,9 @@ def do_inference(opts, reference_files, g, blocks,
         s1 = path_to_string(np1, blocks=nb)
         s2 = path_to_string(np2, blocks=nb)
 
-        (event1, event2), svs, complex_types = classify_paths(path1, path2, blocks,
-                                                              g.size, left_bp,
-                                                              right_bp, opts['verbosity'])
+        (event1, event2), svs, complex_types = classify_paths(
+            path1, path2, blocks, g.size, left_bp, right_bp, opts['verbosity']
+        )
         if opts['verbosity'] > 1:
             print(event1)
             print(event2)
@@ -450,7 +572,7 @@ def do_inference(opts, reference_files, g, blocks,
         # apply filters and write to vcf
         apply_filters(svs)
         filter_criteria = opts['filter_criteria']
-        
+
         # sv1 = [sv for sv in svs if sv.genotype == '1/1' or sv.genotype == '1/0']
         # sv2 = [sv for sv in svs if sv.genotype == '1/1' or sv.genotype == '0/1']
         # for (k, sv_list, frac) in [(0, sv1, frac1), (1, sv2, frac2)]:
@@ -475,13 +597,27 @@ def do_inference(opts, reference_files, g, blocks,
         #             sv_calls.append((pos, line))
         # write to sv_out2.bed
         npaths_signed = -len(paths) if increased_edge_support else len(paths)
-        outlines, vcflines, splitlines = sv_output(np1, np2, nb, event1, event2,
-                                                   frac1, frac2, svs, complex_types,
-                                                   best_lh, ref_likelihood, next_lh,
-                                                   next_best_pathstring, npaths_signed,
-                                                   filter_criteria, output_split_support=True,
-                                                   reference=ref, output_vcf = True)
-                                                   
+        outlines, vcflines, splitlines = sv_output(
+            np1,
+            np2,
+            nb,
+            event1,
+            event2,
+            frac1,
+            frac2,
+            svs,
+            complex_types,
+            best_lh,
+            ref_likelihood,
+            next_lh,
+            next_best_pathstring,
+            npaths_signed,
+            filter_criteria,
+            output_split_support=True,
+            reference=ref,
+            output_vcf=True,
+        )
+
         if opts['verbosity'] > 1:
             print(outlines)
             print('')
@@ -496,23 +632,25 @@ def do_inference(opts, reference_files, g, blocks,
         # if complex variant called, write out figure
         if variant_called and 'complex' in (event1 + event2):
             # 1-indexed inclusive coords to match vcf
-            figname = (f'{blocks[0].chrom}_{blocks[start].start + 1}_{blocks[end].end}.png'
-                       )
+            figname = (
+                f'{blocks[0].chrom}_{blocks[start].start + 1}_{blocks[end].end}.png'
+            )
             figpath = os.path.join(outdir, 'complex_figs', figname)
             if best[0] == best[1]:  # homozygous
-                plot_rearrangement(figpath, blocks, start, end,
-                                   path1, show_ref=True)
-            else:           # heterozygous
-                plot_rearrangement(figpath, blocks, start, end,
-                                   path1, path2,
-                                   show_ref=True)
+                plot_rearrangement(figpath, blocks, start, end, path1, show_ref=True)
+            else:  # heterozygous
+                plot_rearrangement(
+                    figpath, blocks, start, end, path1, path2, show_ref=True
+                )
 
         # write altered reference to file
         sv1 = [sv for sv in svs if sv.genotype == '1/1' or sv.genotype == '1/0']
         sv2 = [sv for sv in svs if sv.genotype == '1/1' or sv.genotype == '0/1']
         compound_het = (path1 != path2) and (len(sv1) > 0) and (len(sv2) > 0)
-        for (k, path, _ev, pathstring, svlist, _frac) in [(0, path1, event1, s1, sv1, frac1),
-                                                        (1, path2, event2, s2, sv2, frac2)]:
+        for k, path, _ev, pathstring, svlist, _frac in [
+            (0, path1, event1, s1, sv1, frac1),
+            (1, path2, event2, s2, sv2, frac2),
+        ]:
             if k == 1 and path1 == path2:
                 continue
             if len(svlist) == 0:
@@ -526,8 +664,9 @@ def do_inference(opts, reference_files, g, blocks,
             for sv in svlist:
                 svtype = sv.type.split(':')[0]  # just write DUP, not DUP:TANDEM
                 qname += f':{svtype}'
-            ars_out = altered_reference_sequence(path, blocks, ref,
-                                                 flank_size=opts['altered_flank_size'])
+            ars_out = altered_reference_sequence(
+                path, blocks, ref, flank_size=opts['altered_flank_size']
+            )
             seqs, block_pos, insertion_size, del_size, svb, svp, hlf, hrf = ars_out
             qnames.append(qname)
             block_positions.append(block_pos)
@@ -538,18 +677,19 @@ def do_inference(opts, reference_files, g, blocks,
             has_left_flank.append(hlf)
             has_right_flank.append(hrf)
             seqnum = 1
-            qname = qname[:(ALTERED_QNAME_MAX_LEN-4)]
+            qname = qname[: (ALTERED_QNAME_MAX_LEN - 4)]
             for seq in seqs:
-                altered_reference_file.write('>{0}\n{1}\n'.
-                                             format(qname + ':' + str(seqnum), seq))
+                altered_reference_file.write(
+                    '>{0}\n{1}\n'.format(qname + ':' + str(seqnum), seq)
+                )
                 seqnum += 1
 
         # print results
         # for sv in svs:
         #     if sv.type == 'INS':
         #         block_before_idx = min([i for i in range(len(blocks)) if blocks[i].end == sv.ref_start])
-                # sl, sr = bp_left_counts[block_before_idx], bp_right_counts[block_before_idx]
-                # hl, hr = hanging_left_counts[block_before_idx], hanging_right_counts[block_before_idx]
+        # sl, sr = bp_left_counts[block_before_idx], bp_right_counts[block_before_idx]
+        # hl, hr = hanging_left_counts[block_before_idx], hanging_right_counts[block_before_idx]
 
         if opts['verbosity'] > 0:
             print('')
@@ -560,17 +700,29 @@ def do_inference(opts, reference_files, g, blocks,
     vcf_file = open(os.path.join(outdir, 'arcsv_out.vcf'), 'w')
     vcf_file.write(get_vcf_header(reference_files['reference']))
     vcf_out.sort()
-    for (_pos, line) in vcf_out:
+    for _pos, line in vcf_out:
         vcf_file.write(line)
     vcf_file.close()
 
-    for obj in (qnames, block_positions, insertion_sizes, del_sizes, simplified_blocks,
-                simplified_paths, has_left_flank, has_right_flank):
+    for obj in (
+        qnames,
+        block_positions,
+        insertion_sizes,
+        del_sizes,
+        simplified_blocks,
+        simplified_paths,
+        has_left_flank,
+        has_right_flank,
+    ):
         pickle.dump(obj, altered_reference_data)
 
-    for output_file in (altered_reference_file, altered_reference_data,
-                        sv_logfile, sv_outfile,
-                        split_outfile):
+    for output_file in (
+        altered_reference_file,
+        altered_reference_data,
+        sv_logfile,
+        sv_outfile,
+        split_outfile,
+    ):
         output_file.close()
 
     return do_inference_insertion_time
@@ -586,19 +738,30 @@ def decompose_graph(opts, g, start_block=None, end_block=None):
     if start_block == end_block - 1:
         return []
     MES = min_edge_support
-    cut_points = set([start_block, end_block - 1])             # nodes which would disconnect the graph if removed, assuming no spanners
+    cut_points = set(
+        [start_block, end_block - 1]
+    )  # nodes which would disconnect the graph if removed, assuming no spanners
     is_spanned = [False] * (end_block - start_block)
     start_in = 2 * start_block
     end_out = 2 * (end_block - 1) + 1
     for b in range(start_block + 1, end_block - 1):
-        b_in = 2*b
-        b_out = 2*b + 1
-        in_neighbors = [n for n in g.supported_neighbors(b_in, MES) if n <= end_out and n >= start_in]
-        out_neighbors = [n for n in g.supported_neighbors(b_out, MES) if n <= end_out and n >= start_in]
-        if (len(in_neighbors) == 0 or max(in_neighbors) < b_in) and \
-                (len(out_neighbors) == 0 or min(out_neighbors) > b_out):
+        b_in = 2 * b
+        b_out = 2 * b + 1
+        in_neighbors = [
+            n
+            for n in g.supported_neighbors(b_in, MES)
+            if n <= end_out and n >= start_in
+        ]
+        out_neighbors = [
+            n
+            for n in g.supported_neighbors(b_out, MES)
+            if n <= end_out and n >= start_in
+        ]
+        if (len(in_neighbors) == 0 or max(in_neighbors) < b_in) and (
+            len(out_neighbors) == 0 or min(out_neighbors) > b_out
+        ):
             cut_points.add(b)
-        for n in (in_neighbors + out_neighbors):
+        for n in in_neighbors + out_neighbors:
             if n > b_out + 2:
                 block_idx = floor(n / 2)
                 for b_spanned in range(b + 1, block_idx):
@@ -628,7 +791,7 @@ def decompose_graph(opts, g, start_block=None, end_block=None):
             cur = [cp, cp]
     if cur is not None:
         minimal_cp.append(cur[0])
-    sub = [(minimal_cp[i], minimal_cp[i+1]) for i in range(0, len(minimal_cp) - 1, 2)]
+    sub = [(minimal_cp[i], minimal_cp[i + 1]) for i in range(0, len(minimal_cp) - 1, 2)]
 
     if opts['verbosity'] > 1:
         print(f'[decompose_graph] minimal cp\n\t{minimal_cp}\n')
@@ -646,7 +809,7 @@ def get_blocks_within_distance(blocks, idx, width, gap_indices, get_after=True):
 
     first = idx
     while first > 0:
-        if blocks[first-1].end <= pos_minus:
+        if blocks[first - 1].end <= pos_minus:
             break
         first -= 1
 
@@ -674,8 +837,12 @@ def get_blocks_within_distance(blocks, idx, width, gap_indices, get_after=True):
     #     first = 0
 
     # adjust for gap_indices
-    gap_before = [gap_indices[i] for i in range(len(gap_indices)) if gap_indices[i] <= idx]
-    gap_after = [gap_indices[i] for i in range(len(gap_indices)) if gap_indices[i] > idx]
+    gap_before = [
+        gap_indices[i] for i in range(len(gap_indices)) if gap_indices[i] <= idx
+    ]
+    gap_after = [
+        gap_indices[i] for i in range(len(gap_indices)) if gap_indices[i] > idx
+    ]
     first = max(gap_before + [first])
     last = min(gap_after + [last])
 
@@ -686,7 +853,9 @@ def get_blocks_within_distance(blocks, idx, width, gap_indices, get_after=True):
 # on either flank
 def expand_subgraph(sub, blocks, width, gap_indices):
     bwd_0 = get_blocks_within_distance(blocks, sub[0], width, gap_indices)
-    bwd_1 = get_blocks_within_distance(blocks, sub[1], width, gap_indices, get_after=False)
+    bwd_1 = get_blocks_within_distance(
+        blocks, sub[1], width, gap_indices, get_after=False
+    )
     return (bwd_0[0], bwd_1[1] - 1)
 
 
@@ -695,10 +864,16 @@ def reference_path(start, end):
 
 
 def insertion_path(start, end, insertion_idx, insertion_block):
-    return reference_path(start, insertion_idx) + [2*insertion_block, 2*insertion_block+1] + reference_path(insertion_idx, end)
+    return (
+        reference_path(start, insertion_idx)
+        + [2 * insertion_block, 2 * insertion_block + 1]
+        + reference_path(insertion_idx, end)
+    )
 
 
-def get_hanging_edges_within_distance(graph, blocks, block_idx, lower_idx, upper_idx, width):
+def get_hanging_edges_within_distance(
+    graph, blocks, block_idx, lower_idx, upper_idx, width
+):
     hanging_left, hanging_right = 0, 0
     cur_dist = 0
     for b in range(block_idx, lower_idx - 1, -1):
@@ -707,8 +882,12 @@ def get_hanging_edges_within_distance(graph, blocks, block_idx, lower_idx, upper
         edge = graph.get_edge(v, v + 1)
         if len(edge['which_hanging']) > 0:
             orientation_out = [ori == 1 for ori in edge['hanging_orientation']]
-            within_distance = [cur_dist + edge['offset'][i] <= width for i in edge['which_hanging']]
-            hanging_right += sum([oo and wd for (oo, wd) in zip(orientation_out, within_distance)])
+            within_distance = [
+                cur_dist + edge['offset'][i] <= width for i in edge['which_hanging']
+            ]
+            hanging_right += sum(
+                [oo and wd for (oo, wd) in zip(orientation_out, within_distance)]
+            )
     cur_dist = 0
     for b in range(block_idx + 1, upper_idx):
         v = b * 2
@@ -719,38 +898,62 @@ def get_hanging_edges_within_distance(graph, blocks, block_idx, lower_idx, upper
             # offsets = [edge['offset'][i] for i in edge['which_hanging']]
             # print('dists: {0}'.format(sorted(dists)))
             # print('offsets: {0}'.format(sorted(offsets)))
-            within_distance = [cur_dist + edge['offset'][i] <= width for i in edge['which_hanging']]
-            hanging_left += sum([oo and wd for (oo, wd) in zip(orientation_in, within_distance)])
+            within_distance = [
+                cur_dist + edge['offset'][i] <= width for i in edge['which_hanging']
+            ]
+            hanging_left += sum(
+                [oo and wd for (oo, wd) in zip(orientation_in, within_distance)]
+            )
         cur_dist += len(blocks[b])
     return hanging_left, hanging_right
 
 
-def haploid_likelihood(likelihood, lib_norm_consts, lib_counts, pi_robust, which_reads=None, epsilon=1e-10):
-    lh_nc = sum([-count * log(n + epsilon) for (count, n) in zip(lib_counts,
-                                                                 lib_norm_consts)])
+def haploid_likelihood(
+    likelihood, lib_norm_consts, lib_counts, pi_robust, which_reads=None, epsilon=1e-10
+):
+    lh_nc = sum(
+        [-count * log(n + epsilon) for (count, n) in zip(lib_counts, lib_norm_consts)]
+    )
     if which_reads is None:
-        lh_rest = sum([log(pi_robust + (1-pi_robust)*l)
-                       for l in likelihood])
+        lh_rest = sum([log(pi_robust + (1 - pi_robust) * l) for l in likelihood])
     else:
-        lh_rest = sum([log(pi_robust + (1-pi_robust)*likelihood[i])
-                       for i in which_reads])
+        lh_rest = sum(
+            [log(pi_robust + (1 - pi_robust) * likelihood[i]) for i in which_reads]
+        )
     return lh_nc + lh_rest
 
 
 # LATER change the one reference to this
-def diploid_likelihood(likelihood1, likelihood2, lib_norm_consts1,
-                        lib_norm_consts2, lib_counts,
-                        pi_robust, which_reads=None, epsilon=2e-10):
-    lh_nc = sum([-count * log(n1 + n2 + epsilon) for (count, n1, n2) in zip(lib_counts,
-                                                                            lib_norm_consts1,
-                                                                            lib_norm_consts2)])
+def diploid_likelihood(
+    likelihood1,
+    likelihood2,
+    lib_norm_consts1,
+    lib_norm_consts2,
+    lib_counts,
+    pi_robust,
+    which_reads=None,
+    epsilon=2e-10,
+):
+    lh_nc = sum(
+        [
+            -count * log(n1 + n2 + epsilon)
+            for (count, n1, n2) in zip(lib_counts, lib_norm_consts1, lib_norm_consts2)
+        ]
+    )
     if which_reads is None:
-        lh_rest = sum([log(2*pi_robust + (1-pi_robust)*(l1 + l2))
-                       for (l1, l2) in
-                       zip(likelihood1, likelihood2)])
+        lh_rest = sum(
+            [
+                log(2 * pi_robust + (1 - pi_robust) * (l1 + l2))
+                for (l1, l2) in zip(likelihood1, likelihood2)
+            ]
+        )
     else:
-        lh_rest = sum([log(2*pi_robust + (1-pi_robust)*(likelihood1[i] + likelihood2[i]))
-                       for i in which_reads])
+        lh_rest = sum(
+            [
+                log(2 * pi_robust + (1 - pi_robust) * (likelihood1[i] + likelihood2[i]))
+                for i in which_reads
+            ]
+        )
         # log(2) here is needed to make sure to match haploid_likelihood2 in the
         # homozygous case. it's because we wrote numerator / (G1+G2) instead of
         # 1/2 numerator / (1/2 G1 + 1/2 G2)
@@ -758,23 +961,43 @@ def diploid_likelihood(likelihood1, likelihood2, lib_norm_consts1,
     return lh_nc + lh_rest
 
 
-def diploid_likelihood_frac(likelihood1, likelihood2, lib_norm_consts1, lib_norm_consts2,
-                            lib_counts, allele_fraction, pi_robust,
-                            which_reads=None, epsilon=2e-10):
+def diploid_likelihood_frac(
+    likelihood1,
+    likelihood2,
+    lib_norm_consts1,
+    lib_norm_consts2,
+    lib_counts,
+    allele_fraction,
+    pi_robust,
+    which_reads=None,
+    epsilon=2e-10,
+):
     # CLEANUP combine this with haploid_likelihood2 for the allele_fraction = 0 or 1 case
     rho1 = 1 - allele_fraction
     rho2 = allele_fraction
-    lh_nc = sum([-count * log(rho1 * n1 + rho2 * n2 + epsilon)
-                 for (count, n1, n2) in zip(lib_counts,
-                                            lib_norm_consts1,
-                                            lib_norm_consts2)])
+    lh_nc = sum(
+        [
+            -count * log(rho1 * n1 + rho2 * n2 + epsilon)
+            for (count, n1, n2) in zip(lib_counts, lib_norm_consts1, lib_norm_consts2)
+        ]
+    )
     if which_reads is None:
-        lh_rest = sum([log(pi_robust + (1-pi_robust)*(rho1 * l1 + rho2 * l2))
-                       for (l1, l2) in
-                       zip(likelihood1, likelihood2)])
+        lh_rest = sum(
+            [
+                log(pi_robust + (1 - pi_robust) * (rho1 * l1 + rho2 * l2))
+                for (l1, l2) in zip(likelihood1, likelihood2)
+            ]
+        )
     else:
-        lh_rest = sum([log(pi_robust + (1-pi_robust)*(rho1 * likelihood1[i] + rho2 * likelihood2[i]))
-                       for i in which_reads])
+        lh_rest = sum(
+            [
+                log(
+                    pi_robust
+                    + (1 - pi_robust) * (rho1 * likelihood1[i] + rho2 * likelihood2[i])
+                )
+                for i in which_reads
+            ]
+        )
     return lh_nc + lh_rest
 
 
@@ -793,7 +1016,17 @@ def duplicated_blocks(paths):
     return which_dup
 
 
-def get_paths_recursive(graph, max_cycle_visits, min_edge_support, visited=None, cycle_cnt=None, path=None, start=None, original_start=None, end=None):
+def get_paths_recursive(
+    graph,
+    max_cycle_visits,
+    min_edge_support,
+    visited=None,
+    cycle_cnt=None,
+    path=None,
+    start=None,
+    original_start=None,
+    end=None,
+):
     if visited is None:
         visited, cycle_cnt, path = set(), {}, []
     if start is None:
@@ -818,7 +1051,7 @@ def get_paths_recursive(graph, max_cycle_visits, min_edge_support, visited=None,
     if start in visited:
         for i in range(len(path) - 2, 0, -1):
             if path[i] == start:
-                cycle = tuple(path[(i-1):-1])
+                cycle = tuple(path[(i - 1) : -1])
                 print(f'path {path} cycle {cycle} start {start}\n')
                 rev = tuple(reversed(cycle))
                 if cycle < rev:
@@ -839,7 +1072,9 @@ def get_paths_recursive(graph, max_cycle_visits, min_edge_support, visited=None,
         neighbors = graph.supported_neighbors(start, min_edge_support)
         print(f'neighbors: {neighbors}\n')
         for next in neighbors:
-            if (next < original_start_in_node or next > end_out_node) and next < 2*graph.size:
+            if (
+                next < original_start_in_node or next > end_out_node
+            ) and next < 2 * graph.size:
                 print(f'left subgraph start {start} next {next}')
                 # left the subgraph
                 continue
@@ -849,15 +1084,25 @@ def get_paths_recursive(graph, max_cycle_visits, min_edge_support, visited=None,
                 cycle_cnt_copy = copy.deepcopy(cycle_cnt)
                 visited_copy = copy.deepcopy(visited)
                 visited_copy.add(next)
-                yield from get_paths_recursive(graph, max_cycle_visits, min_edge_support, visited_copy, cycle_cnt_copy, path + [next], next_flip, original_start, end)
+                yield from get_paths_recursive(
+                    graph,
+                    max_cycle_visits,
+                    min_edge_support,
+                    visited_copy,
+                    cycle_cnt_copy,
+                    path + [next],
+                    next_flip,
+                    original_start,
+                    end,
+                )
             else:
                 end_flip = end + 1 if (end % 2 == 0) else end - 1
                 yield tuple(path + [end, end_flip])
 
 
-def get_paths_iterative(graph, max_back_count,
-                        min_edge_support, max_paths,
-                        start=None, end=None):
+def get_paths_iterative(
+    graph, max_back_count, min_edge_support, max_paths, start=None, end=None
+):
     if start is None:
         start = 0
     if end is None:
@@ -870,7 +1115,7 @@ def get_paths_iterative(graph, max_back_count,
     stacks = []
     back_count = Counter()
 
-    max_backtrack = 10*max_paths
+    max_backtrack = 10 * max_paths
     npaths = 0
     num_backtrack_steps = 0
 
@@ -909,7 +1154,7 @@ def get_paths_iterative(graph, max_back_count,
                 last_stack = stacks.pop()
                 nbacktrack += 1
                 # if just went past a backwards edge, decrement back_count
-                backtracked_edge = path[(-2*nbacktrack - 1): (-2*nbacktrack + 1)]
+                backtracked_edge = path[(-2 * nbacktrack - 1) : (-2 * nbacktrack + 1)]
                 back_count.subtract(is_back_edge(backtracked_edge, graph.size))
 
                 # filter using back_count
@@ -918,7 +1163,7 @@ def get_paths_iterative(graph, max_back_count,
             if last_stack == []:
                 return
             else:
-                path = path[:(-2 * nbacktrack)]
+                path = path[: (-2 * nbacktrack)]
 
         stacks.append(last_stack)
         dest = last_stack.pop()
@@ -937,7 +1182,7 @@ def is_back_edge(edge, graph_size):
     result = []
     for i in (0, 1):
         n = edge[i]
-        m = edge[1-i]
+        m = edge[1 - i]
         is_out = n % 2 == 1
         if (is_out and m <= n) or (not is_out and n <= m):
             result.append(n)
@@ -969,18 +1214,33 @@ def get_edges_in_range(g, which_dup, start_block, end_block):
 
 # insertion_test - if set, only include hanging reads, reads with adjacency requirements, and reads spanning
 #                  the blocks with indices (insertion_test, insertion_test + 1)
-def compute_likelihood(edges, path, blocks, insert_dists, insert_cdfs, insert_cdf_sums,
-                       class_probs, rlen_stats, start, insertion_test_block=None):
+def compute_likelihood(
+    edges,
+    path,
+    blocks,
+    insert_dists,
+    insert_cdfs,
+    insert_cdf_sums,
+    class_probs,
+    rlen_stats,
+    start,
+    insertion_test_block=None,
+):
     likelihood = []
     norm_consts = []
     lib_counter = Counter()
 
     lib_norm_consts = []
     for l in range(len(insert_dists)):
-        nc1 = compute_normalizing_constant(path, blocks,
-                                           insert_cdfs[l], insert_cdf_sums[l],
-                                           class_probs[l],
-                                           rlen_stats[l][0], rlen_stats[l][1])
+        nc1 = compute_normalizing_constant(
+            path,
+            blocks,
+            insert_cdfs[l],
+            insert_cdf_sums[l],
+            class_probs[l],
+            rlen_stats[l][0],
+            rlen_stats[l][1],
+        )
         # MATE PAIR possibly 2 different read lengths
         # nc2 = compute_normalizing_constant(path, blocks,
         #                                    insert_cdfs[l], insert_cdf_sums[l],
@@ -992,9 +1252,13 @@ def compute_likelihood(edges, path, blocks, insert_dists, insert_cdfs, insert_cd
     # compute normalizing constants for reads
     for edge in edges:
         edge_size = len(edge['offset'])
-        which_not_hanging = [i for i in range(edge_size) if i not in edge['which_hanging']]
+        which_not_hanging = [
+            i for i in range(edge_size) if i not in edge['which_hanging']
+        ]
         norm_consts.extend([lib_norm_consts[edge['lib'][i]] for i in which_not_hanging])
-        norm_consts.extend([lib_norm_consts[edge['lib'][i]] for i in edge['which_hanging']])
+        norm_consts.extend(
+            [lib_norm_consts[edge['lib'][i]] for i in edge['which_hanging']]
+        )
         lib_counter = lib_counter + Counter(edge['lib'])
     lib_counts = [lib_counter[l] for l in range(len(insert_dists))]
 
@@ -1008,23 +1272,39 @@ def compute_likelihood(edges, path, blocks, insert_dists, insert_cdfs, insert_cd
         # ss2 = "'" if v2 % 2 == 1 else ""
         # print('\nedge {0} / {1}{2}{3}{4}'.format(edge.tuple, s1, ss1, s2, ss2))
         if insertion_test_block is None:
-            likelihood.extend(compute_edge_likelihood(edge, path, blocks,
-                                                      insert_dists, insert_cdfs,
-                                                      insert_cdf_sums))
+            likelihood.extend(
+                compute_edge_likelihood(
+                    edge, path, blocks, insert_dists, insert_cdfs, insert_cdf_sums
+                )
+            )
         else:
             out_idx = 2 * insertion_test_block + 1
             in_idx = 2 * insertion_test_block + 2
             is_edge_spanning = (min(v1, v2) <= out_idx) and (max(v1, v2) >= in_idx)
             if is_edge_spanning:
-                likelihood.extend(compute_edge_likelihood(edge, path, blocks,
-                                                          insert_dists, insert_cdfs,
-                                                          insert_cdf_sums,
-                                                          hanging_adj_only=False))
+                likelihood.extend(
+                    compute_edge_likelihood(
+                        edge,
+                        path,
+                        blocks,
+                        insert_dists,
+                        insert_cdfs,
+                        insert_cdf_sums,
+                        hanging_adj_only=False,
+                    )
+                )
             else:
-                likelihood.extend(compute_edge_likelihood(edge, path, blocks,
-                                                          insert_dists, insert_cdfs,
-                                                          insert_cdf_sums,
-                                                          hanging_adj_only=True))
+                likelihood.extend(
+                    compute_edge_likelihood(
+                        edge,
+                        path,
+                        blocks,
+                        insert_dists,
+                        insert_cdfs,
+                        insert_cdf_sums,
+                        hanging_adj_only=True,
+                    )
+                )
     # total_length = sum([len(blocks[int(floor(path[i]) / 2)]) for i in range(0, len(path), 2) if not (blocks[int(floor(path[i]) / 2)].is_insertion())])
     # print('block length: {0}'.format(total_length))
     # print('nc: {0}'.format(lib_norm_consts))
@@ -1033,13 +1313,25 @@ def compute_likelihood(edges, path, blocks, insert_dists, insert_cdfs, insert_cd
 
 
 # hanging_adj_only - only use hanging reads and reads with adjacency requirements; and ignore the rest (NOT IMPLEMENTED)
-def compute_edge_likelihood(edge, path, blocks, insert_dists, insert_cdfs, insert_cdf_sums, hanging_adj_only=False):
+def compute_edge_likelihood(
+    edge,
+    path,
+    blocks,
+    insert_dists,
+    insert_cdfs,
+    insert_cdf_sums,
+    hanging_adj_only=False,
+):
     likelihood = []
     v1, v2 = min(edge.tuple), max(edge.tuple)
     adj1_unique, adj2_unique = set(edge['adj1']), set(edge['adj2'])
-    dists, adj1_satisfied, adj2_satisfied = get_block_distances_between_nodes(path, blocks, v1, v2, adj1_unique, adj2_unique)
+    dists, adj1_satisfied, adj2_satisfied = get_block_distances_between_nodes(
+        path, blocks, v1, v2, adj1_unique, adj2_unique
+    )
 
-    which_mapped = [i for i in range(len(edge['offset'])) if i not in edge['which_hanging']]
+    which_mapped = [
+        i for i in range(len(edge['offset'])) if i not in edge['which_hanging']
+    ]
     i_pmap_idx = 0
     for i in which_mapped:
         lh = 0
@@ -1047,7 +1339,9 @@ def compute_edge_likelihood(edge, path, blocks, insert_dists, insert_cdfs, inser
         adj2 = edge['adj2'][i]
         offset = edge['offset'][i]
         lib_idx = edge['lib'][i]
-        pmapped = edge['pmapped'][i_pmap_idx]  # pmapped has no entries for hanging reads
+        pmapped = edge['pmapped'][
+            i_pmap_idx
+        ]  # pmapped has no entries for hanging reads
         i_pmap_idx += 1
         for j in range(len(dists)):
             if adj1_satisfied[adj1][j] and adj2_satisfied[adj2][j]:
@@ -1059,9 +1353,14 @@ def compute_edge_likelihood(edge, path, blocks, insert_dists, insert_cdfs, inser
 
     if len(edge['which_hanging']) > 0 and len(dists) > 0:  # has hanging reads
         which_dist_zero = [i for i in range(len(dists)) if dists[i] == 0][0]
-        self_adj_satisfied = {adj: adj1_satisfied[adj][which_dist_zero] for adj in adj1_satisfied}
-        likelihood.extend(compute_hanging_edge_likelihood(edge, path, blocks,
-                                                          insert_cdfs, self_adj_satisfied))
+        self_adj_satisfied = {
+            adj: adj1_satisfied[adj][which_dist_zero] for adj in adj1_satisfied
+        }
+        likelihood.extend(
+            compute_hanging_edge_likelihood(
+                edge, path, blocks, insert_cdfs, self_adj_satisfied
+            )
+        )
     elif len(edge['which_hanging']) > 0:
         likelihood.extend([0] * len(edge['which_hanging']))
 
@@ -1072,9 +1371,10 @@ def truncate_string(s, max_length):
     if len(s) <= max_length:
         return s
     elif max_length > 3:
-        return s[:(max_length - 3)] + '...'
+        return s[: (max_length - 3)] + '...'
     else:
         return s[:max_length]
+
 
 # def write_lh():
 #     # write out likelihood of reads
@@ -1095,18 +1395,18 @@ def truncate_string(s, max_length):
 def test_decompose_graph():
     g = GenomeGraph(20)
     g.add_ref_path_support(1)
-    assert(decompose_graph(g, 1) == [])
+    assert decompose_graph(g, 1) == []
 
     g = GenomeGraph(20)
-    g.add_support(3, 5)          # deletion of block 2
+    g.add_support(3, 5)  # deletion of block 2
     print(decompose_graph(g, 1))
 
     g = GenomeGraph(20)
-    g.add_support(5, 4)          # duplication of block 3
+    g.add_support(5, 4)  # duplication of block 3
     print(decompose_graph(g, 1))
 
     g = GenomeGraph(20)
-    g.add_support(7, 6)          # duplication of block 4, deletion of block 2
+    g.add_support(7, 6)  # duplication of block 4, deletion of block 2
     g.add_support(1, 4)
     print(decompose_graph(g, 1))
 
@@ -1133,8 +1433,8 @@ def test_graph_1():
             g.add_pair([out], 0, [out + 1], 0, 0)
     for i in (1, 5):
         for _ in range(10):
-            g.add_pair([i], 0, [i-1], 0, 0)
-            g.add_support(i, i-1)
+            g.add_pair([i], 0, [i - 1], 0, 0)
+            g.add_support(i, i - 1)
     return g
 
 
@@ -1166,29 +1466,37 @@ def gtest(x):
 def test_get_block_distances_between_nodes():
     blocks = [GenomeInterval('1', 0, 100), GenomeInterval('1', 100, 300)]
     path = [0, 1, 2, 3]
-    assert(get_block_distances_between_nodes(path, blocks, 1, 2, {None}, {None})[0] == [100])
-    assert(get_block_distances_between_nodes(path, blocks, 1, 3, {None}, {None})[0] == [])
-    assert(get_block_distances_between_nodes(path, blocks, 0, 3, {None}, {None})[0] == [-100])
+    assert get_block_distances_between_nodes(path, blocks, 1, 2, {None}, {None})[0] == [
+        100
+    ]
+    assert (
+        get_block_distances_between_nodes(path, blocks, 1, 3, {None}, {None})[0] == []
+    )
+    assert get_block_distances_between_nodes(path, blocks, 0, 3, {None}, {None})[0] == [
+        -100
+    ]
 
     path = [0, 1, 0, 1, 2, 3]
-    assert(sorted(get_block_distances_between_nodes(path, blocks, 1, 2, {None}, {None})[0]) == [100, 200])
+    assert sorted(
+        get_block_distances_between_nodes(path, blocks, 1, 2, {None}, {None})[0]
+    ) == [100, 200]
 
     path = [0, 1, 2, 3]
     adj1 = set([None, (1, 2), (1, 3)])
     adj2 = set([None, (2, 1), (2, 0)])
     d, a1, a2 = get_block_distances_between_nodes(path, blocks, 1, 2, adj1, adj2)
-    assert(d == [100])
-    assert(a1[(1, 2)][0])
-    assert(not a1[(1, 3)][0])
-    assert(a2[(2, 1)][0])
-    assert(not a2[(2, 0)][0])
+    assert d == [100]
+    assert a1[(1, 2)][0]
+    assert not a1[(1, 3)][0]
+    assert a2[(2, 1)][0]
+    assert not a2[(2, 0)][0]
 
 
 def test_is_adj_satisfied():
     a = [1, 2, 3]
-    assert(is_adj_satisfied(a, [1, 2, 3], 0))
-    assert(not is_adj_satisfied(a, [1, 2], 0))
-    assert(not is_adj_satisfied(a, [1, 2, 3], 1))
-    assert(is_adj_satisfied(a, [3, 2, 1], 2))
-    assert(not is_adj_satisfied(a, [2, 1], 2))
-    assert(not is_adj_satisfied(a, [3, 2, 1], 0))
+    assert is_adj_satisfied(a, [1, 2, 3], 0)
+    assert not is_adj_satisfied(a, [1, 2], 0)
+    assert not is_adj_satisfied(a, [1, 2, 3], 1)
+    assert is_adj_satisfied(a, [3, 2, 1], 2)
+    assert not is_adj_satisfied(a, [2, 1], 2)
+    assert not is_adj_satisfied(a, [3, 2, 1], 0)

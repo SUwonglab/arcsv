@@ -20,8 +20,9 @@ def make_read(pos, is_reverse, read_len=150):
 
 def classify(first, second, ilen):
     discordant = {}
-    dtype = process_discordant_pair(first, second, '20', discordant, MIN_MAPQ, ilen,
-                                    MIN_INSERT, MAX_INSERT)
+    dtype = process_discordant_pair(
+        first, second, '20', discordant, MIN_MAPQ, ilen, MIN_INSERT, MAX_INSERT
+    )
     return dtype, discordant
 
 

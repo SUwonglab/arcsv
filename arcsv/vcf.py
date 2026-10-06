@@ -185,11 +185,14 @@ def get_vcf_header(reference_name, sample_name='sample1'):
 
 
 def vcf_line(chrom, pos, vcf_id, ref, alt, qual, filters, info, format_str, gt):
-    return (f'{chrom}\t{pos}\t{vcf_id}\t{ref}\t{alt}\t{qual}\t'
-            f'{filters}\t{info}\t{format_str}\t{gt}\n')
+    return (
+        f'{chrom}\t{pos}\t{vcf_id}\t{ref}\t{alt}\t{qual}\t'
+        f'{filters}\t{info}\t{format_str}\t{gt}\n'
+    )
 
 
 def get_vcf_contigs(reference_name):
     fa = FastaFile(reference_name)
-    return '\n'.join([f'##contig=<ID={r},length={l}>' for
-                      (r, l) in zip(fa.references, fa.lengths)])
+    return '\n'.join(
+        [f'##contig=<ID={r},length={l}>' for (r, l) in zip(fa.references, fa.lengths)]
+    )

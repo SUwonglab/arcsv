@@ -9,12 +9,22 @@ EXAMPLE = REPO / 'example'
 
 def test_example_matches_expected_output(tmp_path):
     outdir = tmp_path / 'arcsv_out'
-    cmd = [sys.executable, '-m', 'arcsv', 'call',
-           '-i', str(EXAMPLE / 'input.bam'),
-           '-r', '20:0-250000',
-           '-R', str(EXAMPLE / 'reference.fa'),
-           '-G', str(EXAMPLE / 'gaps.bed'),
-           '-o', str(outdir)]
+    cmd = [
+        sys.executable,
+        '-m',
+        'arcsv',
+        'call',
+        '-i',
+        str(EXAMPLE / 'input.bam'),
+        '-r',
+        '20:0-250000',
+        '-R',
+        str(EXAMPLE / 'reference.fa'),
+        '-G',
+        str(EXAMPLE / 'gaps.bed'),
+        '-o',
+        str(outdir),
+    ]
     env = dict(os.environ, PYTHONPATH=str(REPO))
     result = subprocess.run(cmd, env=env, capture_output=True, text=True)
     assert result.returncode == 0, result.stdout[-2000:] + result.stderr[-2000:]
