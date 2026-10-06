@@ -2,7 +2,11 @@
 
 All notable user-facing changes are recorded here.
 
-## Unreleased
+## 0.9.7 - 2026-10-06
+
+These changes reached the master branch gradually between 2018 and 2026 while
+the version stayed at 0.9.6, so an installation from master made during that
+time may include some of them.
 
 ### Breaking changes
 
@@ -31,9 +35,10 @@ All notable user-facing changes are recorded here.
   deletion-type discordant pairs, even when the outer insert size exceeds the
   deletion cutoff. This affects libraries whose insert size cutoff is below
   twice the read length.
-- Rearrangement strings for regions with more than 52 blocks name blocks `A1`
-  through `Z1`, `a1` through `z1`, and so on, instead of using non-letter
-  characters.
+- Rearrangement strings (in `arcsv_out.tab` and the VCF) for regions with more
+  than 52 blocks name blocks `A1` through `Z1`, `a1` through `z1`, and so on.
+  Previously they used non-letter and non-ASCII characters, which broke VCF
+  parsers.
 - The insert size density estimate uses a kernel bandwidth of at least 1 bp,
   avoiding a degenerate estimate for very narrow insert size distributions.
 - Fix handling of reads whose mate is unmapped and has no reference sequence
