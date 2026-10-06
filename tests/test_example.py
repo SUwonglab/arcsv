@@ -1,9 +1,9 @@
 import os
 import subprocess
 import sys
+from pathlib import Path
 
-from conftest import REPO
-
+REPO = Path(__file__).resolve().parents[1]
 EXAMPLE = REPO / 'example'
 
 
