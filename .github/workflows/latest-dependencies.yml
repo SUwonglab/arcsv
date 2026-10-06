@@ -1,0 +1,38 @@
+name: Latest dependencies
+
+# The CI workflow installs the versions pinned in uv.lock. This workflow
+# ignores the lockfile and tests against the newest releases, to catch
+# breakage from upstream changes (numpy, scikit-learn, pysam, ...) early.
+#
+# Note: GitHub disables scheduled workflows after 60 days without repository
+# activity. If that happens, re-enable it from the Actions tab.
+
+on:
+  schedule:
+    - cron: "0 6 1,15 * *"  # 06:00 UTC on the 1st and 15th, about every two weeks
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Python ${{ matrix.python-version }} / latest dependencies
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.14"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install latest dependencies
+        run: uv sync --upgrade --extra test
+      - name: Run tests
+        run: uv run --no-sync python -m pytest

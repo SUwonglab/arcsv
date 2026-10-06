@@ -1,0 +1,95 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "arcsv"
+dynamic = ["version"]
+description = "Automated Reconstruction of Complex Structural Variants from WGS Data"
+readme = "README.md"
+requires-python = ">=3.9"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Joey Arthur", email = "josephgarthur@gmail.com" }]
+keywords = [
+    "bioinformatics",
+    "complex structural variants",
+    "genomics",
+    "structural variation",
+    "whole-genome sequencing",
+]
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+# Lower bounds are the earliest releases with Python 3.9 Linux wheels, and
+# are exercised by the lowest-direct CI job.
+dependencies = [
+    "igraph>=0.10",
+    "matplotlib>=3.3.3",
+    "numpy>=1.19.3",
+    "pyinter>=0.2",
+    "pysam>=0.17",
+    "scikit-learn>=0.24",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8", "ruff>=0.16"]
+
+[project.scripts]
+arcsv = "arcsv.cli:main"
+
+[project.urls]
+Repository = "https://github.com/SUwonglab/arcsv"
+Publication = "https://doi.org/10.1016/j.cell.2024.09.014"
+Issues = "https://github.com/SUwonglab/arcsv/issues"
+Changelog = "https://github.com/SUwonglab/arcsv/blob/master/CHANGELOG.md"
+
+[tool.hatch.version]
+path = "arcsv/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["arcsv"]
+
+[tool.hatch.build.targets.sdist]
+only-include = [
+    "/arcsv",
+    "/scripts",
+    "/tests",
+    "/CHANGELOG.md",
+    "/LICENSE",
+    "/README.md",
+    "/pyproject.toml",
+]
+
+# example/ and resources/ hold tracked files that match .gitignore patterns
+# (*.fa, *.bed), which hatch would otherwise leave out
+[tool.hatch.build.targets.sdist.force-include]
+"example" = "example"
+"resources" = "resources"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+# pyflakes, pycodestyle errors, bugbear (catches undefined names, broken format
+# strings, mutable default arguments, etc.), and f-strings for string formatting
+select = ["E4", "E7", "E9", "F", "B", "UP031", "UP032"]
+ignore = [
+    "E731",  # lambda assignment -- used deliberately for small closures
+    "E741",  # ambiguous variable names (l, I, O)
+]

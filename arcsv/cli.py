@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import argparse
 import sys
 
@@ -32,7 +30,7 @@ def main():
 
 
 def prepare_argparser():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(prog='arcsv')
     subparsers = parser.add_subparsers(dest='command')
 
     add_call_parser(subparsers)
