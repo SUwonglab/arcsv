@@ -1,5 +1,3 @@
-import gc
-import resource
 import itertools
 import matplotlib
 matplotlib.use('Agg')           # required if X11 display is not present
@@ -114,13 +112,12 @@ def score_alignments(bamfile, pkl, chrom, ref, outdir='validate',
     null_aln = pysam.AlignedSegment()
     null_aln.qname = ':::'
     for aln in itertools.chain(bam, [null_aln]):
-        if not aln is null_aln:
+        if aln is not null_aln:
             if aln.is_unmapped:
                 continue
             if not (using_long_reads or chrom_ok(bam.getrname(aln.rname), ref_chrom_names, alternate_chrom_patterns)):
                 print('{0} not OK: skipping'.format(bam.getrname(aln.rname)))
                 continue
-            aln_rname = bam.getrname(aln.rname)
             # skip minus strand alignments to placed contigs
             if aln.is_reverse and (not using_long_reads) and \
                (not chrom_alt(bam.getrname(aln.rname), alternate_chrom_patterns)):
@@ -435,7 +432,6 @@ def handle_records(qname, samrecords, ref, bam, query_blocks,
         rname = bam.getrname(segs[0].aln.rname)
         contig_len = bam.lengths[segs[0].aln.rname]
         plot_name = '_'.join([qname_filename, rname])
-        outdir2 = outdir + '_all'
         if sum(blockwise_scores[2]) + sum(blockwise_scores[3]) >= .01:
             # plot_chain(plot_name, rname, ref, segs, best_chain, best_score, blockwise_scores,
             #            outdir2, query_blocks, del_positions, path, verbosity = verbosity)
@@ -978,7 +974,7 @@ def split_segment(segment, ref_pos, query_pos, query_blocks, del_positions, verb
         rend, qend = rpos + dist, qpos + dist
         if verbosity > 2:
             print('q {0} r {1}'.format((qpos, qend), (rpos, rend)))
-            print('prev_iqpos'.format(prev_iqpos))
+            print('prev_iqpos')
         split_query_coords = set(interval_point_overlap((qpos, qend), query_split))
         split_query_coords.update(c - rpos + qpos for c in \
                                interval_point_overlap((rpos, rend), ref_split))
@@ -1109,7 +1105,7 @@ def aln_to_query_range(aln):
     return query_pos, query_end
 
 # not really needed since we aren't splitting at indels anymore
-def sam_to_segments(aln, query_blocks, query_blocks_rev, del_positions, del_positions_rev, ref_split = [], query_split = []):
+def sam_to_segments(aln, query_blocks, query_blocks_rev, del_positions, del_positions_rev, ref_split=None, query_split=None):
     # start at beginning
     # keep track of ref_pos and query pos as before
     # track initial position, then record a segment when we hit a large indel or the end
@@ -1175,7 +1171,7 @@ def sam_to_segments(aln, query_blocks, query_blocks_rev, del_positions, del_posi
         segments.append(seg)
     return segments
 
-MD_M = 0; MD_X = 1; MD_D = 2    # match, mismatch, deletion
+MD_M, MD_X, MD_D = 0, 1, 2    # match, mismatch, deletion
 def tokenize_md_tag(md):
     ### [0-9]+(([A-Z]|\^[A-Z]+)[0-9]+)*
     # FSM states: 0: [0-9] (matching), 1: [A-Z] (mismatch), 2: ^[A-Z]+ (del), 3: e (end)
@@ -1201,7 +1197,7 @@ def tokenize_md_tag(md):
             if cur_state == 0 and cur_string != ['0']:  # match -- ignore e.g. 0 in 5^AA0T5
                 tokens.append((MD_M, int(''.join(cur_string))))
             elif cur_state == 1: # mismatches e.g. A0C0T
-                for i in range(int((len(cur_string) + 1)/2)):
+                for _i in range(int((len(cur_string) + 1)/2)):
                     tokens.append((MD_X, 1))
             elif cur_state == 2: # deletion
                 tokens.append((MD_D, int(len(cur_string) - 1)))
@@ -1212,7 +1208,6 @@ def tokenize_md_tag(md):
     return tokens
 
 def get_insertion_locations(aln):
-    c = aln.cigartuples
     pos = 0
     insertion_locations = []
     for op, oplen in aln.cigartuples:
@@ -1377,14 +1372,14 @@ def test_is_compatible():
     qc = [(0, 10), (0, 100), (100, 200), (99, 199), (100, 200), (200, 300), (100, 200)]
     rc = [(0, 10), (0, 100), (99, 199), (100, 200), (100, 200), (100, 200), (200, 300)]
     segs = [Segment(r, q, [], [], [(0, 1000)], []) for r, q in zip(rc, qc)]
-    assert(is_compatible(segs[1], segs[2]) == False)
-    assert(is_compatible(segs[1], segs[3]) == False)
-    assert(is_compatible(segs[1], segs[4]) == True)
-    assert(is_compatible(segs[4], segs[1]) == False)
-    assert(is_compatible(segs[1], segs[5]) == True)
-    assert(is_compatible(segs[5], segs[1]) == False)
-    assert(is_compatible(segs[1], segs[6]) == True)
-    assert(is_compatible(segs[6], segs[1]) == False)
+    assert(not is_compatible(segs[1], segs[2]))
+    assert(not is_compatible(segs[1], segs[3]))
+    assert(is_compatible(segs[1], segs[4]))
+    assert(not is_compatible(segs[4], segs[1]))
+    assert(is_compatible(segs[1], segs[5]))
+    assert(not is_compatible(segs[5], segs[1]))
+    assert(is_compatible(segs[1], segs[6]))
+    assert(not is_compatible(segs[6], segs[1]))
 
 def test_del_span():
     block_positions = [(0,1000)]
@@ -1489,8 +1484,6 @@ def test_split_segment():
     aln.is_reverse = False
     seg = sam_to_segments(aln, qb, qbr, dp, dpr)[0]
     print(seg)
-    r = [(0,100)]
-    q = [(0,90)]
 
     # split block
     ref_split = [[10],

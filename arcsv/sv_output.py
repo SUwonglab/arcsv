@@ -79,7 +79,7 @@ def do_sv_processing(opts, data, outdir, reffile,
         sv1 = [sv for sv in svs if sv.genotype == '1/1' or sv.genotype == '1/0']
         sv2 = [sv for sv in svs if sv.genotype == '1/1' or sv.genotype == '0/1']
         compound_het = (path1 != path2) and (len(sv1) > 0) and (len(sv2) > 0)
-        for (k, path, ev, pathstring, svlist) in [(0, path1, event1, s1, sv1),
+        for (k, path, _ev, pathstring, svlist) in [(0, path1, event1, s1, sv1),
                                                   (1, path2, event2, s2, sv2)]:
             if k == 1 and path1 == path2:
                 continue
@@ -191,7 +191,7 @@ def sv_output(path1, path2, blocks, event1, event2,
     compound_het = (path1 != path2) and (len(sv1) > 0) and (len(sv2) > 0)
     is_het = (path1 != path2)
     num_paths = str(num_paths)
-    for (k, path, event, svs, complex_type, frac) in [(0, path1, event1, sv1,
+    for (k, path, _event, svs, complex_type, frac) in [(0, path1, event1, sv1,
                                                        complex_types[0], frac1),
                                                       (1, path2, event2, sv2,
                                                        complex_types[1], frac2)]:

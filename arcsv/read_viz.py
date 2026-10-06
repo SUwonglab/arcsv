@@ -1,6 +1,8 @@
 import os
 import numpy as np
-from math import ceil, floor
+from math import ceil, floor, sqrt
+
+from arcsv.helper import get_chrom_size, get_ucsc_name
 
 # uses dictionary instead of array
 class SparseSignalTrack(object):

@@ -148,7 +148,7 @@ def write_softclips_bigwig(softclips, fileprefix, chrom_name, delete_bed=False):
         os.system('bedGraphToBigWig {file}.bed /scratch/PI/whwong/svproject/'
                   'reference/hg19.chrom.sizes {file}.bigwig'.format(file=fn))
         if delete_bed:
-            os.system('rm {bed}'.format(bedfile))
+            os.system('rm {bed}'.format(bed=bedfile))
 
 
 # def test_merge_softclips():

@@ -1,10 +1,7 @@
-import numpy as np
 import os
-from math import ceil, floor
 from time import strftime
 from pysam import FastaFile
 
-from arcsv.helper import fetch_seq
 from arcsv._version import __version__
 
 # def sv_to_vcf(sv, frac, reference, filterstring=None,

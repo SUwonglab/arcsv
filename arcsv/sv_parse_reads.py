@@ -321,7 +321,7 @@ def parse_reads_with_blocks(opts, reference_files, bamgroups,
                 print('block {0}: '.format(blocks[i]))
                 ulibs = set(edge['lib'])
                 for l in ulibs:
-                    which_lib = [edge['lib'][j] == l and not (j in edge['which_hanging']) for j in range(len(edge['offset']))]
+                    which_lib = [edge['lib'][j] == l and j not in edge['which_hanging'] for j in range(len(edge['offset']))]
                     if any(which_lib):
                         med = np.median([edge['offset'][j] for j in range(len(edge['offset'])) if which_lib[j]])
                         print('\tlib {0} median {1} ({2} reads)'.format(l, med, sum(which_lib)))

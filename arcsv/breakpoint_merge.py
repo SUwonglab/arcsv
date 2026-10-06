@@ -9,13 +9,13 @@ from arcsv.softclip import softclip_cluster_mergefun
 
 class Breakpoint:
     def __init__(self, interval, supp_clip_left=0, supp_clip_right=0,
-                 splits=[], pe=[], libs=[]):
+                 splits=None, pe=None, libs=None):
         self.interval = interval
         self.supp_clip_left = supp_clip_left
         self.supp_clip_right = supp_clip_right
-        self.splits = splits
-        self.pe = pe
-        self.libs = libs
+        self.splits = [] if splits is None else splits
+        self.pe = [] if pe is None else pe
+        self.libs = [] if libs is None else libs
 
     @property
     def supp_pe(self):

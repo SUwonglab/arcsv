@@ -122,7 +122,7 @@ def plot_rearrangement(filename, blocks, start_block, end_block,
         ax.add_collection(p_ins)
         write_block_labels(text_coords, path, blocks, start_block)
         if len(paths) == 1:
-            write_path_label(bottom_pos, 'ALT'.format(pathnum))
+            write_path_label(bottom_pos, 'ALT')
         else:
             write_path_label(bottom_pos, 'ALT {0}'.format(pathnum))
         right_pos = max(right_pos, p_right_pos)

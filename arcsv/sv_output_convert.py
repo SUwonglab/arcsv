@@ -111,7 +111,6 @@ def generic_vcf_convert(vcffile, outdir, reffile, filter_gaps=False, refgapfile=
                         caller=None, flank_size=1000, verbosity=0):
     os.system('mkdir -p %s' % outdir)
 
-    vcf = open(vcffile, 'r')
     log = open(os.path.join(outdir, 'convert_{0}.log'.format(vcffile)), 'w')
     data = []
     svtype_skipped = {}

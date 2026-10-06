@@ -1,4 +1,3 @@
-import pysam
 from collections import Counter
 from math import floor
 
@@ -34,7 +33,7 @@ class SV:
                  event_id='', event_type='',
                  event_num=None, genotype='NA',
                  gap=0, split_support=0, pe_support=0,
-                 supporting_splits=[]):
+                 supporting_splits=None):
         self.type = type
         self.ref_chrom = chrom
         self.ref_start = start
@@ -53,7 +52,7 @@ class SV:
         self.gap = gap
         self.split_support = split_support
         self.pe_support = pe_support
-        self.supporting_splits = supporting_splits
+        self.supporting_splits = [] if supporting_splits is None else supporting_splits
 
     # simple variants only, don't include bnd_orientation etc.
     def same_variant(self, other):
@@ -303,7 +302,6 @@ def classify_svs(path, blocks, num_genome_blocks, left_bp, right_bp, verbosity):
                 j += 1
         if j > bp + 1:
             L = j - bp - 1
-            block_before, inverted_before, count_before
             block_afterinv = block_sequence[j]
             count_afterinv = block_counts[block_afterinv]
             if is_decreasing(block_sequence[bp + 1: j]) and \
@@ -632,7 +630,7 @@ def path_classify_test():
     ev, sv = classify_paths(p1, p2, blocks, num_genome_blocks)
     print(ev)
     print('\n'.join([repr(s) for s in sv]))
-    ref = pysam.FastaFile('/home/jgarthur/sv/reference/GRCh37.fa')
+    # ref = pysam.FastaFile('/home/jgarthur/sv/reference/GRCh37.fa')
     # print('\n'.join([sv_to_vcf(s, ref) for s in sv]))
 
     # ABC/AC

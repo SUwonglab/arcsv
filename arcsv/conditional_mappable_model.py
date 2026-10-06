@@ -1,12 +1,6 @@
 import os
 import pickle
 import numpy as np
-import matplotlib
-matplotlib.use('Agg')           # required if X11 display is not present
-import matplotlib.pyplot as plt
-import matplotlib.cm as cm
-from sklearn import linear_model
-from sklearn.metrics import log_loss
 
 
 # 1 = mapped
@@ -173,80 +167,3 @@ def load_model(model_dir, bam_name, lib_stats):
 
 def round_to_grid(x, xmin, xmax, x_res):
     return np.round(min(max(x, xmin), xmax) / x_res) * x_res
-
-
-def plot_fit(model, filename, qrange, builder, rlen1=None, rlen2=None, mappable_stats=None, max_scatter_points=5000, rlen_tol=10):
-    qmin, qmax = qrange
-    q1g, q2g = np.meshgrid(np.arange(qmin, qmax + .1, .1),
-                           np.arange(qmin, qmax + .1, .1))
-    use_rlen = (rlen1 is not None and rlen2 is not None)
-    if use_rlen:
-        n = np.prod(q1g.shape)
-        x_new = build_design_matrices([builder],
-                                      {'qmean1': np.ravel(q1g),
-                                       'qmean2': np.ravel(q2g),
-                                       'rlen1': np.repeat(rlen1, n),
-                                       'rlen2': np.repeat(rlen2, n)})[0]
-    else:
-        x_new = build_design_matrices([builder],
-                                      {'qmean1': np.ravel(q1g),
-                                       'qmean2': np.ravel(q2g)})[0]
-    proba = predict_prob(model, np.asarray(x_new))
-    pr = [np.reshape(col, q1g.shape) for col in proba.T]
-
-    if mappable_stats is not None:
-        if use_rlen:
-            rn = range(len(mappable_stats['label']))
-            which_scatter = [i for i in rn if
-                             abs(mappable_stats['rlen1'][i] - rlen1) < rlen_tol and
-                             abs(mappable_stats['rlen2'][i] - rlen2) < rlen_tol]
-        else:
-            which_scatter = list(range(len(mappable_stats['label'])))
-        if len(which_scatter) > max_scatter_points:
-            ratio = max_scatter_points / len(which_scatter)
-            which_scatter = [i for i in which_scatter if np.random.rand() <= ratio]
-
-    plt.close('all')
-    f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, sharex='col', sharey='row')
-    f.set_size_inches(10, 12)
-    col = 'k'
-    if use_rlen:
-        titles = ('both mapped (r1 = {0}, r2 = {1})'.format(rlen1, rlen2), '1 mapped, 2 unmapped', '1 unmapped, 2 mapped', '1 mapped, 2 distant', '1 distant, 2 mapped')
-    else:
-        titles = ('both mapped', '1 mapped, 2 unmapped', '1 unmapped, 2 mapped', '1 mapped, 2 distant', '1 distant, 2 mapped')
-    i = 0
-    for ax in (ax1, ax2, ax3, ax4):
-        if i >= len(pr):
-            i += 1
-            continue
-        # ax.colorbar(im, orientation='horizontal', shrink = 0.8)
-        con = ax.contour(q1g, q2g, pr[i], colors=col, linewidths=1.5)
-        # ex = (qrange[0], qrange[1], qrange[0], qrange[1])
-        ax.pcolormesh(q1g, q2g, pr[i], cmap=cm.coolwarm)
-        # im = ax.imshow(pr[i], interpolation='bilinear', origin='lower', cmap=cm.gray, extent = ex)
-        ax.clabel(con, inline=1, fontsize=10)
-
-        if mappable_stats is not None:
-            which_class = [j for j in which_scatter if mappable_stats['label'][j] == i]
-            for j in which_class:
-                ax.scatter(mappable_stats['qmean1'][j], mappable_stats['qmean2'][j], color='k', alpha=.3)
-
-        ax.set_title(titles[i])
-        ax.set_xlabel('read 1 quality')
-        ax.set_ylabel('read 2 quality')
-        i += 1
-    plt.savefig(filename)
-
-
-def do_plot_fits(prefix, model, qr, builder, use_rlen, mappable_stats):
-    if use_rlen:
-        r1q = np.percentile(mappable_stats['rlen1'], (90, 50, 10))
-        r1q = [int(j) for j in r1q]
-        r2q = np.percentile(mappable_stats['rlen2'], (90, 50, 10))
-        r2q = [int(j) for j in r2q]
-        rlen1 = (r1q[0], r1q[0], r1q[1], r1q[2])
-        rlen2 = (r2q[2], r2q[1], r2q[0], r2q[0])
-        for i in range(4):
-            plot_fit(model, '{0}-{1}-{2}.png'.format(prefix, rlen1[i], rlen2[i]), qr, builder, rlen1[i], rlen2[i], mappable_stats=mappable_stats)
-    else:
-        plot_fit(model, '{0}.png'.format(prefix), qr, builder, mappable_stats=mappable_stats)

@@ -176,7 +176,7 @@ def do_inference(opts, reference_files, g, blocks,
             block_after_in = 2 * b + 2
 
             g.get_edge(new_vertex_in, new_vertex_out)  # edge created just for plotting
-            for i in range(opts['min_edge_support']):
+            for _ in range(opts['min_edge_support']):
                 g.add_support(new_vertex_in, block_before_out)
                 g.add_support(new_vertex_out, block_after_in)
 
@@ -514,7 +514,7 @@ def do_inference(opts, reference_files, g, blocks,
         sv1 = [sv for sv in svs if sv.genotype == '1/1' or sv.genotype == '1/0']
         sv2 = [sv for sv in svs if sv.genotype == '1/1' or sv.genotype == '0/1']
         compound_het = (path1 != path2) and (len(sv1) > 0) and (len(sv2) > 0)
-        for (k, path, ev, pathstring, svlist, frac) in [(0, path1, event1, s1, sv1, frac1),
+        for (k, path, _ev, pathstring, svlist, _frac) in [(0, path1, event1, s1, sv1, frac1),
                                                         (1, path2, event2, s2, sv2, frac2)]:
             if k == 1 and path1 == path2:
                 continue
@@ -563,7 +563,7 @@ def do_inference(opts, reference_files, g, blocks,
     vcf_file = open(os.path.join(outdir, 'arcsv_out.vcf'), 'w')
     vcf_file.write(get_vcf_header(reference_files['reference']))
     vcf_out.sort()
-    for (pos, line) in vcf_out:
+    for (_pos, line) in vcf_out:
         vcf_file.write(line)
     vcf_file.close()
 
