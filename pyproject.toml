@@ -52,6 +52,7 @@ arcsv = "arcsv.cli:main"
 [project.urls]
 Repository = "https://github.com/SUwonglab/arcsv"
 Issues = "https://github.com/SUwonglab/arcsv/issues"
+Changelog = "https://github.com/SUwonglab/arcsv/blob/master/CHANGELOG.md"
 
 [tool.hatch.version]
 path = "arcsv/_version.py"
@@ -64,6 +65,7 @@ only-include = [
     "/arcsv",
     "/scripts",
     "/tests",
+    "/CHANGELOG.md",
     "/LICENSE",
     "/README.md",
     "/pyproject.toml",
