@@ -139,8 +139,8 @@ from arcsv._version import __version__
 #     return line
 
 
-def get_vcf_header(reference_name, sample_name='sample1'):
-    file_date = strftime('%Y%m%d')
+def get_vcf_header(reference_name, sample_name="sample1"):
+    file_date = strftime("%Y%m%d")
     reference_basename = os.path.basename(reference_name)
     contigs = get_vcf_contigs(reference_name)
     header = f"""##fileformat=VCFv4.2
@@ -186,13 +186,13 @@ def get_vcf_header(reference_name, sample_name='sample1'):
 
 def vcf_line(chrom, pos, vcf_id, ref, alt, qual, filters, info, format_str, gt):
     return (
-        f'{chrom}\t{pos}\t{vcf_id}\t{ref}\t{alt}\t{qual}\t'
-        f'{filters}\t{info}\t{format_str}\t{gt}\n'
+        f"{chrom}\t{pos}\t{vcf_id}\t{ref}\t{alt}\t{qual}\t"
+        f"{filters}\t{info}\t{format_str}\t{gt}\n"
     )
 
 
 def get_vcf_contigs(reference_name):
     fa = FastaFile(reference_name)
-    return '\n'.join(
-        [f'##contig=<ID={r},length={l}>' for (r, l) in zip(fa.references, fa.lengths)]
+    return "\n".join(
+        [f"##contig=<ID={r},length={l}>" for (r, l) in zip(fa.references, fa.lengths)]
     )

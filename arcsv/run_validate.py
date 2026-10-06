@@ -9,24 +9,24 @@ def get_args():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
-    parser.add_argument('-b', '--bam_name', type=str, default='altered.bam')
-    parser.add_argument('-c', '--chromosome', type=str, help='GRCh37 chromosome name')
+    parser.add_argument("-b", "--bam_name", type=str, default="altered.bam")
+    parser.add_argument("-c", "--chromosome", type=str, help="GRCh37 chromosome name")
     parser.add_argument(
-        '-d', '--install_dir', type=str, default='/home/jgarthur/sv/src'
+        "-d", "--install_dir", type=str, default="/home/jgarthur/sv/src"
     )
     parser.add_argument(
-        '-O', '--output_dir', type=str, default='/home/jgarthur/sv/parser-out'
+        "-O", "--output_dir", type=str, default="/home/jgarthur/sv/parser-out"
     )
     parser.add_argument(
-        '-R',
-        '--reference_name',
+        "-R",
+        "--reference_name",
         type=str,
-        default='grch37',
-        help='huref; grch37; longreads',
+        default="grch37",
+        help="huref; grch37; longreads",
     )
-    parser.add_argument('-v', '--verbosity', type=int, default=1)
+    parser.add_argument("-v", "--verbosity", type=int, default=1)
     args = parser.parse_args()
-    print(f'[run_sv] args: \n{args}\n')
+    print(f"[run_sv] args: \n{args}\n")
     return (
         args.bam_name,
         args.chromosome,
@@ -38,17 +38,17 @@ def get_args():
 
 
 bam_name, chromosome, install_dir, output_dir, reference_name, verbosity = get_args()
-if reference_name not in ('huref', 'grch37', 'longreads'):
-    print('reference_name must be one of the following: huref; grch37; longreads')
+if reference_name not in ("huref", "grch37", "longreads"):
+    print("reference_name must be one of the following: huref; grch37; longreads")
     quit()
-sva_path = os.path.join(install_dir, 'sv_validate_alignment.py')
+sva_path = os.path.join(install_dir, "sv_validate_alignment.py")
 exec(open(sva_path).read())
 
 bamfile = os.path.join(output_dir, bam_name)
-pklfile = os.path.join(output_dir, 'altered.pkl')
+pklfile = os.path.join(output_dir, "altered.pkl")
 
 print(
-    f'score_alignments({bamfile}, {pklfile}, chrom = {chromosome}, ref = {reference_name}'
+    f"score_alignments({bamfile}, {pklfile}, chrom = {chromosome}, ref = {reference_name}"
 )
 
 score_alignments(

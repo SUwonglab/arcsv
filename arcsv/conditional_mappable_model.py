@@ -86,12 +86,12 @@ def model_from_mapstats(mapstats):
 
 
 def add_dummy_obs(mappable_stats, use_rlen):
-    n = len(mappable_stats['label'])
+    n = len(mappable_stats["label"])
     print(n)
     quantiles = [
         np.percentile(m, (10, 50, 90)) for m in mappable_stats.values() if len(m) > 0
     ]
-    print('\n'.join([str(q) for q in quantiles]))
+    print("\n".join([str(q) for q in quantiles]))
     ncl = []
     nq1 = []
     nq2 = []
@@ -99,27 +99,27 @@ def add_dummy_obs(mappable_stats, use_rlen):
         nr1 = []
         nr2 = []
     for i in range(n):
-        cl = mappable_stats['label'][i]
-        q1 = mappable_stats['qmean2'][i]
-        q2 = mappable_stats['qmean1'][i]
+        cl = mappable_stats["label"][i]
+        q1 = mappable_stats["qmean2"][i]
+        q2 = mappable_stats["qmean1"][i]
         if use_rlen:
-            r1 = mappable_stats['rlen2'][i]
-            r2 = mappable_stats['rlen1'][i]
+            r1 = mappable_stats["rlen2"][i]
+            r2 = mappable_stats["rlen1"][i]
         cl = PAIR_CLASS_DICT[tuple(reversed(PAIR_CLASSES[cl]))]
         ncl.append(cl), nq1.append(q1), nq2.append(q2)
         if use_rlen:
             nr1.append(r1), nr2.append(r2)
-    mappable_stats['label'].extend(ncl)
-    mappable_stats['qmean1'].extend(nq1)
-    mappable_stats['qmean2'].extend(nq2)
+    mappable_stats["label"].extend(ncl)
+    mappable_stats["qmean1"].extend(nq1)
+    mappable_stats["qmean2"].extend(nq2)
     if use_rlen:
-        mappable_stats['rlen1'].extend(nr1)
-        mappable_stats['rlen2'].extend(nr2)
-    print(len(mappable_stats['label']))
+        mappable_stats["rlen1"].extend(nr1)
+        mappable_stats["rlen2"].extend(nr2)
+    print(len(mappable_stats["label"]))
     quantiles = [
         np.percentile(m, (10, 50, 90)) for m in mappable_stats.values() if len(m) > 0
     ]
-    print('\n'.join([str(q) for q in quantiles]))
+    print("\n".join([str(q) for q in quantiles]))
 
 
 def load_aggregate_model(model_dir, bam_name, lib_stats):
@@ -128,8 +128,8 @@ def load_aggregate_model(model_dir, bam_name, lib_stats):
     class_prob = [None] * nlib
     rlen_stats = [None] * nlib
     for l in range(nlib):
-        stats_name = f'{model_dir}mapstats_{l}_{os.path.basename(bam_name)}.pkl'
-        with open(stats_name, 'rb') as stats_file:
+        stats_name = f"{model_dir}mapstats_{l}_{os.path.basename(bam_name)}.pkl"
+        with open(stats_name, "rb") as stats_file:
             class_prob[l] = pickle.load(stats_file)
         rlen_stats[l] = (0, 0)
 
@@ -146,15 +146,15 @@ def load_model(model_dir, bam_name, lib_stats):
     class_prob = [None] * nlib
     rlen_stats = [None] * nlib
     for l in range(nlib):
-        stats_name = f'{model_dir}mapstats_{l}_{os.path.basename(bam_name)}.pkl'
-        with open(stats_name, 'rb') as stats_file:
+        stats_name = f"{model_dir}mapstats_{l}_{os.path.basename(bam_name)}.pkl"
+        with open(stats_name, "rb") as stats_file:
             class_prob[l] = pickle.load(stats_file)
-        rlen_name = f'{model_dir}rlen_{l}_{os.path.basename(bam_name)}.pkl'
-        with open(rlen_name, 'rb') as rlen_file:
+        rlen_name = f"{model_dir}rlen_{l}_{os.path.basename(bam_name)}.pkl"
+        with open(rlen_name, "rb") as rlen_file:
             rlen_stats[l] = pickle.load(rlen_file)
-        model_name = f'{model_dir}pmappable_{l}_{os.path.basename(bam_name)}.pkl'
-        with open(model_name, 'rb') as model_file:
-            use_rlen = lib_stats[l]['readlen'] > 0
+        model_name = f"{model_dir}pmappable_{l}_{os.path.basename(bam_name)}.pkl"
+        with open(model_name, "rb") as model_file:
+            use_rlen = lib_stats[l]["readlen"] > 0
             pred_dict = pickle.load(model_file)
             (qmin, qmax, q_res) = pickle.load(model_file)
             if use_rlen:

@@ -196,7 +196,7 @@ def altered_reference_sequence(path_orig, blocks_orig, reference, flank_size):
         if blocks[int(floor(path[i] / 2))].is_insertion()
     ]
 
-    sequences = [''] * (len(ins_idx) + 1)
+    sequences = [""] * (len(ins_idx) + 1)
     seq_idx = 0
     block_positions = [[]] * (1 + len(ins_idx))
     del_sizes = [[]] * (1 + len(ins_idx))
@@ -331,11 +331,11 @@ def test_simplify_blocks():
 
 
 def test_altered_reference_sequence():
-    ref = pysam.FastaFile('/home/jgarthur/sv/reference/GRCh37.fa')
+    ref = pysam.FastaFile("/home/jgarthur/sv/reference/GRCh37.fa")
     blocks = [
-        GenomeInterval('20', 100000 + 100 * i, 100000 + 100 * (i + 1))
+        GenomeInterval("20", 100000 + 100 * i, 100000 + 100 * (i + 1))
         for i in range(10)
-    ] + [GenomeInterval('20', 0, 1000, True)]
+    ] + [GenomeInterval("20", 0, 1000, True)]
 
     refpath = [0, 1, 2, 3, 4, 5, 6, 7]
     delpath = [0, 1, 2, 3, 6, 7, 8, 9]
@@ -356,83 +356,83 @@ def test_altered_reference_sequence():
     out = altered_reference_sequence(delpath, blocks, ref, flank_size)
     print(len(out[0][0]))
     assert out[0][0] == (
-        fetch_seq(ref, '20', 100200 - 200, 100200)
-        + fetch_seq(ref, '20', 100300, 100300 + 200)
+        fetch_seq(ref, "20", 100200 - 200, 100200)
+        + fetch_seq(ref, "20", 100300, 100300 + 200)
     )
     assert out[1][0] == [(0, 200), (200, 400)]
     assert out[2] == []
     assert out[3][0] == [100, 0]
     out = altered_reference_sequence(del2path, blocks, ref, flank_size)
     assert out[0][0] == (
-        fetch_seq(ref, '20', 100200 - 200, 100200)
-        + fetch_seq(ref, '20', 100400, 100400 + 200)
+        fetch_seq(ref, "20", 100200 - 200, 100200)
+        + fetch_seq(ref, "20", 100400, 100400 + 200)
     )
     assert out[1][0] == [(0, 200), (200, 400)]
     assert out[2] == []
     assert out[3][0] == [200, 0]
     out = altered_reference_sequence(duppath, blocks, ref, flank_size)
     assert out[0][0] == (
-        fetch_seq(ref, '20', 100200 - 200, 100200)
-        + fetch_seq(ref, '20', 100200, 100300)
-        + fetch_seq(ref, '20', 100200, 100300)
-        + fetch_seq(ref, '20', 100300, 100300 + 200)
+        fetch_seq(ref, "20", 100200 - 200, 100200)
+        + fetch_seq(ref, "20", 100200, 100300)
+        + fetch_seq(ref, "20", 100200, 100300)
+        + fetch_seq(ref, "20", 100300, 100300 + 200)
     )
     assert out[1][0] == [(0, 200), (200, 300), (300, 400), (400, 600)]
     assert out[2] == []
     assert out[3][0] == [0, 0, 0, 0]
     out = altered_reference_sequence(dupend, blocks, ref, flank_size)
     assert out[0][0] == (
-        fetch_seq(ref, '20', 100200 - 200, 100200)
-        + fetch_seq(ref, '20', 100200, 100300)
-        + fetch_seq(ref, '20', 100200, 100300)
+        fetch_seq(ref, "20", 100200 - 200, 100200)
+        + fetch_seq(ref, "20", 100200, 100300)
+        + fetch_seq(ref, "20", 100200, 100300)
     )
     assert out[1][0] == [(0, 200), (200, 300), (300, 400)]
     assert out[2] == []
     assert out[3][0] == [0, 0, 0]
     out = altered_reference_sequence(dup2path, blocks, ref, flank_size)
     assert out[0][0] == (
-        fetch_seq(ref, '20', 100200 - 200, 100200)
-        + fetch_seq(ref, '20', 100200, 100400)
-        + fetch_seq(ref, '20', 100200, 100400)
-        + fetch_seq(ref, '20', 100400, 100400 + 200)
+        fetch_seq(ref, "20", 100200 - 200, 100200)
+        + fetch_seq(ref, "20", 100200, 100400)
+        + fetch_seq(ref, "20", 100200, 100400)
+        + fetch_seq(ref, "20", 100400, 100400 + 200)
     )
     out = altered_reference_sequence(dupstartdel, blocks, ref, flank_size)
     assert out[0][0] == (
-        fetch_seq(ref, '20', 100000, 100100) * 2
-        + fetch_seq(ref, '20', 100200, 100200 + 100)
+        fetch_seq(ref, "20", 100000, 100100) * 2
+        + fetch_seq(ref, "20", 100200, 100200 + 100)
     )
     assert out[1][0] == [(0, 100), (100, 200), (200, 300)]
     assert out[2] == []
     assert out[3][0] == [0, 100, 0]
     out = altered_reference_sequence(invpath, blocks, ref, flank_size)
     assert out[0][0] == (
-        fetch_seq(ref, '20', 100200 - 200, 100200)
-        + reverse_complement(fetch_seq(ref, '20', 100200, 100300))
-        + fetch_seq(ref, '20', 100300, 100300 + 200)
+        fetch_seq(ref, "20", 100200 - 200, 100200)
+        + reverse_complement(fetch_seq(ref, "20", 100200, 100300))
+        + fetch_seq(ref, "20", 100300, 100300 + 200)
     )
     out = altered_reference_sequence(inv2path, blocks, ref, flank_size)
     assert out[0][0] == (
-        fetch_seq(ref, '20', 100200 - 200, 100200)
-        + reverse_complement(fetch_seq(ref, '20', 100200, 100400))
-        + fetch_seq(ref, '20', 100400, 100400 + 200)
+        fetch_seq(ref, "20", 100200 - 200, 100200)
+        + reverse_complement(fetch_seq(ref, "20", 100200, 100400))
+        + fetch_seq(ref, "20", 100400, 100400 + 200)
     )
     out = altered_reference_sequence(inspath, blocks, ref, flank_size)
     assert out[0] == [
-        fetch_seq(ref, '20', 100200 - 200, 100200),
-        fetch_seq(ref, '20', 100200, 100200 + 200),
+        fetch_seq(ref, "20", 100200 - 200, 100200),
+        fetch_seq(ref, "20", 100200, 100200 + 200),
     ]
     out = altered_reference_sequence(dduppath, blocks, ref, flank_size)
-    assert out[0][0] == fetch_seq(ref, '20', 100200 - 200, 100200) + fetch_seq(
-        ref, '20', 100300, 100400
-    ) + fetch_seq(ref, '20', 100200, 100400 + 200)
+    assert out[0][0] == fetch_seq(ref, "20", 100200 - 200, 100200) + fetch_seq(
+        ref, "20", 100300, 100400
+    ) + fetch_seq(ref, "20", 100200, 100400 + 200)
     assert out[1][0] == [(0, 200), (200, 300), (300, 400), (400, 500), (500, 700)]
     assert out[2] == []
     assert out[3][0] == [0, 0, 0, 0, 0]
 
     blocks = [
-        GenomeInterval('20', 100000, 101000),
-        GenomeInterval('20', 101025, 101125),
-        GenomeInterval('20', 101130, 102500),
+        GenomeInterval("20", 100000, 101000),
+        GenomeInterval("20", 101025, 101125),
+        GenomeInterval("20", 101130, 102500),
     ]
     refpath = [0, 1, 2, 3, 4, 5]
     delpath = [0, 1, 4, 5]
@@ -442,17 +442,17 @@ def test_altered_reference_sequence():
     assert out[0] == []
     out = altered_reference_sequence(delpath, blocks, ref, flank_size)
     assert out[0][0] == (
-        fetch_seq(ref, '20', 100000, 101013) + fetch_seq(ref, '20', 101128, 102130)
+        fetch_seq(ref, "20", 100000, 101013) + fetch_seq(ref, "20", 101128, 102130)
     )
     out = altered_reference_sequence(duppath, blocks, ref, flank_size)
     assert out[0][0] == (
-        fetch_seq(ref, '20', 100000, 101013)
-        + fetch_seq(ref, '20', 101013, 101128) * 2
-        + fetch_seq(ref, '20', 101128, 102130)
+        fetch_seq(ref, "20", 100000, 101013)
+        + fetch_seq(ref, "20", 101013, 101128) * 2
+        + fetch_seq(ref, "20", 101128, 102130)
     )
     out = altered_reference_sequence(invpath, blocks, ref, flank_size)
     assert out[0][0] == (
-        fetch_seq(ref, '20', 100000, 101013)
-        + reverse_complement(fetch_seq(ref, '20', 101013, 101128))
-        + fetch_seq(ref, '20', 101128, 102130)
+        fetch_seq(ref, "20", 100000, 101013)
+        + reverse_complement(fetch_seq(ref, "20", 101013, 101128))
+        + fetch_seq(ref, "20", 101128, 102130)
     )

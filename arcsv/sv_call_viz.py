@@ -5,7 +5,7 @@ import os
 from math import floor
 import matplotlib
 
-matplotlib.use('Agg')  # required if X11 display is not present
+matplotlib.use("Agg")  # required if X11 display is not present
 from matplotlib.cm import jet
 from matplotlib.collections import PatchCollection
 from matplotlib.patches import Polygon
@@ -17,7 +17,7 @@ PHI = 1.618
 
 def arrow_polygon(is_inverted, width, left_pos, bottom_pos):
     if width < 1:
-        print('[arrow_polygon]: width < 1')
+        print("[arrow_polygon]: width < 1")
         width = 1
     template = [
         [0, 0],
@@ -69,13 +69,13 @@ def get_arrow_patches(blocks, path, bottom_pos, start_block, end_block, left_pos
         if not blocks[b].is_insertion()
     ]
     fc = [jet(x) for x in scaled_block_seq]
-    ec = ['black'] * nblocks
+    ec = ["black"] * nblocks
     p = PatchCollection(patches, facecolor=fc, edgecolor=ec)
     # insertions
     nins = len(patches_ins)
-    fc_ins = ['gray'] * nins
-    ec_ins = ['black'] * nins
-    p_ins = PatchCollection(patches_ins, facecolor=fc_ins, edgecolor=ec_ins, hatch='/')
+    fc_ins = ["gray"] * nins
+    ec_ins = ["black"] * nins
+    p_ins = PatchCollection(patches_ins, facecolor=fc_ins, edgecolor=ec_ins, hatch="/")
 
     right_pos = left_pos
 
@@ -89,13 +89,13 @@ def write_block_labels(text_coords, path, blocks, start):
         (x, y) = text_coords[i]
         block = block_seq[i]
         if blocks[block].is_insertion():
-            letter = '='
+            letter = "="
         else:
             letter = block_idx_to_name(block - start)
-        txt = plt.text(x, y, letter, color='white', size=25, ha='center', va='center')
+        txt = plt.text(x, y, letter, color="white", size=25, ha="center", va="center")
         txt.set_path_effects(
             [
-                path_effects.Stroke(linewidth=3, foreground='black'),
+                path_effects.Stroke(linewidth=3, foreground="black"),
                 path_effects.Normal(),
             ]
         )
@@ -106,10 +106,10 @@ def write_path_label(bottom_pos, label):
         -1.5,
         bottom_pos + PHI / 2 - 1 / 8 + 0.065,
         label,
-        color='black',
+        color="black",
         size=30,
-        ha='right',
-        va='center',
+        ha="right",
+        va="center",
     )
 
 
@@ -117,8 +117,8 @@ def plot_rearrangement(
     filename, blocks, start_block, end_block, path1, path2=None, show_ref=None
 ):
     fig, ax = plt.subplots()
-    plt.axis('image')
-    plt.axis('off')
+    plt.axis("image")
+    plt.axis("off")
 
     right_pos = 0
     bottom_pos = 0
@@ -131,7 +131,7 @@ def plot_rearrangement(
         )
         ax.add_collection(p_ref)
         write_block_labels(text_coords, ref_path, blocks, start_block)
-        write_path_label(bottom_pos, 'REF')
+        write_path_label(bottom_pos, "REF")
         right_pos = max(right_pos, ref_right_pos)
         bottom_pos -= 3
 
@@ -145,9 +145,9 @@ def plot_rearrangement(
         ax.add_collection(p_ins)
         write_block_labels(text_coords, path, blocks, start_block)
         if len(paths) == 1:
-            write_path_label(bottom_pos, 'ALT')
+            write_path_label(bottom_pos, "ALT")
         else:
-            write_path_label(bottom_pos, f'ALT {pathnum}')
+            write_path_label(bottom_pos, f"ALT {pathnum}")
         right_pos = max(right_pos, p_right_pos)
         bottom_pos -= 3
         pathnum += 1
@@ -168,41 +168,41 @@ def plot_rearrangement(
 
 def test_plot_rearrangement():
     blocks = [
-        GenomeInterval('1', 0, 1000),
-        GenomeInterval('1', 1010, 1012),  # 1500),
-        GenomeInterval('1', 1505, 2000),
-        GenomeInterval('1', 2000, 4000),
-        GenomeInterval('1', 4000, 20000),
-        GenomeInterval('1', 0, 10, is_de_novo=True),
-        GenomeInterval('1', 0, 1000, is_de_novo=True),
+        GenomeInterval("1", 0, 1000),
+        GenomeInterval("1", 1010, 1012),  # 1500),
+        GenomeInterval("1", 1505, 2000),
+        GenomeInterval("1", 2000, 4000),
+        GenomeInterval("1", 4000, 20000),
+        GenomeInterval("1", 0, 10, is_de_novo=True),
+        GenomeInterval("1", 0, 1000, is_de_novo=True),
     ]
-    outdir = '~/tmp/'
+    outdir = "~/tmp/"
 
     p1 = [0, 1, 4, 5, 6, 7]
-    fn = 'ACD.png'
+    fn = "ACD.png"
     print(fn)
     plot_rearrangement(os.path.join(outdir, fn), blocks, 0, 4, p1, None, True)
 
     p1 = [0, 1, 10, 11, 4, 5, 6, 7]
-    fn = 'AICD.png'
+    fn = "AICD.png"
     print(fn)
     plot_rearrangement(os.path.join(outdir, fn), blocks, 0, 4, p1, None, True)
 
     p1 = [0, 1, 2, 3, 3, 2, 6, 7, 8, 9]
     p2 = [0, 1, 4, 5, 2, 3, 4, 5, 6, 7, 8, 9]
-    fn = 'ABB-DE_ACBCDE.png'
+    fn = "ABB-DE_ACBCDE.png"
     print(fn)
     plot_rearrangement(os.path.join(outdir, fn), blocks, 0, 4, p1, p2, True)
 
     p1 = [0, 1, 2, 3, 3, 2, 2, 3, 3, 2, 2, 3, 2, 3, 6, 7, 7, 6, 8, 9]
     p2 = p2
-    fn = 'ABB--.png'
+    fn = "ABB--.png"
     print(fn)
     plot_rearrangement(os.path.join(outdir, fn), blocks, 0, 4, p1, p2, True)
 
-    blocks = [GenomeInterval('1', i, i + 100) for i in range(0, 2000, 100)]
+    blocks = [GenomeInterval("1", i, i + 100) for i in range(0, 2000, 100)]
     p1 = list(range(0, 39))
     p2 = p2
-    fn = 'ABCD---.png'
+    fn = "ABCD---.png"
     print(fn)
     plot_rearrangement(os.path.join(outdir, fn), blocks, 0, 19, p1, p2, True)

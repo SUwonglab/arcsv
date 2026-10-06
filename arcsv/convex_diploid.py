@@ -5,7 +5,7 @@ import numpy as np
 def convex_diploid(lhs, ncs, pi_robust):
     n = len(lhs)
     w = cvx.Variable(n)
-    print('building objective. . .')
+    print("building objective. . .")
     f = ((1 - pi_robust) * np.asarray(lhs) + pi_robust) / np.asarray(ncs)
     print(f.shape)
     for i in range(f.shape[0]):
@@ -17,7 +17,7 @@ def convex_diploid(lhs, ncs, pi_robust):
 
     constraints = [w >= 0, sum(w) == 1]
     problem = cvx.Problem(objective, constraints)
-    print('solving. . .')
+    print("solving. . .")
     problem.solve()
     print(problem.status)
     return w.value, objective.value

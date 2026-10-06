@@ -70,19 +70,19 @@ def process_discordant_pair(
             # second check is needed for libraries with huge number of readthroughs,
             # e.g. with 2 x 150 reads and insert size cutoff < 300
             # TODO add conditions on other discordant read types?
-            dtype = 'Del'
+            dtype = "Del"
             disc = DiscordantPair(
                 chrom, first.reference_end, second.reference_start, ilen, first.qname
             )
         elif (first.reference_start > second.reference_start) or (
             first.reference_end > second.reference_end
         ):
-            dtype = 'Dup'
+            dtype = "Dup"
             disc = DiscordantPair(
                 chrom, second.reference_start, first.reference_end, ilen, second.qname
             )
         elif ilen < min_insert:
-            dtype = 'Ins'
+            dtype = "Ins"
             disc = DiscordantPair(
                 chrom, first.reference_end, second.reference_start, ilen, first.qname
             )
@@ -90,15 +90,15 @@ def process_discordant_pair(
             # large insert but overlapping reads (read-through), not a Del
             return None
     else:
-        dtype = 'InvR' if (aln1.is_reverse ^ is_rf) else 'InvL'
-        if dtype == 'InvL':
+        dtype = "InvR" if (aln1.is_reverse ^ is_rf) else "InvL"
+        if dtype == "InvL":
             pos1, pos2 = sorted([aln1.reference_end, aln2.reference_end])
         else:
             pos1, pos2 = sorted([aln1.reference_start, aln2.reference_start])
         disc = DiscordantPair(chrom, pos1, pos2, ilen, aln1.qname)
     discordant_pairs[dtype] = discordant_pairs.get(dtype, []) + [disc]
-    if disc.pos1 > disc.pos2 and dtype != 'Ins':
-        raise Warning(f'[process_disc_pair] discordant type {dtype} pos1 > pos2')
+    if disc.pos1 > disc.pos2 and dtype != "Ins":
+        raise Warning(f"[process_disc_pair] discordant type {dtype} pos1 > pos2")
     return dtype
 
 
@@ -116,19 +116,19 @@ def apply_discordant_clustering(
     lr_cond=False,
     bp_confidence_level=0.95,
 ):
-    nlib = opts['nlib']
+    nlib = opts["nlib"]
     breakpoints = []
     for i in range(nlib):
-        lib_name = opts['library_names'][i]
+        lib_name = opts["library_names"][i]
         for dtype, pairs in discordant_pairs_list[i].items():
-            if opts['verbosity'] > 0:
-                print(f'[pecluster] clustering {dtype}')
+            if opts["verbosity"] > 0:
+                print(f"[pecluster] clustering {dtype}")
             clusters, pairs_clustered = cluster_pairs(
                 opts, pairs, dtype, i, insert_mu[i], insert_sigma[i]
             )
 
-            if opts['verbosity'] > 0:
-                print(f'[pecluster] computing null distribution for {dtype} clusters')
+            if opts["verbosity"] > 0:
+                print(f"[pecluster] computing null distribution for {dtype} clusters")
             lr_null_clusters = compute_null_dist(
                 opts,
                 pairs_clustered,
@@ -140,7 +140,7 @@ def apply_discordant_clustering(
                 lr_cond=lr_cond,
             )
 
-            insert_cutoff = insert_max[i] if dtype == 'Del' else insert_min[i]
+            insert_cutoff = insert_max[i] if dtype == "Del" else insert_min[i]
             fdc_out = fdr_discordant_clusters(
                 opts,
                 clusters,
@@ -161,14 +161,14 @@ def apply_discordant_clustering(
                 # print(breakpoints[-2])
                 # print(breakpoints[-1])
                 # print('')
-            if opts['verbosity'] > 0:
-                print(f'[pecluster] {lib_name}: {len(pairs)} discordant {dtype} reads')
+            if opts["verbosity"] > 0:
+                print(f"[pecluster] {lib_name}: {len(pairs)} discordant {dtype} reads")
                 print(
-                    f'[pecluster] {lib_name}: {dtype} clusters, '
-                    f'{len(clusters_pass)} passing {len(clusters_fail)} failing'
+                    f"[pecluster] {lib_name}: {dtype} clusters, "
+                    f"{len(clusters_pass)} passing {len(clusters_fail)} failing"
                 )
-            outname = f'{lib_name}_{dtype}_cluster.txt'
-            fname = os.path.join(opts['outdir'], 'logging', outname)
+            outname = f"{lib_name}_{dtype}_cluster.txt"
+            fname = os.path.join(opts["outdir"], "logging", outname)
             write_clustering_results(fname, lr_pairs, first_reject)
 
     return breakpoints
@@ -209,28 +209,28 @@ def is_ins_compatible(opts, pairs, max_distance, insert_mu, insert_sigma):
     overlap = max(0, max_pos1 - min_pos2)
 
     # no intersection requirement because possible homologous flanking sequences
-    return is_close and overlap <= opts['max_ins_pair_slop']
+    return is_close and overlap <= opts["max_ins_pair_slop"]
 
 
 def is_ins_cluster_compatible(opts, cluster):
     overlap = max(0, max([p.pos1 for p in cluster]) - min([p.pos2 for p in cluster]))
     # LATER do we need this or is it guaranteed?
-    return overlap <= opts['max_ins_cluster_slop']
+    return overlap <= opts["max_ins_cluster_slop"]
 
 
 compatibility_fun = {
-    'Del': is_deldupinv_compatible,
-    'Ins': is_ins_compatible,
-    'Dup': is_deldupinv_compatible,
-    'InvR': is_deldupinv_compatible,
-    'InvL': is_deldupinv_compatible,
+    "Del": is_deldupinv_compatible,
+    "Ins": is_ins_compatible,
+    "Dup": is_deldupinv_compatible,
+    "InvR": is_deldupinv_compatible,
+    "InvL": is_deldupinv_compatible,
 }
 
 
 def cluster_pairs(opts, pairs, dtype, lib_idx, insert_mu, insert_sigma):
-    pairs.sort(key=attrgetter('pos1'))
-    max_compatible_distance = insert_mu + opts['cluster_max_distance_sd'] * insert_sigma
-    max_cluster_size = opts['max_pecluster_size'][lib_idx]
+    pairs.sort(key=attrgetter("pos1"))
+    max_compatible_distance = insert_mu + opts["cluster_max_distance_sd"] * insert_sigma
+    max_cluster_size = opts["max_pecluster_size"][lib_idx]
     is_compatible = functools.partial(
         compatibility_fun[dtype],
         opts=opts,
@@ -238,9 +238,9 @@ def cluster_pairs(opts, pairs, dtype, lib_idx, insert_mu, insert_sigma):
         insert_mu=insert_mu,
         insert_sigma=insert_sigma,
     )
-    if opts['verbosity'] > 1:
-        print(f'clustering {dtype} pairs')
-        print(f'max cluster size: {max_cluster_size}')
+    if opts["verbosity"] > 1:
+        print(f"clustering {dtype} pairs")
+        print(f"max cluster size: {max_cluster_size}")
 
     cur_comps = []  # pairs in the current connected components
     cur_maxpos = []  # max(pair.pos1) over pairs in cur_comps
@@ -254,7 +254,7 @@ def cluster_pairs(opts, pairs, dtype, lib_idx, insert_mu, insert_sigma):
             if abs(cur_maxpos[i] - pair.pos1) > max_compatible_distance
         ]
         if passed_comps != sorted(passed_comps):
-            raise Warning(f'passed_comps not sorted? {passed_comps}')
+            raise Warning(f"passed_comps not sorted? {passed_comps}")
         offset = 0
         for i in passed_comps:
             idx = i - offset  # adjust for deleting other stuff
@@ -318,7 +318,7 @@ def cluster_pairs(opts, pairs, dtype, lib_idx, insert_mu, insert_sigma):
             pairs_clustered.extend(comp)
 
     # insertions need some additional filtering
-    if dtype == 'Ins':
+    if dtype == "Ins":
         clusters = [c for c in clusters if is_ins_cluster_compatible(opts, c)]
     return clusters, pairs_clustered
 
@@ -328,7 +328,7 @@ def cluster_handle_component(component, is_compatible):
     # print('handling component:\n\t%s' % component)
     # create a graph and fill in all the edges
     g = igraph.Graph(len(component))
-    g.vs['pairs'] = component
+    g.vs["pairs"] = component
     iter_pairs = range(len(component))
     compatible_pairs = [
         (i, j)
@@ -341,7 +341,7 @@ def cluster_handle_component(component, is_compatible):
     result = []
     for clique in g.largest_cliques():
         # print('\tclique of size %d' % len(clique))
-        result.append(g.vs[clique]['pairs'])
+        result.append(g.vs[clique]["pairs"])
     return result
 
 
@@ -383,8 +383,8 @@ def lr_del(cluster, insert_mu, insert_sigma, cutoff, conditioning=False):
     lr = lr / (2 * insert_sigma**2)
 
     if lr == -np.inf:
-        sys.stderr.write('[lr_del] DEL likelihood ratio = -inf\n')
-        sys.stderr.write(f'{cluster}\n')
+        sys.stderr.write("[lr_del] DEL likelihood ratio = -inf\n")
+        sys.stderr.write(f"{cluster}\n")
 
     if conditioning:
         n = len(cluster)
@@ -431,7 +431,7 @@ def lr_dup(cluster, insert_mu, insert_sigma, cutoff=None, conditioning=None):
     return len(cluster)
 
 
-lr_fun = {'Del': lr_del, 'Ins': lr_ins, 'InvL': lr_inv, 'InvR': lr_inv, 'Dup': lr_dup}
+lr_fun = {"Del": lr_del, "Ins": lr_ins, "InvL": lr_inv, "InvR": lr_inv, "Dup": lr_dup}
 
 
 # does opts['pecluster_null_reps'] replicates of null cluster simulation and returns
@@ -440,11 +440,11 @@ lr_fun = {'Del': lr_del, 'Ins': lr_ins, 'InvL': lr_inv, 'InvR': lr_inv, 'Dup': l
 def compute_null_dist(
     opts, discordant_pairs, dtype, insert_mu, insert_sigma, gap_file, lib_idx, lr_cond
 ):
-    nreps = opts['pecluster_null_reps']
+    nreps = opts["pecluster_null_reps"]
     chrom_name, start, end = (
-        opts['chromosome'],
-        opts['region_start'],
-        opts['region_end'],
+        opts["chromosome"],
+        opts["region_start"],
+        opts["region_end"],
     )
     gaps_inter = load_genome_gaps(gap_file, chrom_name)
     chrom_inter = pyinter.IntervalSet()
@@ -456,8 +456,8 @@ def compute_null_dist(
     # For deletion null clusters, don't use pairs that are obviously too large.
     # (for normal data the discordant read cutoff for deletion supports
     #  is like mu + 3 sigma ~ mu + .3mu, and we're excluding stuff bigger than 3mu)
-    if dtype == 'Del':
-        max_null_insert = insert_mu * opts['insert_max_mu_multiple']
+    if dtype == "Del":
+        max_null_insert = insert_mu * opts["insert_max_mu_multiple"]
     else:
         max_null_insert = np.inf
 
@@ -474,21 +474,21 @@ def compute_null_dist(
         lr_tmp = np.fromiter(
             (
                 lr_fun[dtype](
-                    c, insert_mu, insert_sigma, opts['insert_cutoff'], lr_cond
+                    c, insert_mu, insert_sigma, opts["insert_cutoff"], lr_cond
                 )
                 for c in clusters_tmp
             ),
             float,
         )
         lr_null_clusters = np.append(lr_null_clusters, lr_tmp)
-    if opts['verbosity'] > 1:
-        print(f'[compute_null_dist] {dtype}')
-        print('shuffled lr:')
+    if opts["verbosity"] > 1:
+        print(f"[compute_null_dist] {dtype}")
+        print("shuffled lr:")
         print(lr_null_clusters)
-        print('')
+        print("")
 
-    outname = f'{opts["library_names"][lib_idx]}_{dtype}_null_cluster_{nreps}reps.txt'
-    fname = os.path.join(opts['outdir'], 'logging', outname)
+    outname = f"{opts['library_names'][lib_idx]}_{dtype}_null_cluster_{nreps}reps.txt"
+    fname = os.path.join(opts["outdir"], "logging", outname)
     write_clustering_results(
         fname, list(zip(lr_null_clusters, null_clusters)), first_reject=0
     )
@@ -519,8 +519,8 @@ def fdr_discordant_clusters(
     lr_pairs.sort()
 
     # find FDR cutoff
-    target_fdr = opts['pecluster_target_fdr']
-    null_sim_nreps = opts['pecluster_null_reps']
+    target_fdr = opts["pecluster_target_fdr"]
+    null_sim_nreps = opts["pecluster_null_reps"]
     M = len(lr_clusters)
     M_0 = len(lr_null_clusters) / null_sim_nreps
 
@@ -553,7 +553,7 @@ def fdr_discordant_clusters(
 
 
 def write_clustering_results(filename, lr_pairs, first_reject):
-    fout = open(filename, 'w')
+    fout = open(filename, "w")
     if len(lr_pairs) > 0:
         lr_clusters, clusters = list(zip(*lr_pairs))
         for i in range(len(clusters)):
@@ -562,9 +562,9 @@ def write_clustering_results(filename, lr_pairs, first_reject):
             pos2 = [p.pos2 for p in clusters[i]]
             lr = lr_clusters[i]
             passing = True if i >= first_reject else False
-            qnames = ';'.join([p.qname for p in clusters[i]])
+            qnames = ";".join([p.qname for p in clusters[i]])
             fout.write(
-                f'{min(pos1)}\t{max(pos1)}\t{min(pos2)}\t{max(pos2)}\t{npairs}\t{lr}\t{passing}\t{qnames}\n'
+                f"{min(pos1)}\t{max(pos1)}\t{min(pos2)}\t{max(pos2)}\t{npairs}\t{lr}\t{passing}\t{qnames}\n"
             )
     fout.close()
 
@@ -572,7 +572,7 @@ def write_clustering_results(filename, lr_pairs, first_reject):
 def cluster_to_bp(cluster, confidence, dtype, libname):
     left_ci, right_ci = cluster_to_ci(cluster, confidence, dtype)
     pe = [(p.qname, dtype) for p in cluster]
-    libs = ['pe_' + libname] * len(cluster)
+    libs = ["pe_" + libname] * len(cluster)
     left_bp = Breakpoint(left_ci, pe=pe, libs=libs)
     right_bp = Breakpoint(right_ci, pe=pe, libs=libs)
     return left_bp, right_bp
@@ -583,13 +583,13 @@ def cluster_to_ci(cluster, confidence, dtype):
     p2 = [p.pos2 for p in cluster]
     lower_1, upper_1 = uniform_ci(p1, confidence)
     lower_2, upper_2 = uniform_ci(p2, confidence)
-    if dtype == 'Del':
+    if dtype == "Del":
         return upper_1, lower_2
-    elif dtype == 'Ins':
+    elif dtype == "Ins":
         return upper_1, lower_2
-    elif dtype == 'Dup':
+    elif dtype == "Dup":
         return lower_1, upper_2
-    elif dtype == 'InvL':
+    elif dtype == "InvL":
         return upper_1, upper_2
-    elif dtype == 'InvR':
+    elif dtype == "InvR":
         return lower_1, lower_2

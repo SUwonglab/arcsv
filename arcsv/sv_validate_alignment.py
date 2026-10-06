@@ -1,7 +1,7 @@
 import itertools
 import matplotlib
 
-matplotlib.use('Agg')  # required if X11 display is not present
+matplotlib.use("Agg")  # required if X11 display is not present
 import matplotlib.pyplot as plt
 import pickle
 import pysam
@@ -15,83 +15,83 @@ from math import floor
 
 # Huref contig-chromosome mapping
 huref_chrom = {
-    '1': 'CM000462.1',
-    '2': 'CM000463.1',
-    '3': 'CM000464.1',
-    '4': 'CM000465.1',
-    '5': 'CM000466.1',
-    '6': 'CM000467.1',
-    '7': 'CM000468.1',
-    '8': 'CM000469.1',
-    '9': 'CM000470.1',
-    '10': 'CM000471.1',
-    '11': 'CM000472.1',
-    '12': 'CM000473.1',
-    '13': 'CM000474.1',
-    '14': 'CM000475.1',
-    '15': 'CM000476.1',
-    '16': 'CM000477.1',
-    '17': 'CM000478.1',
-    '18': 'CM000479.1',
-    '19': 'CM000480.1',
-    '20': 'CM000481.1',
-    '21': 'CM000482.1',
-    '22': 'CM000483.1',
-    'X': 'CM000484.1',
-    'Y': 'CM000485.1',
+    "1": "CM000462.1",
+    "2": "CM000463.1",
+    "3": "CM000464.1",
+    "4": "CM000465.1",
+    "5": "CM000466.1",
+    "6": "CM000467.1",
+    "7": "CM000468.1",
+    "8": "CM000469.1",
+    "9": "CM000470.1",
+    "10": "CM000471.1",
+    "11": "CM000472.1",
+    "12": "CM000473.1",
+    "13": "CM000474.1",
+    "14": "CM000475.1",
+    "15": "CM000476.1",
+    "16": "CM000477.1",
+    "17": "CM000478.1",
+    "18": "CM000479.1",
+    "19": "CM000480.1",
+    "20": "CM000481.1",
+    "21": "CM000482.1",
+    "22": "CM000483.1",
+    "X": "CM000484.1",
+    "Y": "CM000485.1",
 }
 huref_prime_chrom = {
-    '1': 'CM000491.1',
-    '2': 'CM000492.1',
-    '3': 'CM000493.1',
-    '4': 'CM000494.1',
-    '5': 'CM000495.1',
-    '6': 'CM000496.1',
-    '7': 'CM000497.1',
-    '8': 'CM000498.1',
-    '9': 'CM000499.1',
-    '10': 'CM000500.1',
-    '11': 'CM000501.1',
-    '12': 'CM000502.1',
-    '13': 'CM000503.1',
-    '14': 'CM000504.1',
-    '15': 'CM000505.1',
-    '16': 'CM000506.1',
-    '17': 'CM000507.1',
-    '18': 'CM000508.1',
-    '19': 'CM000509.1',
-    '20': 'CM000510.1',
-    '21': 'CM000511.1',
-    '22': 'CM000512.1',
-    'X': 'CM000513.1',
-    'Y': 'CM000514.1',
+    "1": "CM000491.1",
+    "2": "CM000492.1",
+    "3": "CM000493.1",
+    "4": "CM000494.1",
+    "5": "CM000495.1",
+    "6": "CM000496.1",
+    "7": "CM000497.1",
+    "8": "CM000498.1",
+    "9": "CM000499.1",
+    "10": "CM000500.1",
+    "11": "CM000501.1",
+    "12": "CM000502.1",
+    "13": "CM000503.1",
+    "14": "CM000504.1",
+    "15": "CM000505.1",
+    "16": "CM000506.1",
+    "17": "CM000507.1",
+    "18": "CM000508.1",
+    "19": "CM000509.1",
+    "20": "CM000510.1",
+    "21": "CM000511.1",
+    "22": "CM000512.1",
+    "X": "CM000513.1",
+    "Y": "CM000514.1",
 }
-huref_alternate = ('^ABSL', '^DS', '^ABBA')
+huref_alternate = ("^ABSL", "^DS", "^ABBA")
 GRCh37_chrom = {
-    '1': '1',
-    '2': '2',
-    '3': '3',
-    '4': '4',
-    '5': '5',
-    '6': '6',
-    '7': '7',
-    '8': '8',
-    '9': '9',
-    '10': '10',
-    '11': '11',
-    '12': '12',
-    '13': '13',
-    '14': '14',
-    '15': '15',
-    '16': '16',
-    '17': '17',
-    '18': '18',
-    '19': '19',
-    '20': '20',
-    '21': '21',
-    '22': '22',
-    'X': 'X',
-    'Y': 'Y',
+    "1": "1",
+    "2": "2",
+    "3": "3",
+    "4": "4",
+    "5": "5",
+    "6": "6",
+    "7": "7",
+    "8": "8",
+    "9": "9",
+    "10": "10",
+    "11": "11",
+    "12": "12",
+    "13": "13",
+    "14": "14",
+    "15": "15",
+    "16": "16",
+    "17": "17",
+    "18": "18",
+    "19": "19",
+    "20": "20",
+    "21": "21",
+    "22": "22",
+    "X": "X",
+    "Y": "Y",
 }
 GRCh37_alternate = tuple()
 
@@ -112,7 +112,7 @@ aln_min_flank_extension = 200
 
 
 def load_pkl_data(pkl):
-    with open(pkl, 'rb') as pklfile:
+    with open(pkl, "rb") as pklfile:
         qname_list = pickle.load(pklfile)
         block_position_list = pickle.load(pklfile)
         insertion_size_list = pickle.load(pklfile)
@@ -122,8 +122,8 @@ def load_pkl_data(pkl):
         hlf_list = pickle.load(pklfile)  # has_left_flank
         hrf_list = pickle.load(pklfile)  # has_right_flank
     print(
-        '\n'.join(
-            f'{qname}\n\t{bp}\n\t{p}\n\t{ins}'
+        "\n".join(
+            f"{qname}\n\t{bp}\n\t{p}\n\t{ins}"
             for (qname, bp, p, ins) in zip(
                 qname_list, block_position_list, paths_list, insertion_size_list
             )
@@ -146,36 +146,36 @@ def load_pkl_data(pkl):
 # bamfile - filename of bamfile sorted by query name
 # pkl - pickle file, e.g. from sv_inference.py, containing additional information
 def score_alignments(
-    bamfile, pkl, chrom, ref, outdir='validate', qname_split=False, verbosity=0
+    bamfile, pkl, chrom, ref, outdir="validate", qname_split=False, verbosity=0
 ):
-    figdir = os.path.join(outdir, 'validate_figs')
+    figdir = os.path.join(outdir, "validate_figs")
     if not os.path.exists(figdir):
         os.makedirs(figdir)
-    outfile = open(os.path.join(outdir, 'validate_out.bed'), 'w')
+    outfile = open(os.path.join(outdir, "validate_out.bed"), "w")
     outfile.write(output_header())
     # DEBUG
-    outdir2 = outdir + '_all'
-    figdir2 = os.path.join(outdir2, 'validate_figs')
+    outdir2 = outdir + "_all"
+    figdir2 = os.path.join(outdir2, "validate_figs")
     if not os.path.exists(figdir2):
         os.makedirs(figdir2)
-    outfile2 = open(os.path.join(outdir2, 'validate_out.bed'), 'w')
+    outfile2 = open(os.path.join(outdir2, "validate_out.bed"), "w")
     outfile2.write(output_header())
     # DEBUG
 
     pkl_data, qname_list = load_pkl_data(pkl)
     if verbosity > 1 and len(qname_list) > 10:
-        print(f'qname_list: {qname_list[:10]}')
-        print('--> going to remaining_qname')
+        print(f"qname_list: {qname_list[:10]}")
+        print("--> going to remaining_qname")
 
-    if ref == 'huref':
+    if ref == "huref":
         ref_chrom_names = (huref_chrom[chrom], huref_prime_chrom[chrom])
         alternate_chrom_patterns = huref_alternate
         using_long_reads = False
-    elif ref == 'grch37':
+    elif ref == "grch37":
         ref_chrom_names = (GRCh37_chrom[chrom],)
         alternate_chrom_patterns = GRCh37_alternate
         using_long_reads = False
-    elif ref == 'longreads':
+    elif ref == "longreads":
         ref_chrom_names = None
         alternate_chrom_patterns = None
         using_long_reads = True
@@ -185,7 +185,7 @@ def score_alignments(
     records = []
     cur_qname = None
     null_aln = pysam.AlignedSegment()
-    null_aln.qname = ':::'
+    null_aln.qname = ":::"
     for aln in itertools.chain(bam, [null_aln]):
         if aln is not null_aln:
             if aln.is_unmapped:
@@ -196,7 +196,7 @@ def score_alignments(
                     bam.getrname(aln.rname), ref_chrom_names, alternate_chrom_patterns
                 )
             ):
-                print(f'{bam.getrname(aln.rname)} not OK: skipping')
+                print(f"{bam.getrname(aln.rname)} not OK: skipping")
                 continue
             # skip minus strand alignments to placed contigs
             if (
@@ -207,10 +207,10 @@ def score_alignments(
                 continue
         # don't include the :1 or :2 at the end of qname
         if qname_split:
-            aln_qname = aln.qname.split(':')[0]
+            aln_qname = aln.qname.split(":")[0]
         else:
-            aln_qname = ':'.join(aln.qname.split(':')[:-1])
-        print('aln_qname\t' + aln_qname)  # TMP
+            aln_qname = ":".join(aln.qname.split(":")[:-1])
+        print("aln_qname\t" + aln_qname)  # TMP
         # NEW aln_qname = aln.qname
         if cur_qname is None:
             cur_qname = aln_qname
@@ -218,8 +218,8 @@ def score_alignments(
             records.append(aln)
         else:  # handle cur_qname
             if verbosity > 0:
-                print('\n' + '-' * 50)
-                print(f'handling {cur_qname}')
+                print("\n" + "-" * 50)
+                print(f"handling {cur_qname}")
             # NEW qname_id = cur_qname
             # cur_qname.split(':')[0]
             assert cur_qname in remaining_qname
@@ -237,7 +237,7 @@ def score_alignments(
 
             if len(block_positions) > 1:  # insertion
                 if verbosity > 0:
-                    print('\nskipping insertion\n')
+                    print("\nskipping insertion\n")
                 records = [aln]
                 cur_qname = aln_qname
                 continue
@@ -252,7 +252,7 @@ def score_alignments(
 
             if verbosity > 0:
                 print(
-                    f'data:\n\t{cur_qname}\n\t{query_blocks}\n\t(rev) {query_blocks_rev}\n\t{insertion_sizes}\n\t{del_sizes}\n\t{del_positions}\n\t(rev) {del_positions_rev}\n\t{blocks}\n\t{path}\n'
+                    f"data:\n\t{cur_qname}\n\t{query_blocks}\n\t(rev) {query_blocks_rev}\n\t{insertion_sizes}\n\t{del_sizes}\n\t{del_positions}\n\t(rev) {del_positions_rev}\n\t{blocks}\n\t{path}\n"
                 )
             chain, score, segs = handle_records(
                 cur_qname,
@@ -276,7 +276,7 @@ def score_alignments(
             records = [aln]
             cur_qname = aln_qname
     # handle records for which we found no alignments
-    print('REMAINING:')
+    print("REMAINING:")
     print(remaining_qname)
     for qname in remaining_qname:
         if len(pkl_data[qname][0]) == 1:  # skipping insertion
@@ -334,32 +334,32 @@ def plot_chain(
     verbosity=0,
 ):
     if verbosity > 0:
-        print(f'plotting {qname} to {rname}')
+        print(f"plotting {qname} to {rname}")
         print(outdir)
         # gc.collect()
         # print('Memory usage: %s (kb)' % resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
     plt.figure()
     for seg in all_segments:
         for qc, rc in segment_to_lines(seg):
-            plt.plot(qc, rc, 'k-')
+            plt.plot(qc, rc, "k-")
     for seg in chain:
         for qc, rc in segment_to_lines(seg):
-            plt.plot(qc, rc, 'r-')
+            plt.plot(qc, rc, "r-")
     for bp in query_blocks:
         for endpt in bp.position:
-            plt.axvline(x=endpt, linestyle=':', color='black')
-    aln_score_string = f'{int(aln_score)}'
-    blockwise_scores = ', '.join(f'{s:.2f}' for s in scores[2])
-    blockwise_score_string = f'[{blockwise_scores}]'
-    del_scores = ', '.join(f'{s:.2f}' for s in scores[3])
-    del_score_string = f'[{del_scores}]'
-    title = f'{all_segments[0].aln.qname}\naln score: {aln_score_string}\nblockwise {blockwise_score_string} del {del_score_string} flank {scores[4]}\n'
+            plt.axvline(x=endpt, linestyle=":", color="black")
+    aln_score_string = f"{int(aln_score)}"
+    blockwise_scores = ", ".join(f"{s:.2f}" for s in scores[2])
+    blockwise_score_string = f"[{blockwise_scores}]"
+    del_scores = ", ".join(f"{s:.2f}" for s in scores[3])
+    del_score_string = f"[{del_scores}]"
+    title = f"{all_segments[0].aln.qname}\naln score: {aln_score_string}\nblockwise {blockwise_score_string} del {del_score_string} flank {scores[4]}\n"
     plt.title(title)
-    plt.xlabel('hg19 (rearranged)')
-    if ref == 'huref':
-        plt.ylabel(f'HuRef {rname}')
-    elif ref == 'longreads':
-        plt.ylabel(f'PacBio read {rname}')
+    plt.xlabel("hg19 (rearranged)")
+    if ref == "huref":
+        plt.ylabel(f"HuRef {rname}")
+    elif ref == "longreads":
+        plt.ylabel(f"PacBio read {rname}")
     xlim = (min(bp.start for bp in query_blocks), max(bp.end for bp in query_blocks))
     if chain != []:
         qrange = (
@@ -381,7 +381,7 @@ def plot_chain(
     plt.xlim(xlim)
     plt.ylim(ylim)
     plt.subplots_adjust(left=0.125, right=0.875, top=0.825, bottom=0.1)
-    extra = ''
+    extra = ""
     # DEBUG
     # if chain[0].is_reverse:
     #     extra = 'r_'
@@ -391,10 +391,10 @@ def plot_chain(
     #     extra = ''
     # DEBUG
     try:
-        plt.savefig(os.path.join(outdir, 'validate_figs', extra + qname + '.png'))
+        plt.savefig(os.path.join(outdir, "validate_figs", extra + qname + ".png"))
     except OSError:
         plt.savefig(
-            os.path.join(outdir, 'validate_figs', extra + qname.split('_')[0] + '.png')
+            os.path.join(outdir, "validate_figs", extra + qname.split("_")[0] + ".png")
         )
     plt.close()
 
@@ -441,7 +441,7 @@ def handle_records(
     alt_patterns,
     using_long_reads,
 ):
-    qname_filename = '_'.join(qname.split(':')[:2])
+    qname_filename = "_".join(qname.split(":")[:2])
     # sort records into bins by reference contig
     d = defaultdict(list)
     for aln in samrecords:
@@ -454,9 +454,9 @@ def handle_records(
     for rname, records in d.items():
         contig_len = bam.lengths[rname]
         if verbosity > 0:
-            print('\n')
+            print("\n")
             print(
-                f'checking reference contig {bam.getrname(rname)} and query',
+                f"checking reference contig {bam.getrname(rname)} and query",
                 samrecords[0].qname,
             )
         segs = list(
@@ -475,11 +475,11 @@ def handle_records(
         )
         segs.sort(key=lambda s: s.ref_coords)
         if verbosity > 1:
-            print('segments:')
-            print('\n'.join([str(seg) for seg in segs]))
-            print('blocks in query:')
+            print("segments:")
+            print("\n".join([str(seg) for seg in segs]))
+            print("blocks in query:")
             print(query_blocks)
-            print('deletions in query:')
+            print("deletions in query:")
             print(del_positions)
 
         # for efficiency, remove really small segments
@@ -503,11 +503,11 @@ def handle_records(
 
         if verbosity > 1:
             # print('{0} segs before filtering, {1} after filtering, {2} after split'.format(nsegs, nsegs_filter, nsegs_split))
-            print('segments (after split):')
-            print('\n'.join([str(seg) for seg in segs]))
-            print('blocks in query:')
+            print("segments (after split):")
+            print("\n".join([str(seg) for seg in segs]))
+            print("blocks in query:")
             print(query_blocks)
-            print('deletions in query:')
+            print("deletions in query:")
             print(del_positions)
 
         # find best chain
@@ -521,7 +521,7 @@ def handle_records(
             min_inner_block = min(len(b) for b in query_blocks)
         max_cluster_gap = 1.1 * total_query_len
         if verbosity > 1:
-            print(f'max_cluster_gap: {max_cluster_gap}')
+            print(f"max_cluster_gap: {max_cluster_gap}")
         segs_final = []
 
         for do_reverse, qb, dp in [
@@ -532,9 +532,9 @@ def handle_records(
                 # check if there are too many segments
                 total_seg_len = sum(s.num_match for s in seg_cluster)
                 if verbosity > 1:
-                    print('-' * 50)
+                    print("-" * 50)
                     print(
-                        'cluster N = {0}, L = {1}, q_range = {2}, r_range = {3}'.format(
+                        "cluster N = {0}, L = {1}, q_range = {2}, r_range = {3}".format(
                             len(seg_cluster),
                             total_seg_len,
                             (
@@ -549,7 +549,7 @@ def handle_records(
                     )
                 if verbosity > 1:
                     print(
-                        f'filtering segs smaller than {int(0.005 * min_inner_block)}. . .'
+                        f"filtering segs smaller than {int(0.005 * min_inner_block)}. . ."
                     )
                 seg_cluster, filtered = filter_small_segs(
                     seg_cluster, min_inner_block * 0.005
@@ -558,7 +558,7 @@ def handle_records(
                 segs_final.extend(filtered)
                 if verbosity > 1:
                     print(
-                        f'B = {total_inner_len} ; L = {total_seg_len}; N = {len(seg_cluster)} segments'
+                        f"B = {total_inner_len} ; L = {total_seg_len}; N = {len(seg_cluster)} segments"
                     )
                 if (
                     len(seg_cluster) > max_segments_heuristic
@@ -568,20 +568,20 @@ def handle_records(
                     # coord. intervals and look at the total length
                     # MINOR could compute an upper bound on the avg. block score
                     #      here by assigning query coverage to small blocks first etc...
-                    print('SKIPPING')
+                    print("SKIPPING")
                     num_clusters_skipped += 1
                     segs_final.extend(seg_cluster)
                     continue
                 # split clusters and add to segs
                 if verbosity > 1:
-                    print('splitting. . .')
+                    print("splitting. . .")
                 seg_cluster = split_segments_at_segment_boundaries(
                     seg_cluster, max_cluster_gap, qb, dp
                 )
                 segs_final.extend(seg_cluster)
                 if verbosity > 1:
                     print(
-                        f'B = {total_inner_len} ; L = {total_seg_len}; N = {len(seg_cluster)} segments'
+                        f"B = {total_inner_len} ; L = {total_seg_len}; N = {len(seg_cluster)} segments"
                     )
                 # segs_split = []
                 # ref_split, query_split = segment_boundaries(seg_cluster)
@@ -609,7 +609,7 @@ def handle_records(
 
         # evaluate based on blockwise score
         if verbosity > 1:
-            print(f'best chain\n\t{str(best_chain)}')
+            print(f"best chain\n\t{str(best_chain)}")
         qb, dp = (
             (query_blocks_rev, del_positions_rev)
             if best_is_reverse
@@ -631,7 +631,7 @@ def handle_records(
         # SAVE AND PLOT HERE
         rname = bam.getrname(segs[0].aln.rname)
         contig_len = bam.lengths[segs[0].aln.rname]
-        plot_name = '_'.join([qname_filename, rname])
+        plot_name = "_".join([qname_filename, rname])
         if sum(blockwise_scores[2]) + sum(blockwise_scores[3]) >= 0.01:
             # plot_chain(plot_name, rname, ref, segs, best_chain, best_score, blockwise_scores,
             #            outdir2, query_blocks, del_positions, path, verbosity = verbosity)
@@ -660,11 +660,11 @@ def handle_records(
             final_best_min_score = min_bw_score
 
     if verbosity > 0:
-        print(f'best chain is to {bam.getrname(final_best_segs[0].aln.rname)}')
-        print(f'best alignment score {final_best_score}')
-        print(f'min block score: {final_best_min_score}')
+        print(f"best chain is to {bam.getrname(final_best_segs[0].aln.rname)}")
+        print(f"best alignment score {final_best_score}")
+        print(f"min block score: {final_best_min_score}")
         print(
-            f'\tblock scores: {final_best_scores[2]}\n\tdel scores: {final_best_scores[3]}\n\tflanks {final_best_scores[4]}'
+            f"\tblock scores: {final_best_scores[2]}\n\tdel scores: {final_best_scores[3]}\n\tflanks {final_best_scores[4]}"
         )
         # gc.collect()
         # print('Memory usage: %s (kb)' % resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
@@ -734,35 +734,35 @@ def segment_clusters(segments, do_reverse, max_gap):
 
 def output_header():
     return (
-        '\t'.join(
+        "\t".join(
             [
-                'id',
-                'contig',
-                'length',
-                'start',
-                'end',
-                'strand',
-                'aln_score',
-                'avg_score',
-                'block_scores',
-                'del_scores',
-                'flank_aligned',
-                'total_ins_error',
-                'total_del_error',
-                'block_ins_gaps',
-                'block_del_gaps',
-                'del_ins_gaps',
-                'del_del_gaps',
-                'num_clusters_skipped',
+                "id",
+                "contig",
+                "length",
+                "start",
+                "end",
+                "strand",
+                "aln_score",
+                "avg_score",
+                "block_scores",
+                "del_scores",
+                "flank_aligned",
+                "total_ins_error",
+                "total_del_error",
+                "block_ins_gaps",
+                "block_del_gaps",
+                "del_ins_gaps",
+                "del_del_gaps",
+                "num_clusters_skipped",
             ]
         )
-        + '\n'
+        + "\n"
     )
 
 
 def null_output_line(qname):
-    name = qname.split(':')[0]
-    return '\t'.join([name, 'NA', '-1', '-1', '-1', '+', '-1', '-1', '-1', '-1']) + '\n'
+    name = qname.split(":")[0]
+    return "\t".join([name, "NA", "-1", "-1", "-1", "+", "-1", "-1", "-1", "-1"]) + "\n"
 
 
 # write output to a line: qname
@@ -780,13 +780,13 @@ def output_line(
 ):
     contig_len = str(contig_len)
     if best_chain != []:
-        strand = '-' if best_chain[0].is_reverse else '+'
+        strand = "-" if best_chain[0].is_reverse else "+"
         minr = str(min(s.ref_coords[0] for s in best_chain))
         maxr = str(max(s.ref_coords[1] for s in best_chain))
     else:
-        strand = 'NA'
-        minr, maxr = 'NA', 'NA'
-    name = qname.split(':')[0]
+        strand = "NA"
+        minr, maxr = "NA", "NA"
+    name = qname.split(":")[0]
     (
         _,
         average_score,
@@ -797,27 +797,27 @@ def output_line(
         ref_gap,
         gaps,
     ) = best_scores
-    alnsc = f'{int(aln_score)}'
-    asc = f'{average_score:.4f}'
-    ibs = ','.join(f'{s:.4f}' for s in inner_block_scores)
-    if ibs == '':
-        ibs = 'NA'
-    ds = ','.join(f'{s:.4f}' for s in del_scores)
-    if ds == '':
-        ds = 'NA'
-    fba = ','.join(str(x) for x in flank_bases_aligned)
+    alnsc = f"{int(aln_score)}"
+    asc = f"{average_score:.4f}"
+    ibs = ",".join(f"{s:.4f}" for s in inner_block_scores)
+    if ibs == "":
+        ibs = "NA"
+    ds = ",".join(f"{s:.4f}" for s in del_scores)
+    if ds == "":
+        ds = "NA"
+    fba = ",".join(str(x) for x in flank_bases_aligned)
     qg, rg = str(query_gap), str(ref_gap)
-    gapstring = ''
-    for k in ('block_query_gaps', 'block_ref_gaps', 'del_query_gaps', 'del_ref_gaps'):
-        if gapstring != '':
-            gapstring = gapstring + '\t'
-        ss = ','.join(f'{int(g)}' for g in gaps[k])
-        if ss == '':
-            ss = 'NA'
+    gapstring = ""
+    for k in ("block_query_gaps", "block_ref_gaps", "del_query_gaps", "del_ref_gaps"):
+        if gapstring != "":
+            gapstring = gapstring + "\t"
+        ss = ",".join(f"{int(g)}" for g in gaps[k])
+        if ss == "":
+            ss = "NA"
         gapstring = gapstring + ss
     ncs = str(num_clusters_skipped)
     return (
-        '\t'.join(
+        "\t".join(
             [
                 name,
                 rname,
@@ -836,7 +836,7 @@ def output_line(
                 ncs,
             ]
         )
-        + '\n'
+        + "\n"
     )
 
 
@@ -853,14 +853,14 @@ def best_alignment_chain(
     max_gap=1e9,
 ):
     if verbosity > 1:
-        print(f'bac: qb {query_blocks} dp {del_positions} reverse_only {reverse_only}')
+        print(f"bac: qb {query_blocks} dp {del_positions} reverse_only {reverse_only}")
 
     segs = sorted(segs, key=lambda s: s.query_coords)
     n = len(segs)
     data = {}
-    data['best_parent'] = [None] * n
-    data['best_score'] = [-np.inf] * n
-    data['segment'] = segs
+    data["best_parent"] = [None] * n
+    data["best_score"] = [-np.inf] * n
+    data["segment"] = segs
 
     best_score = -np.inf
     best_final_node = None
@@ -869,18 +869,18 @@ def best_alignment_chain(
         # print('idx_v: {0}'.format(idx_v))
         # print('[best_alignment_chain] idx_v {0}'.format(idx_v))
         # print(idx_v)
-        seg2 = data['segment'][idx_v]
+        seg2 = data["segment"][idx_v]
         v_score = segment_global_aln_score(seg2)
         if verbosity > 1:
-            print('==')
-            print(str(seg2) + '\n\tscore ' + str(v_score))
-            print(f'\tmatch {seg2.num_match} mismatch {seg2.num_mismatch}')
-            print('==')
-        data['best_score'][idx_v] = v_score
-        data['best_parent'][idx_v] = idx_v
+            print("==")
+            print(str(seg2) + "\n\tscore " + str(v_score))
+            print(f"\tmatch {seg2.num_match} mismatch {seg2.num_mismatch}")
+            print("==")
+        data["best_score"][idx_v] = v_score
+        data["best_parent"][idx_v] = idx_v
         predecessors = [i for i in range(len(segs)) if is_compatible(segs[i], seg2)]
         for idx_w in predecessors:
-            seg1 = data['segment'][idx_w]
+            seg1 = data["segment"][idx_w]
             ref_gap = seg2.ref_coords[0] - seg1.ref_coords[1]
             if ref_gap > max_gap:
                 continue
@@ -892,28 +892,28 @@ def best_alignment_chain(
             ) + gap_extension_penalty * (
                 (ref_gap - 1) * (ref_gap > 0) + (query_gap - 1) * (query_gap > 0)
             )
-            w_score = data['best_score'][idx_w]
+            w_score = data["best_score"][idx_w]
             score = w_score + v_score - gap_penalty
-            if score > data['best_score'][idx_v]:
-                data['best_score'][idx_v] = score
-                data['best_parent'][idx_v] = idx_w
-        if data['best_score'][idx_v] > best_score:
-            best_score = data['best_score'][idx_v]
+            if score > data["best_score"][idx_v]:
+                data["best_score"][idx_v] = score
+                data["best_parent"][idx_v] = idx_w
+        if data["best_score"][idx_v] > best_score:
+            best_score = data["best_score"][idx_v]
             best_final_node = idx_v
 
     chain = []
     idx = best_final_node
-    while data['best_parent'][idx] != idx:
+    while data["best_parent"][idx] != idx:
         chain.append(idx)
-        idx = data['best_parent'][idx]
+        idx = data["best_parent"][idx]
     chain.append(idx)
     chain.reverse()
 
-    seg_chain = [data['segment'][i] for i in chain]
+    seg_chain = [data["segment"][i] for i in chain]
     if verbosity > 1:
-        print(f'top score {best_score}')
-        print(f'\tfirst segment {seg_chain[0]}')
-        print(f'\tlast segment {seg_chain[-1]}')
+        print(f"top score {best_score}")
+        print(f"\tfirst segment {seg_chain[0]}")
+        print(f"\tlast segment {seg_chain[-1]}")
     if extend_flanks:
         if query_blocks[0].is_flank:
             first_seg = seg_chain[0]
@@ -944,7 +944,7 @@ def best_alignment_chain(
                 best_score += last_seg_dist_to_query_end
 
     if verbosity > 1:
-        print(f'top score (adjusted) {best_score}')
+        print(f"top score (adjusted) {best_score}")
 
     return seg_chain, best_score
 
@@ -970,7 +970,7 @@ def chain_to_blockwise_scores(
     chain_split = []
     if chain is not None:
         for seg in chain:
-            print(f'splitting {seg} at ref {ref_split} query {query_split}')
+            print(f"splitting {seg} at ref {ref_split} query {query_split}")
             chain_split.extend(
                 split_segment(
                     seg, ref_split, query_split, query_blocks, del_positions, verbosity
@@ -983,10 +983,10 @@ def chain_to_blockwise_scores(
 
 def blockwise_score(chain, query_blocks, del_positions, is_reverse, verbosity):
     gaps = {
-        'block_query_gaps': [0] * len(query_blocks),
-        'block_ref_gaps': [0] * len(query_blocks),
-        'del_query_gaps': [0] * len(del_positions),
-        'del_ref_gaps': [0] * len(del_positions),
+        "block_query_gaps": [0] * len(query_blocks),
+        "block_ref_gaps": [0] * len(query_blocks),
+        "del_query_gaps": [0] * len(del_positions),
+        "del_ref_gaps": [0] * len(del_positions),
     }
     if chain == []:
         return (
@@ -1029,7 +1029,7 @@ def blockwise_score(chain, query_blocks, del_positions, is_reverse, verbosity):
                 block_scores,
                 del_scores,
                 gaps,
-                'query',
+                "query",
             )
         for err, idx in seg.ref_gap_errors:
             add_err(
@@ -1040,7 +1040,7 @@ def blockwise_score(chain, query_blocks, del_positions, is_reverse, verbosity):
                 block_scores,
                 del_scores,
                 gaps,
-                'ref',
+                "ref",
             )
         if last_seg is not None:
             query_gap_pos = (last_seg.query_coords[1], seg.query_coords[0])
@@ -1052,7 +1052,7 @@ def blockwise_score(chain, query_blocks, del_positions, is_reverse, verbosity):
             # print('[bws] seg1 {0} seg2 {1}'.format(last_seg, seg))
             # print('\tquery gap {0} at {1} ref gap {2} at {3}'.format(query_gap, query_gap_pos, ref_gap, query_gap_pos))
             for err, idx in interval_error(
-                query_gap_pos, query_gap, query_blocks, del_positions, 'query_gap'
+                query_gap_pos, query_gap, query_blocks, del_positions, "query_gap"
             ):
                 add_err(
                     query_blocks,
@@ -1062,10 +1062,10 @@ def blockwise_score(chain, query_blocks, del_positions, is_reverse, verbosity):
                     block_scores,
                     del_scores,
                     gaps,
-                    'query',
+                    "query",
                 )
             for err, idx in interval_error(
-                query_gap_pos, ref_gap, query_blocks, del_positions, 'ref_gap'
+                query_gap_pos, ref_gap, query_blocks, del_positions, "ref_gap"
             ):
                 add_err(
                     query_blocks,
@@ -1075,7 +1075,7 @@ def blockwise_score(chain, query_blocks, del_positions, is_reverse, verbosity):
                     block_scores,
                     del_scores,
                     gaps,
-                    'ref',
+                    "ref",
                 )
         last_seg = seg
     # adjust del scores for spanning
@@ -1097,13 +1097,13 @@ def blockwise_score(chain, query_blocks, del_positions, is_reverse, verbosity):
         for i in range(len(block_scores))
         if not query_blocks[i].is_flank
     ]
-    gaps['block_query_gaps'] = [
-        gaps['block_query_gaps'][i]
+    gaps["block_query_gaps"] = [
+        gaps["block_query_gaps"][i]
         for i in range(len(block_scores))
         if not query_blocks[i].is_flank
     ]
-    gaps['block_ref_gaps'] = [
-        gaps['block_ref_gaps'][i]
+    gaps["block_ref_gaps"] = [
+        gaps["block_ref_gaps"][i]
         for i in range(len(block_scores))
         if not query_blocks[i].is_flank
     ]
@@ -1136,9 +1136,9 @@ def add_err(
     query_blocks, del_positions, idx, err, block_scores, del_scores, gaps, err_type
 ):
     block_gaps = (
-        gaps['block_query_gaps'] if err_type == 'query' else gaps['block_ref_gaps']
+        gaps["block_query_gaps"] if err_type == "query" else gaps["block_ref_gaps"]
     )
-    del_gaps = gaps['del_query_gaps'] if err_type == 'query' else gaps['del_ref_gaps']
+    del_gaps = gaps["del_query_gaps"] if err_type == "query" else gaps["del_ref_gaps"]
     if idx is None:
         return
     elif idx >= 0:
@@ -1238,8 +1238,8 @@ class QueryBlock:
         return self.position[1] - self.position[0]
 
     def __repr__(self):
-        flankstring = ' (flank)' if self.is_flank else ''
-        return f'[{self.position[0]},{self.position[1]}{flankstring}]'
+        flankstring = " (flank)" if self.is_flank else ""
+        return f"[{self.position[0]},{self.position[1]}{flankstring}]"
 
     @property
     def start(self):
@@ -1266,7 +1266,7 @@ class Segment:
     ):
         if verbosity > 2:
             print(
-                f'\n\tcreating segment r {ref_coords} q {query_coords} qb {query_blocks}'
+                f"\n\tcreating segment r {ref_coords} q {query_coords} qb {query_blocks}"
             )
         self.ref_coords = ref_coords
         self.query_coords = query_coords
@@ -1277,14 +1277,14 @@ class Segment:
             and self.query_coords[1] <= query_blocks[i].end
         ]
         if verbosity > 2:
-            print(f'\tmatch_block {match_block}')
+            print(f"\tmatch_block {match_block}")
         if len(match_block) == 1:
             idx_match = match_block[0]
             self.block = query_blocks[idx_match]
         else:
             self.block = None
         if verbosity > 2:
-            print(f'\tblock {self.block}\n')
+            print(f"\tblock {self.block}\n")
         self.indel_query_pos = indel_query_pos
         self.indel_len = indel_len
         self.query_gap_len, self.ref_gap_len = 0, 0
@@ -1325,11 +1325,11 @@ class Segment:
         self.aln = aln
 
     def __repr__(self):
-        sign = '-' if self.is_reverse else '+'
+        sign = "-" if self.is_reverse else "+"
         indels = list(zip(self.indel_query_pos, self.indel_len))
         return (
-            f'ref {self.ref_coords} q {self.query_coords} strand {sign} '
-            f'indel {indels} block {self.block}'
+            f"ref {self.ref_coords} q {self.query_coords} strand {sign} "
+            f"indel {indels} block {self.block}"
         )
 
 
@@ -1360,7 +1360,7 @@ def split_segments_at_segment_boundaries(
             upper += 1
         # now R0[upper] >= seg.r[1] + max_gap
         if lower > upper:
-            raise Warning('wtf')
+            raise Warning("wtf")
         ref_split = itertools.chain(*R[lower:upper])
         query_split = itertools.chain(*Q[lower:upper])
         segs_split.extend(
@@ -1416,16 +1416,16 @@ def split_segment(
     sorted_indel.append(((segment.query_coords[1], segment.query_coords[1]), 0))
     mismatches = segment.mismatches
     if verbosity > 2:
-        print('----------------------------------------')
-        print(f'sorted_indel {sorted_indel}')
+        print("----------------------------------------")
+        print(f"sorted_indel {sorted_indel}")
     for iqpos, ilen in sorted_indel:
         if verbosity > 2:
             print(
-                'iqpos prev_iqpos sorted_indel '
+                "iqpos prev_iqpos sorted_indel "
                 + str(iqpos)
-                + ' '
+                + " "
                 + str(prev_iqpos)
-                + ' '
+                + " "
                 + str(sorted_indel)
             )
         # find splits within current subsegment and make new segments
@@ -1434,8 +1434,8 @@ def split_segment(
         ilen_query = 0 if iqpos[0] == iqpos[1] else ilen
         rend, qend = rpos + dist, qpos + dist
         if verbosity > 2:
-            print(f'q {(qpos, qend)} r {(rpos, rend)}')
-            print('prev_iqpos')
+            print(f"q {(qpos, qend)} r {(rpos, rend)}")
+            print("prev_iqpos")
         split_query_coords = set(interval_point_overlap((qpos, qend), query_split))
         split_query_coords.update(
             c - rpos + qpos for c in interval_point_overlap((rpos, rend), ref_split)
@@ -1578,9 +1578,9 @@ def interval_point_overlap(interval, positions):
     return overlap_positions
 
 
-ops = {0: 'M', 1: 'I', 2: 'D', 4: 'S', 5: 'H'}
-ref_has = {'M': True, 'S': False, 'H': False, 'I': False, 'D': True}
-query_has = {'M': True, 'S': True, 'H': True, 'I': True, 'D': False}
+ops = {0: "M", 1: "I", 2: "D", 4: "S", 5: "H"}
+ref_has = {"M": True, "S": False, "H": False, "I": False, "D": True}
+query_has = {"M": True, "S": True, "H": True, "I": True, "D": False}
 
 
 # returns sorted list of segment boundaries in reference and query
@@ -1599,10 +1599,10 @@ def aln_to_query_range(aln):
     query_pos, query_end = 0, 0
     for op, oplen in aln.cigartuples:
         opname = ops[op]
-        seen_M |= opname == 'M'
-        if opname == 'M' or opname == 'I':
+        seen_M |= opname == "M"
+        if opname == "M" or opname == "I":
             query_end += oplen
-        elif (opname == 'S' or opname == 'H') and (not seen_M):
+        elif (opname == "S" or opname == "H") and (not seen_M):
             query_pos += oplen
             query_end += oplen
     return query_pos, query_end
@@ -1641,8 +1641,8 @@ def sam_to_segments(
     seen_M = False
     for op, oplen in aln.cigartuples:
         opname = ops[op]
-        seen_M = seen_M or opname == 'M'
-        if (opname == 'I' or opname == 'D') and oplen > maximum_indel_size:
+        seen_M = seen_M or opname == "M"
+        if (opname == "I" or opname == "D") and oplen > maximum_indel_size:
             # write segment
             seg = Segment(
                 (ref_pos, ref_end),
@@ -1662,17 +1662,17 @@ def sam_to_segments(
             query_pos = query_end + (oplen * query_has[opname])
             query_end = query_pos
         else:
-            if opname == 'I':
+            if opname == "I":
                 indel_query_pos.append((query_end, query_end + oplen))
                 indel_len.append(oplen)
-            if opname == 'D':
+            if opname == "D":
                 indel_query_pos.append((query_end, query_end))
                 indel_len.append(oplen)
             if ref_has[opname]:
                 ref_end += oplen
-            if opname == 'M' or opname == 'I':
+            if opname == "M" or opname == "I":
                 query_end += oplen
-            elif (opname == 'S' or opname == 'H') and (not seen_M):
+            elif (opname == "S" or opname == "H") and (not seen_M):
                 query_pos += oplen
                 query_end += oplen
     if ref_end > ref_pos and query_end > query_pos:
@@ -1700,25 +1700,25 @@ def tokenize_md_tag(md):
     state_trans = {
         0: dict(
             [(str(x), 0) for x in range(10)]
-            + [(chr(ord('A') + i), 1) for i in range(26)]
-            + [('^', 2), ('e', 3)]
+            + [(chr(ord("A") + i), 1) for i in range(26)]
+            + [("^", 2), ("e", 3)]
         ),
         1: dict(
             [(str(x), 0) for x in range(0, 10)]
             +
             # [(chr(ord('A')+i), 1) for i in range(26)] +
-            [('e', 3)]
+            [("e", 3)]
         ),
         2: dict(
             [(str(x), 0) for x in range(10)]
-            + [(chr(ord('A') + i), 2) for i in range(26)]
+            + [(chr(ord("A") + i), 2) for i in range(26)]
         ),
         3: dict(),
     }
     cur_state = 0
     cur_string = []
     tokens = []
-    for char in itertools.chain(md, 'e'):  # add terminator
+    for char in itertools.chain(md, "e"):  # add terminator
         # print('char {0}'.format(char))
         # print('state {0}'.format(cur_state))
         next_state = state_trans[cur_state][char]
@@ -1726,9 +1726,9 @@ def tokenize_md_tag(md):
         if next_state != cur_state:
             # handle current string
             if cur_state == 0 and cur_string != [
-                '0'
+                "0"
             ]:  # match -- ignore e.g. 0 in 5^AA0T5
-                tokens.append((MD_M, int(''.join(cur_string))))
+                tokens.append((MD_M, int("".join(cur_string))))
             elif cur_state == 1:  # mismatches e.g. A0C0T
                 for _i in range(int((len(cur_string) + 1) / 2)):
                     tokens.append((MD_X, 1))
@@ -1746,16 +1746,16 @@ def get_insertion_locations(aln):
     insertion_locations = []
     for op, oplen in aln.cigartuples:
         opname = ops[op]
-        if opname == 'I':
+        if opname == "I":
             insertion_locations.append((pos, pos + oplen))
-        if opname != 'D':
+        if opname != "D":
             pos += oplen
     return insertion_locations
 
 
 # based on the MD tag from bwa mem, return the positions of all mismatches (in query coordinates)
 def parse_aln_mismatches(aln):
-    md = aln.get_tag('MD')
+    md = aln.get_tag("MD")
     toks = tokenize_md_tag(md)
 
     # extract insertion locations
@@ -1766,7 +1766,7 @@ def parse_aln_mismatches(aln):
     # adjust mismatch positions for insertion locations
     mismatches = set()
     i, j = 0, 0
-    if ops[aln.cigartuples[0][0]] in ('S', 'H'):
+    if ops[aln.cigartuples[0][0]] in ("S", "H"):
         pos = aln.cigartuples[0][1]
     else:
         pos = 0
@@ -1794,7 +1794,7 @@ def parse_aln_mismatches(aln):
                 pos += md_len + pos_increment
                 pos_increment = 0
             elif ins_pos[1] <= md_pos[0]:
-                raise Warning(f'parse_aln_mismatches: {aln.cigarstring} {md}')
+                raise Warning(f"parse_aln_mismatches: {aln.cigarstring} {md}")
             else:
                 assert toks[i][0] == MD_M
                 pos_increment += ins_pos[1] - ins_pos[0]
@@ -1823,9 +1823,9 @@ def interval_error(location, error, query_blocks, del_positions, error_type=None
     #   ** always del positions
     if error_type is None:
         if location[0] == location[1]:  # gap in reference
-            error_type = 'ref_gap'
+            error_type = "ref_gap"
         else:
-            error_type = 'query_gap'
+            error_type = "query_gap"
     if error == 0:
         return ((0, None),)
     # errors in inner (non-flanking) blocks
@@ -1856,7 +1856,7 @@ def interval_error(location, error, query_blocks, del_positions, error_type=None
     else:
         slop_regions = []
         outermost_blocks = []
-    if error_type == 'ref_gap':  # deletion error/gap in reference
+    if error_type == "ref_gap":  # deletion error/gap in reference
         intervals_check = inner_intervals
         blocks_check = inner_blocks
     else:  # insertion error/gap in query
@@ -1999,7 +1999,7 @@ def test_sam_to_segments():
     del_positions = []
     aln = pysam.AlignedSegment()
     aln.pos = 0
-    aln.cigarstring = '20M5D20M10I25M5I5M20D5M'
+    aln.cigarstring = "20M5D20M10I25M5I5M20D5M"
     print(aln.cigarstring)
     aln.is_reverse = False
     out = sam_to_segments(aln, block_positions, del_positions)
@@ -2009,7 +2009,7 @@ def test_sam_to_segments():
     assert [s.ref_coords for s in out] == r
     assert [s.query_coords for s in out] == q
 
-    aln.cigarstring = '20S100M30S'
+    aln.cigarstring = "20S100M30S"
     print(aln.cigarstring)
     out = sam_to_segments(aln, block_positions, del_positions)
     r = [(0, 100)]
@@ -2018,7 +2018,7 @@ def test_sam_to_segments():
     assert [s.ref_coords for s in out] == r
     assert [s.query_coords for s in out] == q
 
-    aln.cigarstring = '20S100M5D10M100I10M100D10M20S'
+    aln.cigarstring = "20S100M5D10M100I10M100D10M20S"
     print(aln.cigarstring)
     out = sam_to_segments(aln, block_positions, del_positions)
     r = [(0, 115), (115, 125), (225, 235)]
@@ -2041,8 +2041,8 @@ def test_split_segment_fail():
     dpr = reverse_del_positions(dp, query_len)
     aln = pysam.AlignedSegment()
     aln.pos = 1609
-    aln.cigarstring = '1000H68I274M1I190M68I228M307H'
-    aln.set_tag('MD', '2000')
+    aln.cigarstring = "1000H68I274M1I190M68I228M307H"
+    aln.set_tag("MD", "2000")
     aln.is_reverse = False
     seg = sam_to_segments(aln, qb, qbr, dp, dpr)[0]
     print(seg)
@@ -2064,8 +2064,8 @@ def test_split_segment():
     dpr = reverse_del_positions(dp, query_len)
     aln = pysam.AlignedSegment()
     aln.pos = 0
-    aln.cigarstring = '20M5D20M10I25M5I5M20D5M'
-    aln.set_tag('MD', '200')
+    aln.cigarstring = "20M5D20M10I25M5I5M20D5M"
+    aln.set_tag("MD", "200")
     aln.is_reverse = False
     seg = sam_to_segments(aln, qb, qbr, dp, dpr)[0]
     print(seg)
@@ -2215,8 +2215,8 @@ def test_best_alignment_chain():
 
 
 def test_mismatches():
-    cigarstrings = ['100M', '10S5M10I5M1D10M10S', '10M10I10M', '26M1I18M1I18M2I34M']
-    mds = ['25A25A23T24', '2A4T2^C0A5G0T2', '9T0G9', '31C31A20C10C0']
+    cigarstrings = ["100M", "10S5M10I5M1D10M10S", "10M10I10M", "26M1I18M1I18M2I34M"]
+    mds = ["25A25A23T24", "2A4T2^C0A5G0T2", "9T0G9", "31C31A20C10C0"]
     mms = [(25, 51, 75), (12, 27, 30, 36, 37), (9, 20), (32, 67, 88, 99)]
     tts = [
         [
@@ -2257,30 +2257,30 @@ def test_mismatches():
     for i in range(len(cigarstrings)):
         aln = pysam.AlignedSegment()
         aln.cigarstring = cigarstrings[i]
-        aln.set_tag('MD', mds[i])
+        aln.set_tag("MD", mds[i])
         print(aln.cigarstring)
-        print(aln.get_tag('MD'))
-        tt = tokenize_md_tag(aln.get_tag('MD'))
+        print(aln.get_tag("MD"))
+        tt = tokenize_md_tag(aln.get_tag("MD"))
         print(tt)
         assert tt == tts[i]
         il = get_insertion_locations(aln)
         print(il)
         assert il == ils[i]
-        print('-' * 20)
+        print("-" * 20)
         mm = parse_aln_mismatches(aln)
         print(mm)
         assert set(mm) == set(mms[i])
-        print('=' * 20)
+        print("=" * 20)
 
 
 def test_mismatches_bam(bam, num=100):
     acc = 0
     for aln in bam:
-        if (not aln.is_unmapped) and any(ops[ct[0]] == 'D' for ct in aln.cigartuples):
+        if (not aln.is_unmapped) and any(ops[ct[0]] == "D" for ct in aln.cigartuples):
             print(aln.cigarstring)
-            print(aln.get_tag('MD'))
+            print(aln.get_tag("MD"))
             print(sorted(parse_aln_mismatches(aln)))
-            print('-' * 50)
+            print("-" * 50)
             acc += 1
             if acc >= num:
                 break

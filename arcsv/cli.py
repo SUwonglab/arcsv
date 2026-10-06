@@ -13,27 +13,27 @@ def main():
     parser = prepare_argparser()
 
     if len(sys.argv) < 2:
-        args = parser.parse_args(['-h'])
+        args = parser.parse_args(["-h"])
     else:
         args = parser.parse_args()
 
     command_name = args.command
 
-    if command_name == 'call':
+    if command_name == "call":
         from arcsv.call_sv import run
 
         run(args)
-    elif command_name == 'validate':
+    elif command_name == "validate":
         pass
-    elif command_name == 'filter-merge':
+    elif command_name == "filter-merge":
         from arcsv.filter_output import filter_arcsv_output
 
         filter_arcsv_output(args)
 
 
 def prepare_argparser():
-    parser = argparse.ArgumentParser(prog='arcsv')
-    subparsers = parser.add_subparsers(dest='command')
+    parser = argparse.ArgumentParser(prog="arcsv")
+    subparsers = parser.add_subparsers(dest="command")
 
     add_call_parser(subparsers)
     # add_validate_parser(subparsers)
@@ -44,44 +44,44 @@ def prepare_argparser():
 
 def add_call_parser(subparsers):
     parser_call = subparsers.add_parser(
-        'call',
-        help='Call SVs from alignment data',
+        "call",
+        help="Call SVs from alignment data",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    required = parser_call.add_argument_group('required arguments')
+    required = parser_call.add_argument_group("required arguments")
     required.add_argument(
-        '-i',
-        '--input_list',
+        "-i",
+        "--input_list",
         required=True,
         type=str,
-        help='bam file to use for SV calling. '
-        'for a single library split across multiple files, '
-        'use a comma-separated list',
+        help="bam file to use for SV calling. "
+        "for a single library split across multiple files, "
+        "use a comma-separated list",
     )
     required.add_argument(
-        '-r', '--region', required=True, type=str, help='chromosome[:start-end]'
+        "-r", "--region", required=True, type=str, help="chromosome[:start-end]"
     )
     required.add_argument(
-        '-R',
-        '--reference_file',
+        "-R",
+        "--reference_file",
         required=True,
         type=str,
-        help='path to referece genome file',
+        help="path to referece genome file",
     )
     required.add_argument(
-        '-G',
-        '--gap_file',
+        "-G",
+        "--gap_file",
         type=str,
         required=True,
-        help='path to referece genome gaps file (BED format)',
+        help="path to referece genome gaps file (BED format)",
     )
-    optional = parser_call.add_argument_group('optional arguments')
-    optional.add_argument('-o', '--outdir', type=str, help='output folder')
+    optional = parser_call.add_argument_group("optional arguments")
+    optional.add_argument("-o", "--outdir", type=str, help="output folder")
     optional.add_argument(
-        '--overwrite',
-        dest='overwrite_outdir',
-        action='store_true',
-        help='overwrite existing files in the output directory, if it exists',
+        "--overwrite",
+        dest="overwrite_outdir",
+        action="store_true",
+        help="overwrite existing files in the output directory, if it exists",
     )
     # optional.add_argument('-D', '--reference_dir', type=str,
     # default='/home/jgarthur/sv/reference')
@@ -89,51 +89,51 @@ def add_call_parser(subparsers):
     #                       help='reference genome name. [name].fa, [name].fa.fai, and '
     #                            '[name]_gaps.bed will be expected in arcsv/resources')
     # BEFORE SUBMIT CHANGE DEFAULT LOWER
-    optional.add_argument('-v', '--verbosity', type=int, help='how much output? (0-10)')
+    optional.add_argument("-v", "--verbosity", type=int, help="how much output? (0-10)")
     optional.add_argument(
-        '-C',
-        '--insert_cutoff',
+        "-C",
+        "--insert_cutoff",
         type=float,
-        help='determines likelihood ratio cutoff for discordant reads '
-        'which is equivalent to phi(0)/phi(C).',
+        help="determines likelihood ratio cutoff for discordant reads "
+        "which is equivalent to phi(0)/phi(C).",
     )
     optional.add_argument(
-        '-t',
-        '--cutoff_type',
+        "-t",
+        "--cutoff_type",
         type=str,
-        help='low/high -- affects all breakpoint support thresholds',
+        help="low/high -- affects all breakpoint support thresholds",
     )
     optional.add_argument(
-        '--nondeterministic_seed',
-        action='store_true',
-        help='set random seed based on the current system time'
-        ' (breaks determinism/reproducibility)',
+        "--nondeterministic_seed",
+        action="store_true",
+        help="set random seed based on the current system time"
+        " (breaks determinism/reproducibility)",
     )
     # optional.add_argument('--do_viz', action='store_true')
     # optional.add_argument('--use_mate_tags', action='store_true')
     # optional.add_argument('--use_indels', action='store_true')
-    optional.add_argument('--filter_read_through', action='store_true')
-    optional.add_argument('--no_pecluster', dest='do_pecluster', action='store_false')
+    optional.add_argument("--filter_read_through", action="store_true")
+    optional.add_argument("--no_pecluster", dest="do_pecluster", action="store_false")
     optional.add_argument(
-        '-f',
-        '--allele_fraction_list',
+        "-f",
+        "--allele_fraction_list",
         type=str,
-        help='(EXPERIMENTAL) comma-separated list of alternate allele '
-        'fractions to check when calling heterozygotes. '
-        'These should be <= 0.5, as the fraction 1-f will '
+        help="(EXPERIMENTAL) comma-separated list of alternate allele "
+        "fractions to check when calling heterozygotes. "
+        "These should be <= 0.5, as the fraction 1-f will "
         'automatically be checked for each fraction f. Using -f "" '
-        'will call homozygotes only.',
+        "will call homozygotes only.",
     )
 
-    other = parser_call.add_argument_group('other arguments')
-    other.add_argument('--version', action='version', version='%(prog)s ' + __version__)
+    other = parser_call.add_argument_group("other arguments")
+    other.add_argument("--version", action="version", version="%(prog)s " + __version__)
 
     parser_call.set_defaults(**DEFAULT_OPTS)
 
 
 def add_validate_parser(subparsers):
     parser_call = subparsers.add_parser(
-        'validate', help='Validate SVs using ground truth sequences'
+        "validate", help="Validate SVs using ground truth sequences"
     )
     pass
     return parser_call
@@ -141,100 +141,100 @@ def add_validate_parser(subparsers):
 
 def add_filter_parser(subparsers):
     parser_filter = subparsers.add_parser(
-        'filter-merge',
-        help='Filter and/or merge ARC-SV output',
+        "filter-merge",
+        help="Filter and/or merge ARC-SV output",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser_filter.add_argument(
-        '--min_size',
+        "--min_size",
         required=False,
         type=int,
         default=0,
-        help='minimum SV size (according to len_affected, i.e., length '
-        'of reference sequence affected by the event plus any '
-        'novel insertions',
+        help="minimum SV size (according to len_affected, i.e., length "
+        "of reference sequence affected by the event plus any "
+        "novel insertions",
     )
     parser_filter.add_argument(
-        '--min_span',
+        "--min_span",
         required=False,
         type=int,
         default=0,
-        help='minimum SV span (from first to last breakpoint)',
+        help="minimum SV span (from first to last breakpoint)",
     )
     parser_filter.add_argument(
-        '--min_sr_support',
+        "--min_sr_support",
         required=False,
         type=int,
         default=0,
-        help='minimum supporting split reads '
-        '(required at each breakpoint in case num_sv > 1)',
+        help="minimum supporting split reads "
+        "(required at each breakpoint in case num_sv > 1)",
     )
-    parser_filter.add_argument('--max_sr_support', required=False, type=int)
+    parser_filter.add_argument("--max_sr_support", required=False, type=int)
     parser_filter.add_argument(
-        '--min_pe_support',
+        "--min_pe_support",
         required=False,
         type=int,
         default=0,
-        help='minimum supporting discordant read pair cluster size '
-        '(required at each breakpoint in case num_sv > 1)',
+        help="minimum supporting discordant read pair cluster size "
+        "(required at each breakpoint in case num_sv > 1)",
     )
-    parser_filter.add_argument('--max_pe_support', required=False, type=int)
+    parser_filter.add_argument("--max_pe_support", required=False, type=int)
     parser_filter.add_argument(
-        '--min_allele_fraction',
+        "--min_allele_fraction",
         required=False,
         type=float,
         default=0,
-        help='minimum predicted allele fraction of alternate alleles',
+        help="minimum predicted allele fraction of alternate alleles",
     )
     parser_filter.add_argument(
-        '--max_allele_fraction',
+        "--max_allele_fraction",
         required=False,
         type=float,
         default=1,
-        help='maximum predicted allele fraction of alternate alleles',
+        help="maximum predicted allele fraction of alternate alleles",
     )
     parser_filter.add_argument(
-        '--outdir',
+        "--outdir",
         required=False,
         type=str,
-        default='.',
-        help='directory to output filtered SVs',
+        default=".",
+        help="directory to output filtered SVs",
     )
     parser_filter.add_argument(
-        '--outname',
+        "--outname",
         required=False,
         type=str,
-        default='arcsv_out_filtered.tab',
-        help='file name for filtered SV output',
+        default="arcsv_out_filtered.tab",
+        help="file name for filtered SV output",
     )
     parser_filter.add_argument(
-        '--inputname',
+        "--inputname",
         required=False,
         type=str,
-        default='arcsv_out.tab',
-        help='name of files with SV calls',
+        default="arcsv_out.tab",
+        help="name of files with SV calls",
     )
     parser_filter.add_argument(
-        '--overwrite', action='store_true', help='overwrite existing files'
+        "--overwrite", action="store_true", help="overwrite existing files"
     )
-    parser_filter.add_argument('--no_complex', action='store_true')
-    parser_filter.add_argument('--no_simple', action='store_true')
-    parser_filter.add_argument('--no_deletions', action='store_true')
-    parser_filter.add_argument('--no_tandemdups', action='store_true')
-    parser_filter.add_argument('--no_insertions', action='store_true')
-    parser_filter.add_argument('--no_inversions', action='store_true')
-    parser_filter.add_argument('--no_compoundhet', action='store_true')
+    parser_filter.add_argument("--no_complex", action="store_true")
+    parser_filter.add_argument("--no_simple", action="store_true")
+    parser_filter.add_argument("--no_deletions", action="store_true")
+    parser_filter.add_argument("--no_tandemdups", action="store_true")
+    parser_filter.add_argument("--no_insertions", action="store_true")
+    parser_filter.add_argument("--no_inversions", action="store_true")
+    parser_filter.add_argument("--no_compoundhet", action="store_true")
     parser_filter.add_argument(
-        'basedir',
-        nargs='*',
-        help='base directory containing the ARC-SV output. Multiple'
-        ' directories may be specified with wildcards'
-        ' (e.g. /home/user/arcsv_chr*/ or ./arcsv_chr*/)',
+        "basedir",
+        nargs="*",
+        help="base directory containing the ARC-SV output. Multiple"
+        " directories may be specified with wildcards"
+        " (e.g. /home/user/arcsv_chr*/ or ./arcsv_chr*/)",
     )
 
     # parser_filter.set_defaults(**DEFAULT_OPTS)
     return parser_filter
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

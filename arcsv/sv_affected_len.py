@@ -7,18 +7,18 @@ def sv_affected_len(path, blocks):
     # ref_path = list(range(0, 2 * len(blocks)))
     n_ref = len([x for x in blocks if not x.is_insertion()])
     ref_block_num = list(range(n_ref))
-    ref_string = ''.join(chr(x) for x in range(ord('A'), ord('A') + n_ref))
+    ref_string = "".join(chr(x) for x in range(ord("A"), ord("A") + n_ref))
 
     path_block_num = []
-    path_string = ''
+    path_string = ""
     for i in path[1::2]:
         block_num = int(np.floor(i / 2))
         path_block_num.append(block_num)
         if i % 2 == 1:  # forward orientation
-            path_string += chr(ord('A') + block_num)
+            path_string += chr(ord("A") + block_num)
         else:  # reverse orientation
             # FIXME: replace 1000 with MAX_BLOCKS constant
-            path_string += chr(ord('A') + block_num + 1000)
+            path_string += chr(ord("A") + block_num + 1000)
 
     affected_idx_1, affected_idx_2 = align_strings(ref_string, path_string)
     affected_block_1 = set(ref_block_num[x] for x in affected_idx_1)
@@ -32,9 +32,9 @@ def sv_affected_len(path, blocks):
 # s1, s2: strings
 # returns indices
 def align_strings(s1, s2, match=1000, mismatch=-1, gap=-1):
-    s1 = s1 + '$'
-    s2 = s2 + '$'
-    print(f'aln_str\t{s1}\t{s2}')
+    s1 = s1 + "$"
+    s2 = s2 + "$"
+    print(f"aln_str\t{s1}\t{s2}")
     l1, l2 = len(s1), len(s2)
     D = np.zeros((l1 + 1, l2 + 1), dtype=int)
     prev = np.array([[None] * (l2 + 1)] * (l1 + 1))
@@ -66,8 +66,8 @@ def align_strings(s1, s2, match=1000, mismatch=-1, gap=-1):
     def rest_of_path(
         i,
         j,
-        aligned_1='',
-        aligned_2='',
+        aligned_1="",
+        aligned_2="",
         scores=D,
         affected_idx_1=None,
         affected_idx_2=None,
@@ -78,7 +78,7 @@ def align_strings(s1, s2, match=1000, mismatch=-1, gap=-1):
         if i == j == 0:
             print(aligned_1[::-1])
             print(aligned_2[::-1])
-            print('')
+            print("")
             return
         affected_idx_1, affected_idx_2 = set(), set()
         for x, y in prev[i, j]:
@@ -86,10 +86,10 @@ def align_strings(s1, s2, match=1000, mismatch=-1, gap=-1):
             # TODO if gap or mismatch, add i - 1 and/or j - 1 to affected_idx_1/2
             if (x, y) == (-1, 0):
                 aligned_1_new = aligned_1 + s1[i - 1]
-                aligned_2_new = aligned_2 + '-'
+                aligned_2_new = aligned_2 + "-"
                 affected_idx_1.add(i - 1)
             elif (x, y) == (0, -1):
-                aligned_1_new = aligned_1 + '-'
+                aligned_1_new = aligned_1 + "-"
                 aligned_2_new = aligned_2 + s2[j - 1]
                 affected_idx_2.add(j - 1)
             else:  # (x, y) == (-1, -1)
@@ -109,13 +109,13 @@ def align_strings(s1, s2, match=1000, mismatch=-1, gap=-1):
 
 
 def test_affected_len():
-    print(align_strings('abcde', 'abdef'))
-    print('-' * 50)
-    print(align_strings('aab', 'ab'))
-    print('-' * 50)
-    print(align_strings('sjdioa', 'ssjjdioa'))
+    print(align_strings("abcde", "abdef"))
+    print("-" * 50)
+    print(align_strings("aab", "ab"))
+    print("-" * 50)
+    print(align_strings("sjdioa", "ssjjdioa"))
 
-    print('=' * 50)
+    print("=" * 50)
 
     blocks = [
         GenomeInterval(1, 0, 100),

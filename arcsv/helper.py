@@ -7,11 +7,11 @@ from math import sqrt, floor, log, erf
 from arcsv.constants import LOWQUAL_CHARS
 
 BLOCK_CHARS = 52
-A_OFFSET = ord('A')
+A_OFFSET = ord("A")
 LOWER_OFFSET = 6  # number of non-alphabet characters between 'Z' and 'a'
 INVERSION_CHAR = "'"
-DE_NOVO_CHAR = '_'
-TRANSLOCATION_CHAR = '='
+DE_NOVO_CHAR = "_"
+TRANSLOCATION_CHAR = "="
 
 
 # preliminary checks on reads
@@ -26,28 +26,28 @@ def fully_aligned(aln):
 def valid_hanging_pair(pair, max_dist):
     a1, a2 = pair
     if a1.rname != a2.rname:
-        return 'dist_other_chrom'
+        return "dist_other_chrom"
     elif abs(a1.pos - a2.pos) >= max_dist:
-        return 'dist_same_chrom'
+        return "dist_same_chrom"
     elif a1.is_unmapped != a2.is_unmapped:
-        return 'unmapped'
+        return "unmapped"
     else:
         return None
 
 
 def valid_hanging_anchor(aln, max_dist):
     if aln.rname != aln.mrnm:
-        return 'dist_other_chrom'
+        return "dist_other_chrom"
     elif abs(aln.pos - aln.mpos) >= max_dist:
-        return 'dist_same_chrom'
+        return "dist_same_chrom"
     elif aln.is_unmapped != aln.mate_is_unmapped:
-        return 'unmapped'
+        return "unmapped"
     else:
         return None
 
 
 def is_read_through(opts, pair):
-    read_through_slop = opts['read_through_slop']
+    read_through_slop = opts["read_through_slop"]
     if pair[0].is_reverse == pair[1].is_reverse:
         return False
     elif (
@@ -56,7 +56,7 @@ def is_read_through(opts, pair):
         or pair[1].cigarstring is None
     ):
         return False
-    elif pair[0].has_tag('SA') or pair[1].has_tag('SA'):
+    elif pair[0].has_tag("SA") or pair[1].has_tag("SA"):
         return False
     elif pair[1].is_reverse:
         plus, minus = pair[0], pair[1]
@@ -72,10 +72,10 @@ def is_read_through(opts, pair):
 
 
 def get_ucsc_name(chrom):
-    if chrom[0:3] == 'chr':
+    if chrom[0:3] == "chr":
         return chrom
     else:
-        return 'chr' + chrom
+        return "chr" + chrom
 
 
 def get_chrom_size(chrom_name, refname):
@@ -86,10 +86,10 @@ def get_chrom_size(chrom_name, refname):
 
 def load_genome_gaps(gapsfile, chrom_name):
     gaps = pyinter.IntervalSet()
-    with open(gapsfile, 'r') as file:
-        lines = [l for l in file.readlines() if l.split('\t')[0] == chrom_name]
+    with open(gapsfile, "r") as file:
+        lines = [l for l in file.readlines() if l.split("\t")[0] == chrom_name]
         for line in lines:
-            toks = line.split('\t')
+            toks = line.split("\t")
             a, b = int(toks[1]), int(toks[2])
             gaps.add(pyinter.closedopen(a, b))
     return gaps
@@ -109,9 +109,9 @@ def get_chrom_size_from_bam(chrom_name, bam):
 
 
 class SoftClip:
-    qname = ''
+    qname = ""
     loc = 0
-    strand = '+'
+    strand = "+"
     mapq = 0
     num_clipped = 0
     is_right = True
@@ -123,23 +123,23 @@ class SoftClip:
 
     def __str__(self):
         return (
-            f'{self.qname}\t{int(self.loc)}\t{self.strand}\t{int(self.mapq)}\t'
-            f'{int(self.num_clipped)}\t{int(self.is_right)}\t'
-            f'{int(self.med_clipped_qual)}\t{int(self.min_clipped_qual)}\t'
-            f'{int(self.any_ambiguous_clipped)}\t{int(self.med_mapped_qual)}\t'
-            f'{int(self.is_double_clip)}'
+            f"{self.qname}\t{int(self.loc)}\t{self.strand}\t{int(self.mapq)}\t"
+            f"{int(self.num_clipped)}\t{int(self.is_right)}\t"
+            f"{int(self.med_clipped_qual)}\t{int(self.min_clipped_qual)}\t"
+            f"{int(self.any_ambiguous_clipped)}\t{int(self.med_mapped_qual)}\t"
+            f"{int(self.is_double_clip)}"
         )
 
 
 # sc_array - list of SoftClip objects
 def print_softclips(sc_list, filename):
-    with open(filename, 'w') as file:
+    with open(filename, "w") as file:
         file.write(
-            'qname\trg\tloc\tstrand\tmapq\tnclip\tisright\tmedq\t'
-            'minq\tambig\tmedmappedq\tdouble\n'
+            "qname\trg\tloc\tstrand\tmapq\tnclip\tisright\tmedq\t"
+            "minq\tambig\tmedmappedq\tdouble\n"
         )
         for sc in sc_list:
-            file.write(str(sc) + '\n')
+            file.write(str(sc) + "\n")
 
 
 # LATER can use this lots more places
@@ -209,12 +209,12 @@ class GenomeInterval:
 # merged locations and merged objects. e.g. lambda locs, objs: ((min(locs), max(locs)), objs)
 # type:
 # max_distance: objects closer than this distance will be merged (for us, in bp)
-def merge_nearby(objects, mergefun, type='integer', max_distance=5):
+def merge_nearby(objects, mergefun, type="integer", max_distance=5):
     if len(objects) == 0:
         return {}
-    if type == 'integer':
+    if type == "integer":
         dist = lambda x, y: abs(x - y)
-    elif type == 'interval':  # closed intervals
+    elif type == "interval":  # closed intervals
         dist = lambda x, y: max(x[0] - y[1], y[0] - x[1], 0)
 
     locations = list(objects.keys())
@@ -259,38 +259,38 @@ def merge_nearby(objects, mergefun, type='integer', max_distance=5):
 
 def reverse_complement(seq):
     COMP_DICT = {
-        'A': 'T',
-        'T': 'A',
-        'C': 'G',
-        'G': 'C',
-        'N': 'N',
-        'R': 'Y',
-        'Y': 'R',
-        'W': 'W',
-        'S': 'S',
-        'M': 'K',
-        'K': 'M',
-        'B': 'V',
-        'V': 'B',
-        'D': 'H',
-        'H': 'D',
-        'a': 't',
-        't': 'a',
-        'c': 'g',
-        'g': 'c',
-        'n': 'n',
-        'r': 'y',
-        'y': 'r',
-        'w': 'w',
-        's': 's',
-        'm': 'k',
-        'k': 'm',
-        'b': 'v',
-        'v': 'b',
-        'd': 'h',
-        'h': 'd',
+        "A": "T",
+        "T": "A",
+        "C": "G",
+        "G": "C",
+        "N": "N",
+        "R": "Y",
+        "Y": "R",
+        "W": "W",
+        "S": "S",
+        "M": "K",
+        "K": "M",
+        "B": "V",
+        "V": "B",
+        "D": "H",
+        "H": "D",
+        "a": "t",
+        "t": "a",
+        "c": "g",
+        "g": "c",
+        "n": "n",
+        "r": "y",
+        "y": "r",
+        "w": "w",
+        "s": "s",
+        "m": "k",
+        "k": "m",
+        "b": "v",
+        "v": "b",
+        "d": "h",
+        "h": "d",
     }
-    return ''.join(COMP_DICT[seq[i]] for i in range(len(seq) - 1, -1, -1))
+    return "".join(COMP_DICT[seq[i]] for i in range(len(seq) - 1, -1, -1))
 
 
 def robust_sd(x):
@@ -320,7 +320,7 @@ def fetch_seq(ref, ctg, start, end, truncate=False, pad_N=False, is_reverse=Fals
             start, end = max(0, start), min(end, length)
     seq = ref.fetch(ctg, start, end).upper()
     if pad_N:
-        seq = ('N' * pad_left) + seq + ('N' * pad_right)
+        seq = ("N" * pad_left) + seq + ("N" * pad_right)
     if is_reverse:
         seq = reverse_complement(seq)
     return seq
@@ -330,7 +330,7 @@ def time_to_str(seconds):
     hrs = floor(seconds / 3600)
     mins = floor((seconds % 3600) / 60)
     sec = floor((seconds % 60))
-    return f'{hrs:02d}:{mins:02d}:{sec:02d}'
+    return f"{hrs:02d}:{mins:02d}:{sec:02d}"
 
 
 def normcdf(x, mu=0, sigma=1):
@@ -487,7 +487,7 @@ def block_name_to_idx(block_name):
 
 
 def rearrangement_to_string(rearrangement, start=0, blocks=None):
-    return ''.join(block_idx_to_name(idx, start, blocks) for idx in rearrangement)
+    return "".join(block_idx_to_name(idx, start, blocks) for idx in rearrangement)
 
 
 def is_path_ref(path, blocks):
@@ -521,17 +521,17 @@ def count_lowqual_bases(aln, slop=0):
 
 def add_time_checkpoint(opts, name):
     cur_time = time.time()
-    opts['time_checkpoints'].append((cur_time, name))
+    opts["time_checkpoints"].append((cur_time, name))
 
 
 def print_time_checkpoints(opts):
-    start_time = opts['time_checkpoints'][0][0]
-    prev_time = opts['time_checkpoints'][0][0]
-    for t, name in opts['time_checkpoints'][1:]:
+    start_time = opts["time_checkpoints"][0][0]
+    prev_time = opts["time_checkpoints"][0][0]
+    for t, name in opts["time_checkpoints"][1:]:
         elapsed = t - prev_time
         cumulative = t - start_time
         print(
-            f'[timer]\t{name}\telapsed\t{time_to_str(elapsed)}\tcumulative\t{time_to_str(cumulative)}'
+            f"[timer]\t{name}\telapsed\t{time_to_str(elapsed)}\tcumulative\t{time_to_str(cumulative)}"
         )
         prev_time = t
 
@@ -551,7 +551,7 @@ def test_merge_nearby():
         M = max([loc[1] for loc in locs])
         return ((m, M), objs)
 
-    print(merge_nearby(a, mergefun, type='interval'))
+    print(merge_nearby(a, mergefun, type="interval"))
 
 
 #  test cases: no insertion blocks, some insertion blocks, edge cases within those
@@ -564,7 +564,7 @@ def test_block_gap():
     ]
     truth = [0, 5, 5, 0, 0, 0]
     for i in range(6):
-        print(f'{i}: {block_gap(blocks, i)}')
+        print(f"{i}: {block_gap(blocks, i)}")
         assert block_gap(blocks, i) == truth[i]
 
 

@@ -26,43 +26,43 @@ def run(args):
     opts = vars(args)
 
     # setup time checkpoints
-    opts['time_checkpoints'] = []
+    opts["time_checkpoints"] = []
 
-    reference_files = {'reference': opts['reference_file'], 'gap': opts['gap_file']}
-    if opts['verbosity'] > 0:
-        print(f'[run] ref files {reference_files}')
+    reference_files = {"reference": opts["reference_file"], "gap": opts["gap_file"]}
+    if opts["verbosity"] > 0:
+        print(f"[run] ref files {reference_files}")
 
-    region_split = opts['region'].split(':')
+    region_split = opts["region"].split(":")
     if len(region_split) > 1:
-        opts['chromosome'] = region_split[0]
-        opts['region_start'] = int(region_split[1].split('-')[0])
-        opts['region_end'] = int(region_split[1].split('-')[1])
+        opts["chromosome"] = region_split[0]
+        opts["region_start"] = int(region_split[1].split("-")[0])
+        opts["region_end"] = int(region_split[1].split("-")[1])
     else:
-        opts['chromosome'] = opts['region']
-        start, end = 0, get_chrom_size(opts['chromosome'], reference_files['reference'])
-        opts['region_start'] = start
-        opts['region_end'] = end
+        opts["chromosome"] = opts["region"]
+        start, end = 0, get_chrom_size(opts["chromosome"], reference_files["reference"])
+        opts["region_start"] = start
+        opts["region_end"] = end
 
-    if opts['cutoff_type'] == 'high':
-        opts['min_softclip_support'] = 2  # filter softclip clusters (single orient.)
-        opts['min_bp_support'] = 4  # filter merged breakpoints
-        opts['min_edge_support'] = 3  # adjacency graph edge cutoff
-    elif opts['cutoff_type'] == 'vhigh':
-        opts['min_softclip_support'] = 4
-        opts['min_bp_support'] = 4
-        opts['min_edge_support'] = 4
-    elif opts['cutoff_type'] == 'highsplit':
-        opts['max_softclip_merge_distance'] = 2
-        opts['min_softclip_support'] = 10
-        opts['min_bp_support'] = 10
-        opts['min_edge_support'] = 3
+    if opts["cutoff_type"] == "high":
+        opts["min_softclip_support"] = 2  # filter softclip clusters (single orient.)
+        opts["min_bp_support"] = 4  # filter merged breakpoints
+        opts["min_edge_support"] = 3  # adjacency graph edge cutoff
+    elif opts["cutoff_type"] == "vhigh":
+        opts["min_softclip_support"] = 4
+        opts["min_bp_support"] = 4
+        opts["min_edge_support"] = 4
+    elif opts["cutoff_type"] == "highsplit":
+        opts["max_softclip_merge_distance"] = 2
+        opts["min_softclip_support"] = 10
+        opts["min_bp_support"] = 10
+        opts["min_edge_support"] = 3
 
-    if opts['allele_fraction_list'] == "":
-        opts['allele_fractions_symmetrized'] = []
+    if opts["allele_fraction_list"] == "":
+        opts["allele_fractions_symmetrized"] = []
     else:
         try:
             allele_fractions = [
-                float(x) for x in opts['allele_fraction_list'].split(',')
+                float(x) for x in opts["allele_fraction_list"].split(",")
             ]
             symmetrized = set(
                 itertools.chain(allele_fractions, (1 - x for x in allele_fractions))
@@ -71,39 +71,39 @@ def run(args):
                 symmetrized.remove(0)
             if 1 in symmetrized:
                 symmetrized.remove(1)
-            opts['allele_fractions_symmetrized'] = sorted(symmetrized)
+            opts["allele_fractions_symmetrized"] = sorted(symmetrized)
         except ValueError:
             sys.stderr.write(
-                '\ninvalid format for allele_fraction_list -- '
-                'use a comma-separated list, e.g.: 0.5,1\n'
+                "\ninvalid format for allele_fraction_list -- "
+                "use a comma-separated list, e.g.: 0.5,1\n"
             )
             sys.exit(1)
         # print('allele_fractions: ' + str(opts['allele_fractions_symmetrized']))
 
     # CLEANUP no tuple
-    inputs = [(os.path.realpath(ip.strip()),) for ip in opts['input_list'].split(',')]
-    opts['outdir'] = os.path.realpath(opts['outdir'])
+    inputs = [(os.path.realpath(ip.strip()),) for ip in opts["input_list"].split(",")]
+    opts["outdir"] = os.path.realpath(opts["outdir"])
 
-    if opts['verbosity'] > 1:
-        print(f'[run] all options:\n\n{opts}\n\n')
+    if opts["verbosity"] > 1:
+        print(f"[run] all options:\n\n{opts}\n\n")
 
     # call SVs
-    if opts['verbosity'] > 0:
+    if opts["verbosity"] > 0:
         print(
-            '[run] calling SVs in {chrom}:{start}-{end}\n'.format(
-                chrom=opts['chromosome'],
-                start=opts['region_start'],
-                end=opts['region_end'],
+            "[run] calling SVs in {chrom}:{start}-{end}\n".format(
+                chrom=opts["chromosome"],
+                start=opts["region_start"],
+                end=opts["region_end"],
             )
         )
-    if opts['verbosity'] > 1:
-        print(f'options:\n{opts}\n')
+    if opts["verbosity"] > 1:
+        print(f"options:\n{opts}\n")
         print(
-            f'[call_sv] arguments\n\tinputs = {inputs}\n\toutdir = {opts["outdir"]}\n'
-            f'\treference_name = {opts["reference_name"]}\n'
-            f'\tinsert_cutoff = {opts["insert_cutoff"]}\n'
-            f'\tdo_viz = {opts["do_viz"]}\n\tuse_indels = {opts["use_indels"]}\n'
-            f'\tdo_pecluster = {opts["do_pecluster"]}\n\t'
+            f"[call_sv] arguments\n\tinputs = {inputs}\n\toutdir = {opts['outdir']}\n"
+            f"\treference_name = {opts['reference_name']}\n"
+            f"\tinsert_cutoff = {opts['insert_cutoff']}\n"
+            f"\tdo_viz = {opts['do_viz']}\n\tuse_indels = {opts['use_indels']}\n"
+            f"\tdo_pecluster = {opts['do_pecluster']}\n\t"
         )
 
     call_sv(opts, inputs, reference_files)
@@ -113,36 +113,36 @@ def run(args):
 # NOTE: lib names in metainfo contained in inputs need to be all unique
 def call_sv(opts, inputs, reference_files):
     # start timer
-    add_time_checkpoint(opts, 'start')
+    add_time_checkpoint(opts, "start")
     # load some options for convenience
-    outdir = opts['outdir']
+    outdir = opts["outdir"]
     # create ouput directories if needed
 
     if not os.path.exists(outdir):
         os.makedirs(outdir)
     elif os.path.isfile(outdir):
         sys.stderr.write(
-            '\nError: The specified output directory has the same name'
-            ' as an existing file.\n'
+            "\nError: The specified output directory has the same name"
+            " as an existing file.\n"
         )
         sys.exit(1)
-    elif not opts['overwrite_outdir']:  # is directory
+    elif not opts["overwrite_outdir"]:  # is directory
         sys.stderr.write(
-            '\nError: The specified output directory already exists.'
-            ' Use --overwrite to overwrite existing ARC-SV output '
-            f'files in {outdir}\n'
+            "\nError: The specified output directory already exists."
+            " Use --overwrite to overwrite existing ARC-SV output "
+            f"files in {outdir}\n"
         )
         sys.exit(1)
 
     output_dirs = []
-    if opts['do_viz']:
-        track_dir = os.path.join(outdir, 'tracks')
-        os.system('rm -f ' + os.path.join(track_dir, 'trackDb.txt'))
+    if opts["do_viz"]:
+        track_dir = os.path.join(outdir, "tracks")
+        os.system("rm -f " + os.path.join(track_dir, "trackDb.txt"))
         output_dirs.append(track_dir)
 
-    fig_dir = os.path.join(outdir, 'complex_figs')
+    fig_dir = os.path.join(outdir, "complex_figs")
     output_dirs.append(fig_dir)
-    log_dir = os.path.join(outdir, 'logging')
+    log_dir = os.path.join(outdir, "logging")
     output_dirs.append(log_dir)
     for d in output_dirs:
         # print('checking ' + dd)
@@ -151,16 +151,16 @@ def call_sv(opts, inputs, reference_files):
             os.makedirs(d)
 
     # write version to log
-    with open(os.path.join(outdir, 'logging', 'version_info'), 'w') as f:
-        f.write(f'this run used ARC-SV version {__version__}')
+    with open(os.path.join(outdir, "logging", "version_info"), "w") as f:
+        f.write(f"this run used ARC-SV version {__version__}")
 
     # random seed
-    if opts['nondeterministic_seed']:
-        opts['random_seed'] = int(time.time())
-    rnd.seed(opts['random_seed'])
-    np.random.seed(opts['random_seed'] + 1)
-    if opts['verbosity'] > 1:
-        print(f'[call_sv] random seed: {opts["random_seed"]}')
+    if opts["nondeterministic_seed"]:
+        opts["random_seed"] = int(time.time())
+    rnd.seed(opts["random_seed"])
+    np.random.seed(opts["random_seed"] + 1)
+    if opts["verbosity"] > 1:
+        print(f"[call_sv] random seed: {opts['random_seed']}")
 
     softclips = []
     splits = []
@@ -183,13 +183,13 @@ def call_sv(opts, inputs, reference_files):
 
     softclips.extend(scout)
     splits.extend(sout)
-    if not opts['use_mate_tags']:
+    if not opts["use_mate_tags"]:
         mapstats.extend(mout)
     readlen_medians.extend(rlout)
     insert.extend(iout)
     insert_mu.extend(imean)
     insert_sigma.extend(isd)
-    if opts['do_pecluster']:
+    if opts["do_pecluster"]:
         disc.extend(dout)
         insert_min.extend(imin)
         insert_max.extend(imax)
@@ -197,13 +197,13 @@ def call_sv(opts, inputs, reference_files):
     # lib_dict_all.append(lib_dict)
     # lib_dict_combined = combine_lib_dict(lib_dict_all)
 
-    add_time_checkpoint(opts, '(first pass)')
-    if opts['verbosity'] > 0:
+    add_time_checkpoint(opts, "(first pass)")
+    if opts["verbosity"] > 0:
         print_time_checkpoints(opts)
-        print('\n\n')
+        print("\n\n")
 
     # cluster discordant pairs
-    if opts['do_pecluster']:
+    if opts["do_pecluster"]:
         bp_disc = apply_discordant_clustering(
             opts,
             disc,
@@ -211,33 +211,33 @@ def call_sv(opts, inputs, reference_files):
             insert_sigma,
             insert_min,
             insert_max,
-            reference_files['gap'],
+            reference_files["gap"],
         )
     else:
         bp_disc = []
-    add_time_checkpoint(opts, '(DRP clust)')
-    if opts['verbosity'] > 0:
+    add_time_checkpoint(opts, "(DRP clust)")
+    if opts["verbosity"] > 0:
         print_time_checkpoints(opts)
-        print('\n\n')
+        print("\n\n")
 
     # merge breakpoints
     bp_merged = merge_breakpoints(opts, softclips, splits, bp_disc)
-    add_time_checkpoint(opts, '(BP merge)')
-    if opts['verbosity'] > 0:
+    add_time_checkpoint(opts, "(BP merge)")
+    if opts["verbosity"] > 0:
         print_time_checkpoints(opts)
-        print('\n\n')
+        print("\n\n")
 
     # load mappability models from disk
     mappable_models = []
     class_probs = []
     rlen_stats = []
-    if opts['use_mate_tags']:  # NOT USED until implement INS calling
+    if opts["use_mate_tags"]:  # NOT USED until implement INS calling
         # load mappability model from disk for each input bam file
         # MULTILIB
-        model_dir = '.'
+        model_dir = "."
         for inp in inputs:
             # tmp, tmp_lib_stats = parse_library_stats(inp[1])
-            if opts['use_mate_tags']:
+            if opts["use_mate_tags"]:
                 out = load_model(model_dir, inp[0])
                 mod, class_prob, rlen_stat = out
             else:
@@ -254,18 +254,18 @@ def call_sv(opts, inputs, reference_files):
             class_probs.append(mfm[1])
             rlen_stats.append(rl_med)
 
-    if opts['verbosity'] > 1:
-        print('\n[call_sv] mappable_models:')
+    if opts["verbosity"] > 1:
+        print("\n[call_sv] mappable_models:")
         for m in mappable_models:
-            print(f'\t{m(30, 150, 10, 150)}')
-            print(f'\t{m(50, 150, 50, 150)}')
-            print('\nclass_probs:')
+            print(f"\t{m(30, 150, 10, 150)}")
+            print(f"\t{m(50, 150, 50, 150)}")
+            print("\nclass_probs:")
         for cp in class_probs:
-            print(f'\t{cp}')
-            print('\nrlen_stats:')
+            print(f"\t{cp}")
+            print("\nrlen_stats:")
         for rls in rlen_stats:
-            print(f'\t{rls}')
-            print('\n')
+            print(f"\t{rls}")
+            print("\n")
 
     # compute insert distributions and related quantities
     def create_insert_pmf(ins):
@@ -278,9 +278,9 @@ def call_sv(opts, inputs, reference_files):
         return lambda x, cdf=cdf: 0 if x < 0 else 1 if x >= len(ins) else cdf[x]
 
     insert_cdfs = [create_insert_cdf(ins) for ins in insert]
-    if opts['verbosity'] > 1:
-        print('[call_sv] insert_cdfs')
-        print('\n'.join([str([ic(i) for i in range(300)]) for ic in insert_cdfs]))
+    if opts["verbosity"] > 1:
+        print("[call_sv] insert_cdfs")
+        print("\n".join([str([ic(i) for i in range(300)]) for ic in insert_cdfs]))
 
     def create_insert_cs(ins):
         cdf = np.cumsum(ins)
@@ -294,17 +294,17 @@ def call_sv(opts, inputs, reference_files):
     for l in range(len(insert)):
         ins = insert[l]
         lower_range = min(
-            [i for i in range(len(ins)) if insert_cdfs[l](i) >= opts['insert_qlow']]
+            [i for i in range(len(ins)) if insert_cdfs[l](i) >= opts["insert_qlow"]]
         )
         upper_range = min(
-            [i for i in range(len(ins)) if insert_cdfs[l](i) >= opts['insert_qhigh']]
+            [i for i in range(len(ins)) if insert_cdfs[l](i) >= opts["insert_qhigh"]]
         )
         insert_ranges.append((lower_range, upper_range))
-    if opts['verbosity'] > 1:
-        print('insert_ranges:')
+    if opts["verbosity"] > 1:
+        print("insert_ranges:")
         print(
-            '\n'.join([f'\t{insert_ranges[l]}' for l in range(len(insert_ranges))])
-            + '\n'
+            "\n".join([f"\t{insert_ranges[l]}" for l in range(len(insert_ranges))])
+            + "\n"
         )
 
     # call SVs
@@ -315,13 +315,13 @@ def call_sv(opts, inputs, reference_files):
         opts, reference_files, [bamgroup], bp_merged, insert_ranges, mappable_models
     )
     graph, blocks, gap_indices, left_bp, right_bp = pr_out
-    add_time_checkpoint(opts, '(second pass)')
-    if opts['verbosity'] > 0:
+    add_time_checkpoint(opts, "(second pass)")
+    if opts["verbosity"] > 0:
         print_time_checkpoints(opts)
-        print('\n\n')
+        print("\n\n")
 
     # TODO
-    def compute_pi_robust(pmf, p=opts['robustness_parameter']):
+    def compute_pi_robust(pmf, p=opts["robustness_parameter"]):
         pmf_sorted = sorted(pmf, reverse=True)
         cs = np.cumsum(pmf_sorted)
         i = min([i for i in range(len(cs)) if cs[i] >= (1 - p)])
@@ -329,11 +329,11 @@ def call_sv(opts, inputs, reference_files):
 
     # MULTILIB
     pi_robust = np.median(
-        [compute_pi_robust(ins, opts['robustness_parameter']) for ins in insert]
+        [compute_pi_robust(ins, opts["robustness_parameter"]) for ins in insert]
     )
-    opts['pi_robust'] = pi_robust
-    if opts['verbosity'] > 0:
-        print(f'[call_sv] pi_robust: {pi_robust:f}')
+    opts["pi_robust"] = pi_robust
+    if opts["verbosity"] > 0:
+        print(f"[call_sv] pi_robust: {pi_robust:f}")
 
     insert_q01 = []
     insert_q99 = []
@@ -360,7 +360,7 @@ def call_sv(opts, inputs, reference_files):
         rlen_stats,
         insertion_search_width,
     )
-    add_time_checkpoint(opts, '(sv inference)')
+    add_time_checkpoint(opts, "(sv inference)")
 
-    if opts['verbosity'] > 0:
+    if opts["verbosity"] > 0:
         print_time_checkpoints(opts)

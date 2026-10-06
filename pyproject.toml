@@ -85,9 +85,6 @@ testpaths = ["tests"]
 line-length = 88
 target-version = "py39"
 
-[tool.ruff.format]
-quote-style = "preserve"
-
 [tool.ruff.lint]
 # pyflakes, pycodestyle errors, bugbear (catches undefined names, broken format
 # strings, mutable default arguments, etc.), and f-strings for string formatting

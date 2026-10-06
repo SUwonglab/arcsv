@@ -33,8 +33,8 @@ class SoftclipCluster:
 
     def __str__(self):
         return (
-            f'(is_right {self.is_right} pos {self.pos} nclipped {self.bases_clipped} nmapped {self.bases_mapped} nreads {self.num_reads} '
-            f'nexact {self.num_reads_exact} mapq {self.sum_mapq} strand - {self.num_minus} + {self.num_plus} libs {self.which_libs})'
+            f"(is_right {self.is_right} pos {self.pos} nclipped {self.bases_clipped} nmapped {self.bases_mapped} nreads {self.num_reads} "
+            f"nexact {self.num_reads_exact} mapq {self.sum_mapq} strand - {self.num_minus} + {self.num_plus} libs {self.which_libs})"
         )
 
     def __repr__(self):
@@ -58,10 +58,10 @@ class SoftclipCluster:
 
 
 def process_softclip(opts, pair, pair_split_found, softclips, lib_idx):
-    min_mapq = opts['min_mapq_softclip']
-    min_clipped_bases = opts['min_clipped_bases']
-    min_clipped_qual = opts['min_clipped_qual']
-    lowqual_trim_extra = opts['lowqual_trim_extra']
+    min_mapq = opts["min_mapq_softclip"]
+    min_clipped_bases = opts["min_clipped_bases"]
+    min_clipped_qual = opts["min_clipped_qual"]
+    lowqual_trim_extra = opts["lowqual_trim_extra"]
     for aln, split_found in zip(pair, pair_split_found):
         if (
             aln is None
@@ -169,16 +169,16 @@ def softclip_cluster_mergefun(locs, softclips, min_support_filter=None):
 
 # softclips = [{}, {}] -- left softclips and right ones
 def write_softclips_bed(softclips, fileprefix, chrom_name):
-    fn = ['', '']
-    fn[LEFT] = fileprefix + '_left.bed'
-    fn[RIGHT] = fileprefix + '_right.bed'
+    fn = ["", ""]
+    fn[LEFT] = fileprefix + "_left.bed"
+    fn[RIGHT] = fileprefix + "_right.bed"
     for orientation in (LEFT, RIGHT):
-        file = open(fn[orientation], 'w')
+        file = open(fn[orientation], "w")
         locs = list(softclips[orientation].keys())
         locs.sort()
         for loc in locs:
             line = (
-                f'{chrom_name}\t{loc}\t{loc + 1}\t{len(softclips[orientation][loc])}\n'
+                f"{chrom_name}\t{loc}\t{loc + 1}\t{len(softclips[orientation][loc])}\n"
             )
             file.write(line)
         file.close()
@@ -188,13 +188,13 @@ def write_softclips_bed(softclips, fileprefix, chrom_name):
 def write_softclips_bigwig(softclips, fileprefix, chrom_name, delete_bed=False):
     bed_out = write_softclips_bed(softclips, fileprefix, chrom_name)
     for bedfile in bed_out:
-        fn = bedfile.rstrip('.bed')
+        fn = bedfile.rstrip(".bed")
         os.system(
-            f'bedGraphToBigWig {fn}.bed /scratch/PI/whwong/svproject/'
-            f'reference/hg19.chrom.sizes {fn}.bigwig'
+            f"bedGraphToBigWig {fn}.bed /scratch/PI/whwong/svproject/"
+            f"reference/hg19.chrom.sizes {fn}.bigwig"
         )
         if delete_bed:
-            os.system(f'rm {bedfile}')
+            os.system(f"rm {bedfile}")
 
 
 # def test_merge_softclips():
