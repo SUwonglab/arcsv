@@ -76,8 +76,7 @@ def extract_approximate_library_stats(opts, bam, rough_insert_median):
             process_read_len(pair, read_len_shorter[lib_idx], read_len_longer[lib_idx])
             reads_processed[lib_idx] += 1
             if min(reads_processed) % 200000 == 0 and opts['verbosity'] > 0:
-                print('[library_stats] processed {0} reads ({1} chunks) for each lib'.
-                      format(min(reads_processed), chunks_processed))
+                print(f'[library_stats] processed {min(reads_processed)} reads ({chunks_processed} chunks) for each lib')
         chunks_processed += 1
 
     insert_mean = [np.median(il) for il in insert_len]
@@ -122,13 +121,13 @@ def parse_bam(opts, reference_files, bamfiles):
     als = extract_approximate_library_stats(opts, bam, rough_insert_median)
     mean_approx, sd_approx, pmf_approx, qlower, qupper, rlen_medians = als
     for i in range(len(pmf_approx)):
-        with open(os.path.join(outdir, 'logging', '{0}_insert_pmf.txt'
-                               .format(opts['library_names'][i])), 'w') as f:
+        lib_name = opts['library_names'][i]
+        with open(os.path.join(outdir, 'logging', f'{lib_name}_insert_pmf.txt'), 'w') as f:
             for j in range(len(pmf_approx[i])):
-                f.write('{0}\t{1}\n'.format(j, pmf_approx[i][j]))
+                f.write(f'{j}\t{pmf_approx[i][j]}\n')
     if opts['verbosity'] > 0:
-        print('[parse_bam] library stats:\n\tmu = {0}\n\tsigma = {1}'
-              .format(mean_approx, sd_approx))
+        print(f'[parse_bam] library stats:\n\tmu = {mean_approx}\n\tsigma = {sd_approx}'
+              )
         add_time_checkpoint(opts, 'lib. stats')
 
     def get_lr_cutoff(opts, pmf, do_min=False):
@@ -149,20 +148,19 @@ def parse_bam(opts, reference_files, bamfiles):
                     cutoff = i + 1
                     break
         if opts['verbosity'] > 0:
-            print('[insert_cutoff] lr_cutoff is {0}'.format(lr_cutoff))
-            print('[insert_cutoff] mode (log) {0} at {1}'.format(logmode, which_mode))
-            print('[insert_cutoff] cutoff ratio (log) {0} at {1}'.
-                  format(logmode - np.log(pmf[i]), cutoff))
+            print(f'[insert_cutoff] lr_cutoff is {lr_cutoff}')
+            print(f'[insert_cutoff] mode (log) {logmode} at {which_mode}')
+            print(f'[insert_cutoff] cutoff ratio (log) {logmode - np.log(pmf[i])} at {cutoff}')
         return cutoff
     min_concordant_insert = [get_lr_cutoff(opts, pmf, do_min=True) for pmf in pmf_approx]
     max_concordant_insert = [get_lr_cutoff(opts, pmf) for pmf in pmf_approx]
     if opts['verbosity'] > 0:
         print('[parse_bam] insert size cutoffs:')
         print('[parse_bam]' + '\n'
-              .join(['{0}-{1}'.format(min_concordant_insert[i], max_concordant_insert[i])
+              .join([f'{min_concordant_insert[i]}-{max_concordant_insert[i]}'
                      for i in range(len(mean_approx))]))
-        print('[parse_bam] equivalent to mu +/- 3 sigma in normal:\n\t{0}\n\t{1}\n'
-              .format(qlower, qupper))
+        print(f'[parse_bam] equivalent to mu +/- 3 sigma in normal:\n\t{qlower}\n\t{qupper}\n'
+              )
 
     seen_aln = {}
     nreads, npairs = 0, 0
@@ -185,7 +183,7 @@ def parse_bam(opts, reference_files, bamfiles):
             continue
         nreads += 1
         if opts['verbosity'] > 0 and nreads % (1000000) == 0:
-            print('[parse_bam] %d reads processed' % nreads)
+            print(f'[parse_bam] {nreads} reads processed')
 
         # TODO this can be done cleaner -- check for is_unmapped above
         #    and use handle_unpaired for everything with mate_is_unmapped
@@ -239,8 +237,7 @@ def parse_bam(opts, reference_files, bamfiles):
             if a1_split and a2_split and splits_are_mirrored(splits[lib_idx][-1],
                                                              splits[lib_idx][-2]):
                 if opts['verbosity'] > 1:
-                    print('[bamparser] mirrored split: {0} {1} {2}'.
-                          format(chrom_name, splits[lib_idx][-1].bp2, pair[0].qname))
+                    print(f'[bamparser] mirrored split: {chrom_name} {splits[lib_idx][-1].bp2} {pair[0].qname}')
                 del splits[lib_idx][-1]
 
             process_softclip(opts, pair, (a1_split, a2_split), softclips[lib_idx], lib_idx)
@@ -257,10 +254,10 @@ def parse_bam(opts, reference_files, bamfiles):
 
     # report stats
     if opts['verbosity'] > 0:
-        print('[parse_bam] processed a total of {0} reads'.format(nreads))
+        print(f'[parse_bam] processed a total of {nreads} reads')
         if opts['filter_read_through']:
-            print('[parse_bam] found {0} read-through pairs out of {1} total'
-                  .format(num_read_through, npairs))
+            print(f'[parse_bam] found {num_read_through} read-through pairs out of {npairs} total'
+                  )
     add_time_checkpoint(opts, 'parse bam')
 
     # compute insert length distributions and save plots
@@ -284,8 +281,8 @@ def parse_bam(opts, reference_files, bamfiles):
 
     if opts['verbosity'] > 1:
         for i in range(nlib):
-            print('[parse_bam] lib {0} mu {1} sigma {2}'
-                  .format(i, insert_mean[i], insert_sd[i]))
+            print(f'[parse_bam] lib {i} mu {insert_mean[i]} sigma {insert_sd[i]}'
+                  )
 
     # insert dist plots
     plot_insert_dist(opts, insert_len_dist, outdir)
@@ -299,8 +296,8 @@ def parse_bam(opts, reference_files, bamfiles):
                                   for pc in opts['phys_coverage']]
 
     if opts['verbosity'] > 0:
-        print('[parse_bam] average sequence coverage: %.1fx' % opts['seq_coverage'][0])
-        print('[parse_bam] average physical coverage: %.1fx' % opts['phys_coverage'][0])
+        print(f'[parse_bam] average sequence coverage: {opts["seq_coverage"][0]:.1f}x')
+        print(f'[parse_bam] average physical coverage: {opts["phys_coverage"][0]:.1f}x')
 
     if opts['do_pecluster']:
         return (softclips, splits, mapstats, rlen_medians, insert_len_dist,

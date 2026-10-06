@@ -69,14 +69,10 @@ class SV:
         return hash(self) == hash(other)
 
     def __repr__(self):
-        string = ('({0}, {1}, {2}, {3}, len = {4}, CN = {5}, BP = {6}:{7}, '
-                  'GT = {8}, ID = {9}, OR = {10}, INS = {11})')
-        return string.format(self.type, self.ref_chrom,
-                             self.ref_start, self.ref_end,
-                             self.length, self.copynumber,
-                             self.bp1, self.bp2,
-                             self.genotype, self.event_id,
-                             self.bnd_orientation, self.bnd_ins)
+        return (f'({self.type}, {self.ref_chrom}, {self.ref_start}, {self.ref_end}, '
+                f'len = {self.length}, CN = {self.copynumber}, BP = {self.bp1}:{self.bp2}, '
+                f'GT = {self.genotype}, ID = {self.event_id}, OR = {self.bnd_orientation}, '
+                f'INS = {self.bnd_ins})')
 
     def to_bed(self):
         return '\t'.join([str(a) for a in (self.ref_chrom,
@@ -96,7 +92,7 @@ def classify_paths(path1, path2, blocks, num_genome_blocks, left_bp, right_bp, v
     end_pos = blocks[floor(path1[-1] / 2)].end
     # @ here is the ASCII character before A,B,C,... (see below)
     # FIXME: this doesn't work with 26+ events in a single complex SV
-    ev_id = '{0},{1}-{2},@'.format(chrom, start_pos + 1, end_pos)  # 1-indexed, inclusive interval for VCF
+    ev_id = f'{chrom},{start_pos + 1}-{end_pos},@'  # 1-indexed, inclusive interval for VCF
     ev1, sv1 = classify_svs(path1, blocks, num_genome_blocks, left_bp, right_bp, verbosity)
     ev2, sv2 = classify_svs(path2, blocks, num_genome_blocks, left_bp, right_bp, verbosity)
     sv_final = []
@@ -104,7 +100,7 @@ def classify_paths(path1, path2, blocks, num_genome_blocks, left_bp, right_bp, v
     all_hom = path1 == path2
     compound_het = (not all_hom) and sv1 != [] and sv2 != []
     if verbosity > 1:
-        print('compound het {0}'.format(compound_het))
+        print(f'compound het {compound_het}')
     has_complex_1 = any([ev == 'complex' for ev in ev1])
     has_complex_2 = any([ev == 'complex' for ev in ev2])
     ct1 = classify_complex(path1, blocks) if has_complex_1 else 'NA'
@@ -138,7 +134,7 @@ def classify_paths(path1, path2, blocks, num_genome_blocks, left_bp, right_bp, v
                     sv.genotype = '1/1'
                 else:
                     sv.genotype = '1/0' if svlist is sv1 else '0/1'
-                sv.event_id = '{0}{1}'.format(ev_id, ev_num)
+                sv.event_id = f'{ev_id}{ev_num}'
                 ev_num += 1
                 sv_final.append(sv)
             else:               # simple sv
@@ -146,7 +142,7 @@ def classify_paths(path1, path2, blocks, num_genome_blocks, left_bp, right_bp, v
                 seen = any([sv.same_variant(other) for other in sv_final])
                 if seen:  # already in sv_final, so just add new event id if needed
                     sv = [other for other in sv_final if sv.same_variant(other)][0]
-                    sv.event_id = '{0};{1}{2}'.format(sv.event_id, ev_id, ev_num)
+                    sv.event_id = f'{sv.event_id};{ev_id}{ev_num}'
                     ev_num += 1
                     if hc and sv.event_type == 'SIMPLE':
                         sv.event_type = 'COMPLEX'
@@ -155,7 +151,7 @@ def classify_paths(path1, path2, blocks, num_genome_blocks, left_bp, right_bp, v
                         sv.genotype = '1/1'
                     else:
                         sv.genotype = '1/0' if svlist is sv1 else '0/1'
-                    sv.event_id = '{0}{1}'.format(ev_id, ev_num)
+                    sv.event_id = f'{ev_id}{ev_num}'
                     ev_num += 1
                     sv_final.append(sv)
 
@@ -252,7 +248,7 @@ def classify_svs(path, blocks, num_genome_blocks, left_bp, right_bp, verbosity):
             if verbosity > 1:
                 print('\nsimple del')
                 print(svs[-1])
-                print('split {0}'.format(split_support))
+                print(f'split {split_support}')
                 print(right_bp[block_before])
                 print(left_bp[block_after])
                 print('')
@@ -338,7 +334,7 @@ def classify_svs(path, blocks, num_genome_blocks, left_bp, right_bp, verbosity):
                 if verbosity > 1:
                     print('\nsimple inv')
                     print(svs[-1])
-                    print('split {0}'.format(split_support))
+                    print(f'split {split_support}')
                     print(right_bp[block_before])
                     print(left_bp[block_afterinv])
                     print('')
@@ -431,7 +427,7 @@ def classify_svs(path, blocks, num_genome_blocks, left_bp, right_bp, verbosity):
                     if verbosity > 1:
                         print('\nsimple dup')
                         print(svs[-1])
-                        print('split {0}'.format(split_support))
+                        print(f'split {split_support}')
                         print(left_bp[first_dup_block])
                         print(right_bp[last_dup_block])
                         print('')
@@ -495,7 +491,7 @@ def classify_svs(path, blocks, num_genome_blocks, left_bp, right_bp, verbosity):
             print('\nbreakend')
             print(svs[-1])
             if not blocks[block_after].is_insertion():
-                print('split {0}'.format(split_support))
+                print(f'split {split_support}')
                 if inverted_before:
                     print(left_bp[block_before])
                 else:

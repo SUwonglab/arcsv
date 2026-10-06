@@ -33,7 +33,7 @@ def sv_affected_len(path, blocks):
 def align_strings(s1, s2, match=1000, mismatch=-1, gap=-1):
     s1 = s1 + '$'
     s2 = s2 + '$'
-    print('aln_str\t{0}\t{1}'.format(s1, s2))
+    print(f'aln_str\t{s1}\t{s2}')
     l1, l2 = len(s1), len(s2)
     D = np.zeros((l1 + 1, l2 + 1), dtype=int)
     prev = np.array([[None]*(l2+1)]*(l1+1))

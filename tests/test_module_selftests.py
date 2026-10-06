@@ -27,6 +27,6 @@ SELF_TESTS = [
 
 
 @pytest.mark.parametrize('module, name', SELF_TESTS,
-                         ids=['{0}.{1}'.format(m, n) for (m, n) in SELF_TESTS])
+                         ids=[f'{m}.{n}' for (m, n) in SELF_TESTS])
 def test_module_selftest(module, name):
     getattr(importlib.import_module('arcsv.' + module), name)()

@@ -167,8 +167,8 @@ def get_overlap_insertion_probabilities(path, blocks,
                     print('WARNING no annotation in get_overlap_insert_probabilities')
                     print('\tPath:')
                     print(path)
-                    print('first block {0}'.format(blocks[int(floor(path[0] / 2))]))
-                    print('last block {0}'.format(blocks[int(floor(path[-1] / 2))]))
+                    print(f'first block {blocks[int(floor(path[0] / 2))]}')
+                    print(f'last block {blocks[int(floor(path[-1] / 2))]}')
                 j += 1
         else:
             overall_offsets = [block_5_position + o for o in offsets]
@@ -187,8 +187,8 @@ def get_overlap_insertion_probabilities(path, blocks,
                     print('WARNING no annotation in get_overlap_insert_probabilities')
                     print('\tPath:')
                     print(path)
-                    print('first block {0}'.format(blocks[int(floor(path[0] / 2))]))
-                    print('last block {0}'.format(blocks[int(floor(path[-1] / 2))]))
+                    print(f'first block {blocks[int(floor(path[0] / 2))]}')
+                    print(f'last block {blocks[int(floor(path[-1] / 2))]}')
                 j += 1
         intervals.append(tuple(this_intervals))
     return probs_both, probs_d, probs_t, intervals
@@ -487,7 +487,7 @@ def test_get_gap_overlap_positions():
         inter = pyinter.IntervalSet()
         for interval in truth[i]:
             inter.add(pyinter.open(interval[0], interval[1]))
-        print('truth: {0}\nresult: {1}\n'.format(inter, out))
+        print(f'truth: {inter}\nresult: {out}\n')
         assert(out == inter)
 
     blocks = [GenomeInterval(1, 0, 100),
@@ -502,7 +502,7 @@ def test_get_gap_overlap_positions():
     inter = pyinter.IntervalSet()
     for interval in truth:
         inter.add(pyinter.open(interval[0], interval[1]))
-    print('truth: {0}\nresult: {1}\n'.format(inter, out))
+    print(f'truth: {inter}\nresult: {out}\n')
     assert(out == inter)
 
 
@@ -534,7 +534,7 @@ def test_get_insertion_overlap_positions():
         inter = pyinter.IntervalSet()
         for interval in truth[i]:
             inter.add(pyinter.open(interval[0], interval[1]))
-        print('truth: {0}\nresult: {1}\n'.format(inter, out))
+        print(f'truth: {inter}\nresult: {out}\n')
         assert(out == inter)
 
     blocks = [GenomeInterval(1, 0, 100),
@@ -548,7 +548,7 @@ def test_get_insertion_overlap_positions():
     inter = pyinter.IntervalSet()
     for interval in truth:
         inter.add(pyinter.open(interval[0], interval[1]))
-    print('truth: {0}\nresult: {1}\n'.format(inter, out))
+    print(f'truth: {inter}\nresult: {out}\n')
     assert(out == inter)
 
 

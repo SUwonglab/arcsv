@@ -119,17 +119,11 @@ class SoftClip:
     is_double_clip = False
 
     def __str__(self):
-        return '%s\t%d\t%s\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d' % (self.qname,
-                                                               self.loc,
-                                                               self.strand,
-                                                               self.mapq,
-                                                               self.num_clipped,
-                                                               self.is_right,
-                                                               self.med_clipped_qual,
-                                                               self.min_clipped_qual,
-                                                               self.any_ambiguous_clipped,
-                                                               self.med_mapped_qual,
-                                                               self.is_double_clip)
+        return (f'{self.qname}\t{int(self.loc)}\t{self.strand}\t{int(self.mapq)}\t'
+                f'{int(self.num_clipped)}\t{int(self.is_right)}\t'
+                f'{int(self.med_clipped_qual)}\t{int(self.min_clipped_qual)}\t'
+                f'{int(self.any_ambiguous_clipped)}\t{int(self.med_mapped_qual)}\t'
+                f'{int(self.is_double_clip)}')
 
 
 # sc_array - list of SoftClip objects
@@ -298,7 +292,7 @@ def time_to_str(seconds):
     hrs = floor(seconds / 3600)
     mins = floor((seconds % 3600) / 60)
     sec = floor((seconds % 60))
-    return '%02d:%02d:%02d' % (hrs, mins, sec)
+    return f'{hrs:02d}:{mins:02d}:{sec:02d}'
 
 
 def normcdf(x, mu=0, sigma=1):
@@ -440,7 +434,7 @@ def block_name_to_idx(block_name):
     if block_name == INVERSION_CHAR:
         return INVERSION_CHAR
     if block_name in (DE_NOVO_CHAR, TRANSLOCATION_CHAR):
-        raise ValueError("can't convert '{}' unambiguously to a block index".format(block_name))
+        raise ValueError(f"can't convert '{block_name}' unambiguously to a block index")
     mod = ord(block_name[0]) - A_OFFSET
     if mod > 26:
         mod -= LOWER_OFFSET
@@ -494,8 +488,7 @@ def print_time_checkpoints(opts):
     for (t, name) in opts['time_checkpoints'][1:]:
         elapsed = t - prev_time
         cumulative = t - start_time
-        print('[timer]\t{0}\telapsed\t{1}\tcumulative\t{2}'.
-              format(name, time_to_str(elapsed), time_to_str(cumulative)))
+        print(f'[timer]\t{name}\telapsed\t{time_to_str(elapsed)}\tcumulative\t{time_to_str(cumulative)}')
         prev_time = t
 
 
@@ -523,7 +516,7 @@ def test_block_gap():
               GenomeInterval(1, 1000, 2000, True)]
     truth = [0, 5, 5, 0, 0, 0]
     for i in range(6):
-        print('{0}: {1}'.format(i, block_gap(blocks, i)))
+        print(f'{i}: {block_gap(blocks, i)}')
         assert(block_gap(blocks, i) == truth[i])
 
 

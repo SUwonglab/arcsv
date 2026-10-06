@@ -123,7 +123,7 @@ def load_aggregate_model(model_dir, bam_name, lib_stats):
     class_prob = [None] * nlib
     rlen_stats = [None] * nlib
     for l in range(nlib):
-        stats_name = '{0}mapstats_{1}_{2}.pkl'.format(model_dir, l, os.path.basename(bam_name))
+        stats_name = f'{model_dir}mapstats_{l}_{os.path.basename(bam_name)}.pkl'
         with open(stats_name, 'rb') as stats_file:
             class_prob[l] = pickle.load(stats_file)
         rlen_stats[l] = (0, 0)
@@ -139,13 +139,13 @@ def load_model(model_dir, bam_name, lib_stats):
     class_prob = [None] * nlib
     rlen_stats = [None] * nlib
     for l in range(nlib):
-        stats_name = '{0}mapstats_{1}_{2}.pkl'.format(model_dir, l, os.path.basename(bam_name))
+        stats_name = f'{model_dir}mapstats_{l}_{os.path.basename(bam_name)}.pkl'
         with open(stats_name, 'rb') as stats_file:
             class_prob[l] = pickle.load(stats_file)
-        rlen_name = '{0}rlen_{1}_{2}.pkl'.format(model_dir, l, os.path.basename(bam_name))
+        rlen_name = f'{model_dir}rlen_{l}_{os.path.basename(bam_name)}.pkl'
         with open(rlen_name, 'rb') as rlen_file:
             rlen_stats[l] = pickle.load(rlen_file)
-        model_name = '{0}pmappable_{1}_{2}.pkl'.format(model_dir, l, os.path.basename(bam_name))
+        model_name = f'{model_dir}pmappable_{l}_{os.path.basename(bam_name)}.pkl'
         with open(model_name, 'rb') as model_file:
             use_rlen = lib_stats[l]['readlen'] > 0
             pred_dict = pickle.load(model_file)

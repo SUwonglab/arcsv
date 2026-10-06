@@ -26,8 +26,8 @@ def filter_arcsv_output(args):
 
     outfile = os.path.join(opts['outdir'], opts['outname'])
     if not opts['overwrite'] and os.path.exists(outfile):
-        sys.stderr.write('\nError: Output file {0} exists but --overwrite was not set\n'
-                         .format(outfile))
+        sys.stderr.write(f'\nError: Output file {outfile} exists but --overwrite was not set\n'
+                         )
         sys.exit(1)
 
     header = None
@@ -38,7 +38,8 @@ def filter_arcsv_output(args):
             header = out
 
     if header is None:
-        sys.stderr.write('\nNo input files named {0} found in the directories specified (check --inputname)\n'.format(opts['inputname']))
+        sys.stderr.write(f'\nNo input files named {opts["inputname"]} found in the directories '
+                         'specified (check --inputname)\n')
         sys.exit(1)
 
     if len(arcsv_records) == 0:
@@ -104,7 +105,7 @@ def write_arcsv_output(opts, records, header):
         for record in records:
             line = '\t'.join(record) + '\n'
             f.write(line)
-    print('\nWrote output to {0}'.format(outfile))
+    print(f'\nWrote output to {outfile}')
 
 
 def apply_filters(opts, records, header):

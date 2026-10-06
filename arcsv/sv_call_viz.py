@@ -124,7 +124,7 @@ def plot_rearrangement(filename, blocks, start_block, end_block,
         if len(paths) == 1:
             write_path_label(bottom_pos, 'ALT')
         else:
-            write_path_label(bottom_pos, 'ALT {0}'.format(pathnum))
+            write_path_label(bottom_pos, f'ALT {pathnum}')
         right_pos = max(right_pos, p_right_pos)
         bottom_pos -= 3
         pathnum += 1

@@ -31,7 +31,7 @@ class SparseSignalTrack(object):
         if other == 0:
             return self
         else:
-            raise TypeError('addition of SparseSignalTrack and {0} not supported'.format(type(other)))
+            raise TypeError(f'addition of SparseSignalTrack and {type(other)} not supported')
 
     def add(self, location, value = 1):
         if self.signal_type == 'int':
@@ -89,16 +89,13 @@ class SparseSignalTrack(object):
                 value = np.mean(windowed)
             elif type == 'zscore':
                 value = zscore(windowed, mu, sigma)
-            file.write('{chr}\t{start}\t{end}\t{val}\n'.format(chr = self.chrom_name,
-                                                              start = loc_low,
-                                                              end = loc_high,
-                                                              val = value))
+            file.write(f'{self.chrom_name}\t{loc_low}\t{loc_high}\t{value}\n')
         file.close()
 
     def write_bigwig(self, fileprefix, type = 'count', every = 1, window = 1,
                      mu = None, sigma = None):
         self.write_bed(fileprefix, type, every, window, mu, sigma)
-        os.system('bedGraphToBigWig {file}.bed /scratch/PI/whwong/svproject/reference/hg19.chrom.sizes {file}.bigwig'.format(file=fileprefix))
+        os.system(f'bedGraphToBigWig {fileprefix}.bed /scratch/PI/whwong/svproject/reference/hg19.chrom.sizes {fileprefix}.bigwig')
 
 # not used
 class SignalTrack(object):
@@ -171,10 +168,7 @@ class SignalTrack(object):
             if type == 'zscore':
                 value = zscore(windowed, mu, sigma)
             location = self.get_location(idx)
-            file.write('{chr}\t{loc}\t{locp}\t{val}\n'.format(chr = self.chrom_name,
-                                                              loc = location,
-                                                              locp = location + 1,
-                                                              val = value))
+            file.write(f'{self.chrom_name}\t{location}\t{location + 1}\t{value}\n')
         file.close()
 
 def zscore(L, mu, sigma):
@@ -183,21 +177,22 @@ def zscore(L, mu, sigma):
 def write_trackdb(file, libname, trackname, extension, tracktype,
                   itemRgb = False, heightPixels = None, color = None,
                   visibility = None, viewMin = None, viewMax = None):
-    out = "track {0}-{1}\n" + "bigDataUrl {0}-{1}.{2}\n" + "shortLabel {0}-{1}\n" + \
-        "longLabel {0}-{1}\n" + "type {3}\n"
-    out = out.format(libname, trackname, extension, tracktype)
+    out = (f"track {libname}-{trackname}\n"
+           f"bigDataUrl {libname}-{trackname}.{extension}\n"
+           f"shortLabel {libname}-{trackname}\n"
+           f"longLabel {libname}-{trackname}\n"
+           f"type {tracktype}\n")
     if visibility:
-        out += "visibility {0}\n".format(visibility)
+        out += f"visibility {visibility}\n"
     if itemRgb:
         out += "itemRgb on\n"
     if heightPixels:
-        out += "maxHeightPixels 100:{0}:8\n".format(heightPixels)
+        out += f"maxHeightPixels 100:{heightPixels}:8\n"
     elif extension == "bigwig":
         out += "maxHeightPixels 100:32:8\n"
     if viewMin is not None and viewMax is not None:
-        out += "viewLimits {0}:{1}\n".format(viewMin, viewMax)
-        out += "viewLimitsMax {0}:{1}\n".format(min(viewMin - 20, 0),
-                                                10 * viewMax)
+        out += f"viewLimits {viewMin}:{viewMax}\n"
+        out += f"viewLimitsMax {min(viewMin - 20, 0)}:{10 * viewMax}\n"
     if color == 'orange':
         out += "color 240,162,29\n"
     elif color == 'magenta':
@@ -214,15 +209,14 @@ def write_array_bed(arr, chrom_name, fileprefix, start = None, end = None):
         # VIZ need to specify reference
         end = get_chrom_size(chrom_name) - 1
     for i in range(start, end):
-        file.write('{chr}\t{start}\t{end}\t{val}\n'.format(chr = ucsc_chrom, start = i, end = i+1,
-                                                           val = arr[i]))
+        file.write(f'{ucsc_chrom}\t{i}\t{i+1}\t{arr[i]}\n')
     file.close()
 
 def write_array_bigwig(arr, chrom_name, fileprefix, start = None, end = None, delete_bed = False):
     write_array_bed(arr, chrom_name, fileprefix, start, end)
-    os.system('bedGraphToBigWig {file}.bed /scratch/PI/whwong/svproject/reference/hg19.chrom.sizes {file}.bigwig'.format(file=fileprefix))
+    os.system(f'bedGraphToBigWig {fileprefix}.bed /scratch/PI/whwong/svproject/reference/hg19.chrom.sizes {fileprefix}.bigwig')
     if delete_bed:
-        os.system('rm %s' % (fileprefix + '.bed'))
+        os.system(f'rm {fileprefix}.bed')
 
 def testsignal():
     s = SignalTrack('chr1', 0, 100)

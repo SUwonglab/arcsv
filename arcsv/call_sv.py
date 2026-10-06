@@ -27,7 +27,7 @@ def run(args):
 
     reference_files = {'reference': opts['reference_file'], 'gap': opts['gap_file']}
     if opts['verbosity'] > 0:
-        print('[run] ref files {0}'.format(reference_files))
+        print(f'[run] ref files {reference_files}')
 
     region_split = opts['region'].split(':')
     if len(region_split) > 1:
@@ -78,7 +78,7 @@ def run(args):
     opts['outdir'] = os.path.realpath(opts['outdir'])
 
     if opts['verbosity'] > 1:
-        print('[run] all options:\n\n{0}\n\n'.format(opts))
+        print(f'[run] all options:\n\n{opts}\n\n')
 
     # call SVs
     if opts['verbosity'] > 0:
@@ -87,13 +87,12 @@ def run(args):
                      start=opts['region_start'],
                      end=opts['region_end']))
     if opts['verbosity'] > 1:
-        print('options:\n{0}\n'.format(opts))
-        l = ('[call_sv] arguments\n\tinputs = {0}\n\toutdir = {1}\n'
-             '\treference_name = {2}\n\tinsert_cutoff = {6}\n'
-             '\tdo_viz = {3}\n\tuse_indels = {4}\n\tdo_pecluster = {5}\n\t')
-        l = l.format(inputs, opts['outdir'], opts['reference_name'], opts['do_viz'],
-                     opts['use_indels'], opts['do_pecluster'], opts['insert_cutoff'])
-        print(l)
+        print(f'options:\n{opts}\n')
+        print(f'[call_sv] arguments\n\tinputs = {inputs}\n\toutdir = {opts["outdir"]}\n'
+              f'\treference_name = {opts["reference_name"]}\n'
+              f'\tinsert_cutoff = {opts["insert_cutoff"]}\n'
+              f'\tdo_viz = {opts["do_viz"]}\n\tuse_indels = {opts["use_indels"]}\n'
+              f'\tdo_pecluster = {opts["do_pecluster"]}\n\t')
 
     call_sv(opts, inputs, reference_files)
 
@@ -116,7 +115,7 @@ def call_sv(opts, inputs, reference_files):
     elif not opts['overwrite_outdir']:                       # is directory
         sys.stderr.write('\nError: The specified output directory already exists.'
                          ' Use --overwrite to overwrite existing ARC-SV output '
-                         'files in {0}\n'.format(outdir))
+                         f'files in {outdir}\n')
         sys.exit(1)
 
     output_dirs = []
@@ -137,7 +136,7 @@ def call_sv(opts, inputs, reference_files):
 
     # write version to log
     with open(os.path.join(outdir, 'logging', 'version_info'), 'w') as f:
-        f.write('this run used ARC-SV version {0}'.format(__version__))
+        f.write(f'this run used ARC-SV version {__version__}')
 
     # random seed
     if opts['nondeterministic_seed']:
@@ -145,7 +144,7 @@ def call_sv(opts, inputs, reference_files):
     rnd.seed(opts['random_seed'])
     np.random.seed(opts['random_seed'] + 1)
     if opts['verbosity'] > 1:
-        print('[call_sv] random seed: {0}'.format(opts['random_seed']))
+        print(f'[call_sv] random seed: {opts["random_seed"]}')
 
     softclips = []
     splits = []
@@ -235,14 +234,14 @@ def call_sv(opts, inputs, reference_files):
     if opts['verbosity'] > 1:
         print('\n[call_sv] mappable_models:')
         for m in mappable_models:
-            print('\t{0}'.format(m(30, 150, 10, 150)))
-            print('\t{0}'.format(m(50, 150, 50, 150)))
+            print(f'\t{m(30, 150, 10, 150)}')
+            print(f'\t{m(50, 150, 50, 150)}')
             print('\nclass_probs:')
         for cp in class_probs:
-            print('\t{0}'.format(cp))
+            print(f'\t{cp}')
             print('\nrlen_stats:')
         for rls in rlen_stats:
-            print('\t{0}'.format(rls))
+            print(f'\t{rls}')
             print('\n')
 
     # compute insert distributions and related quantities
@@ -275,7 +274,7 @@ def call_sv(opts, inputs, reference_files):
         insert_ranges.append((lower_range, upper_range))
     if opts['verbosity'] > 1:
         print('insert_ranges:')
-        print('\n'.join(['\t{0}'.format(insert_ranges[l]) for l in range(len(insert_ranges))])
+        print('\n'.join([f'\t{insert_ranges[l]}' for l in range(len(insert_ranges))])
               + '\n')
 
     # call SVs
@@ -301,7 +300,7 @@ def call_sv(opts, inputs, reference_files):
                            for ins in insert])
     opts['pi_robust'] = pi_robust
     if opts['verbosity'] > 0:
-        print('[call_sv] pi_robust: %f' % pi_robust)
+        print(f'[call_sv] pi_robust: {pi_robust:f}')
 
     insert_q01 = []
     insert_q99 = []

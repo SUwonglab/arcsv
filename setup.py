@@ -27,7 +27,7 @@ setup(
         'numpy>=1.19',
         'scikit-learn>=0.24',
         'matplotlib>=3.3',
-        'igraph>=0.10',         # formerly published as python-igraph
+        'igraph>=0.10',
         'pyinter'
     ],
     extras_require={

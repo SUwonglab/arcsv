@@ -140,11 +140,14 @@ from arcsv._version import __version__
 
 
 def get_vcf_header(reference_name, sample_name='sample1'):
-    header = """##fileformat=VCFv4.2
-##fileDate={0}
-##source=arcsv-{1}
-##reference={2}
-{3}
+    file_date = strftime('%Y%m%d')
+    reference_basename = os.path.basename(reference_name)
+    contigs = get_vcf_contigs(reference_name)
+    header = f"""##fileformat=VCFv4.2
+##fileDate={file_date}
+##source=arcsv-{__version__}
+##reference={reference_basename}
+{contigs}
 ##ALT=<ID=DEL,Description="Deletion">
 ##ALT=<ID=DUP,Description="Duplication">
 ##ALT=<ID=INV,Description="Inversion">
@@ -177,21 +180,16 @@ def get_vcf_header(reference_name, sample_name='sample1'):
 ##INFO=<ID=SV_TYPE,Number=1,Type=String,Description="Type of structural variant">
 ##FILTER=<ID=INSERTION,Description="Event contains an insertion call">
 ##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
-#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t{4}\n"""
-    header = header.format(strftime('%Y%m%d'),
-                           __version__,
-                           os.path.basename(reference_name),
-                           get_vcf_contigs(reference_name),
-                           sample_name)
+#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t{sample_name}\n"""
     return header
 
 
-def vcf_line_template():
-    return ('{chr}\t{pos}\t{id}\t{ref}\t{alt}\t{qual}\t'
-            '{filter}\t{info}\t{format_str}\t{gt}\n')
+def vcf_line(chrom, pos, vcf_id, ref, alt, qual, filters, info, format_str, gt):
+    return (f'{chrom}\t{pos}\t{vcf_id}\t{ref}\t{alt}\t{qual}\t'
+            f'{filters}\t{info}\t{format_str}\t{gt}\n')
 
 
 def get_vcf_contigs(reference_name):
     fa = FastaFile(reference_name)
-    return '\n'.join(['##contig=<ID={0},length={1}>'.format(r, l) for
+    return '\n'.join([f'##contig=<ID={r},length={l}>' for
                       (r, l) in zip(fa.references, fa.lengths)])

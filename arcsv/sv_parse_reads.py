@@ -203,7 +203,7 @@ class GenomeGraph:
                     num_dist = sum(edge['hanging_is_distant'])
                     num_un = len(edge['which_hanging']) - num_dist
                     if max(num_un, num_dist) > 0:
-                        print('unmapped: {0}\tdistant: {1}'.format(num_un, num_dist))
+                        print(f'unmapped: {num_un}\tdistant: {num_dist}')
 
 
 def is_block_edge(e):
@@ -284,7 +284,7 @@ def parse_reads_with_blocks(opts, reference_files, bamgroups,
         # parse reads from this chromosome
         alignments = bam.fetch_unsorted(chrom_name, start, end)
         if opts['verbosity'] > 0:
-            print('[parse_reads] fetching alignments from chromosome {0}'.format(chrom_name))
+            print(f'[parse_reads] fetching alignments from chromosome {chrom_name}')
         # SPEEDUP handle hanging reads (mate unmapped or rname!=mrnm, but not distant) as we go to save memory. but, careful not to add them twice...
         for aln in alignments:
             if not_primary(aln) or aln.is_unmapped or aln.is_duplicate or aln.pos >= blocks[-1].end:
@@ -318,13 +318,13 @@ def parse_reads_with_blocks(opts, reference_files, bamgroups,
         for i in range(g.size):
             edge = g.get_edge(2 * i, 2 * i + 1)
             if len(edge['offset']) > 100:
-                print('block {0}: '.format(blocks[i]))
+                print(f'block {blocks[i]}: ')
                 ulibs = set(edge['lib'])
                 for l in ulibs:
                     which_lib = [edge['lib'][j] == l and j not in edge['which_hanging'] for j in range(len(edge['offset']))]
                     if any(which_lib):
                         med = np.median([edge['offset'][j] for j in range(len(edge['offset'])) if which_lib[j]])
-                        print('\tlib {0} median {1} ({2} reads)'.format(l, med, sum(which_lib)))
+                        print(f'\tlib {l} median {med} ({sum(which_lib)} reads)')
                         print('\n')
 
     return g, blocks, gap_indices, left_breakpoints, right_breakpoints
@@ -360,10 +360,10 @@ def create_blocks(breakpoints, gaps, chrom_name, start, end, verbosity):
         adjusted_blocks = sorted(list(adjusted_blocks))
 
         if verbosity > 1:
-            print('bploc {0}'.format(bpl))
-            print('bp {0}'.format(breakpoint))
-            print('blockinterval {0}'.format(blockinterval))
-            print('adjusted {0}'.format(adjusted_blocks))
+            print(f'bploc {bpl}')
+            print(f'bp {breakpoint}')
+            print(f'blockinterval {blockinterval}')
+            print(f'adjusted {adjusted_blocks}')
 
         for ab in adjusted_blocks:
             if ab.lower_value == ab.upper_value:  # block completely within a gap
@@ -381,9 +381,9 @@ def create_blocks(breakpoints, gaps, chrom_name, start, end, verbosity):
                 else:
                     right_breakpoint = breakpoint
                 if verbosity > 1:
-                    print('adding {0}'.format(GenomeInterval(chrom_name, ab.lower_value, ab.upper_value)))
-                    print('\tleft {0}'.format(left_breakpoint))
-                    print('\tright {0}'.format(right_breakpoint))
+                    print(f'adding {GenomeInterval(chrom_name, ab.lower_value, ab.upper_value)}')
+                    print(f'\tleft {left_breakpoint}')
+                    print(f'\tright {right_breakpoint}')
                 blocks.append(GenomeInterval(chrom_name, ab.lower_value, ab.upper_value))
                 left_breakpoints.append(left_breakpoint)
                 right_breakpoints.append(right_breakpoint)
@@ -457,7 +457,7 @@ def block_parser_handle_pair(opts, aln1, aln2, bam, g, blocks, block_ends,
     # not hanging, but aln2 was not in fetch range
     if same_chrom and not is_distant and aln2.query_qualities is None and not aln2.is_unmapped:
         if opts['verbosity'] > 1:
-            print('skipping pair, aln has pos = {0} mpos = {1}'.format(aln1.pos, aln1.mpos))
+            print(f'skipping pair, aln has pos = {aln1.pos} mpos = {aln1.mpos}')
         return
 
     if opts['filter_read_through'] and \
@@ -582,7 +582,7 @@ def get_blocked_alignment(opts, aln, blocks, block_ends, block_idx, bam,
                                                                         find_offset=True, true_read_length=true_rlen,
                                                                         aln_read_length=first.query_length)
         if opts['verbosity'] > 1:
-            print('qname {0}, first {1} is_rev={2}'.format(first.qname, first_overlapping_blocks, first.is_reverse))
+            print(f'qname {first.qname}, first {first_overlapping_blocks} is_rev={first.is_reverse}')
         second_blocks, second_gaps = get_blocks_gaps(second)
         second_overlapping_blocks, second_offset = get_overlapping_blocks(blocks,
                                                                           second_blocks, second_gaps,
@@ -591,7 +591,7 @@ def get_blocked_alignment(opts, aln, blocks, block_ends, block_idx, bam,
                                                                           aln_read_length=second.query_length)
         overlapping_blocks = first_overlapping_blocks + second_overlapping_blocks
         if opts['verbosity'] > 1:
-            print('qname {0}, second {1} is_rev={2}'.format(second.qname, second_overlapping_blocks, second.is_reverse))
+            print(f'qname {second.qname}, second {second_overlapping_blocks} is_rev={second.is_reverse}')
             print('\n')
         for a in first, second:
             # print('\n')

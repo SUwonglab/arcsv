@@ -75,7 +75,7 @@ def process_discordant_pair(aln1, aln2, chrom, discordant_pairs, min_mapq, ilen,
         disc = DiscordantPair(chrom, pos1, pos2, ilen, aln1.qname)
     discordant_pairs[dtype] = discordant_pairs.get(dtype, []) + [disc]
     if disc.pos1 > disc.pos2 and dtype != 'Ins':
-        raise Warning('[process_disc_pair] discordant type {0} pos1 > pos2'.format(dtype))
+        raise Warning(f'[process_disc_pair] discordant type {dtype} pos1 > pos2')
     return dtype
 
 
@@ -92,12 +92,12 @@ def apply_discordant_clustering(opts, discordant_pairs_list,
         lib_name = opts['library_names'][i]
         for (dtype, pairs) in discordant_pairs_list[i].items():
             if opts['verbosity'] > 0:
-                print('[pecluster] clustering {0}'.format(dtype))
+                print(f'[pecluster] clustering {dtype}')
             clusters, pairs_clustered = cluster_pairs(opts, pairs, dtype, i,
                                                       insert_mu[i], insert_sigma[i])
 
             if opts['verbosity'] > 0:
-                print('[pecluster] computing null distribution for {0} clusters'.format(dtype))
+                print(f'[pecluster] computing null distribution for {dtype} clusters')
             lr_null_clusters = compute_null_dist(opts, pairs_clustered, dtype,
                                                  insert_mu[i], insert_sigma[i],
                                                  gap_file, lib_idx=i, lr_cond=lr_cond)
@@ -115,12 +115,10 @@ def apply_discordant_clustering(opts, discordant_pairs_list,
                 # print(breakpoints[-1])
                 # print('')
             if opts['verbosity'] > 0:
-                print('[pecluster] {0}: {1} discordant {2} reads'
-                      .format(opts['library_names'][i], len(pairs), dtype))
-                print('[pecluster] {0}: {1} clusters, {2} passing {3} failing'
-                      .format(opts['library_names'][i], dtype,
-                              len(clusters_pass), len(clusters_fail)))
-            outname = '{0}_{1}_cluster.txt'.format(lib_name, dtype)
+                print(f'[pecluster] {lib_name}: {len(pairs)} discordant {dtype} reads')
+                print(f'[pecluster] {lib_name}: {dtype} clusters, '
+                      f'{len(clusters_pass)} passing {len(clusters_fail)} failing')
+            outname = f'{lib_name}_{dtype}_cluster.txt'
             fname = os.path.join(opts['outdir'], 'logging', outname)
             write_clustering_results(fname, lr_pairs, first_reject)
 
@@ -184,8 +182,8 @@ def cluster_pairs(opts, pairs, dtype, lib_idx, insert_mu, insert_sigma):
                                       max_distance=max_compatible_distance,
                                       insert_mu=insert_mu, insert_sigma=insert_sigma)
     if opts['verbosity'] > 1:
-        print('clustering {0} pairs'.format(dtype))
-        print('max cluster size: {0}'.format(max_cluster_size))
+        print(f'clustering {dtype} pairs')
+        print(f'max cluster size: {max_cluster_size}')
 
     cur_comps = []              # pairs in the current connected components
     cur_maxpos = []             # max(pair.pos1) over pairs in cur_comps
@@ -196,7 +194,7 @@ def cluster_pairs(opts, pairs, dtype, lib_idx, insert_mu, insert_sigma):
         passed_comps = [i for i in range(len(cur_comps)) if
                         abs(cur_maxpos[i] - pair.pos1) > max_compatible_distance]
         if passed_comps != sorted(passed_comps):
-            raise Warning('passed_comps not sorted? {0}'.format(passed_comps))
+            raise Warning(f'passed_comps not sorted? {passed_comps}')
         offset = 0
         for i in passed_comps:
             idx = i - offset    # adjust for deleting other stuff
@@ -290,7 +288,7 @@ def shuffle_discordant_pairs(discordant_pairs, chrom_len_no_gaps, max_insert_siz
         pair_len = pair.pos2 - pair.pos1
         # ignoring read length, but doesn't matter for chrom_len >> read_len
         if pair_len < chrom_len_no_gaps and pair_len > -chrom_len_no_gaps:
-            # randint's upper bound is exclusive (random_integers' was inclusive)
+            # randint excludes its upper bound
             new_pos1 = np.random.randint(max(0, -pair_len),
                                          chrom_len_no_gaps - max(0, pair_len) + 1)
             new_pair = DiscordantPair(pair.chrom, new_pos1, new_pos1 + pair_len,
@@ -314,7 +312,7 @@ def lr_del(cluster, insert_mu, insert_sigma, cutoff, conditioning=False):
 
     if lr == -np.inf:
         sys.stderr.write('[lr_del] DEL likelihood ratio = -inf\n')
-        sys.stderr.write('{0}\n'.format(cluster))
+        sys.stderr.write(f'{cluster}\n')
 
     if conditioning:
         n = len(cluster)
@@ -396,13 +394,12 @@ def compute_null_dist(opts, discordant_pairs, dtype,
                              float)
         lr_null_clusters = np.append(lr_null_clusters, lr_tmp)
     if opts['verbosity'] > 1:
-        print('[compute_null_dist] {0}'.format(dtype))
+        print(f'[compute_null_dist] {dtype}')
         print('shuffled lr:')
         print(lr_null_clusters)
         print('')
 
-    outname = ('{0}_{1}_null_cluster_{2}reps.txt'
-               .format(opts['library_names'][lib_idx], dtype, nreps))
+    outname = f'{opts["library_names"][lib_idx]}_{dtype}_null_cluster_{nreps}reps.txt'
     fname = os.path.join(opts['outdir'], 'logging', outname)
     write_clustering_results(fname, list(zip(lr_null_clusters, null_clusters)), first_reject=0)
 
@@ -466,9 +463,8 @@ def write_clustering_results(filename, lr_pairs, first_reject):
             lr = lr_clusters[i]
             passing = True if i >= first_reject else False
             qnames = ';'.join([p.qname for p in clusters[i]])
-            fout.write('{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\n'
-                       .format(min(pos1), max(pos1), min(pos2), max(pos2), npairs,
-                               lr, passing, qnames))
+            fout.write(f'{min(pos1)}\t{max(pos1)}\t{min(pos2)}\t{max(pos2)}\t{npairs}\t{lr}\t{passing}\t{qnames}\n'
+                       )
     fout.close()
 
 
