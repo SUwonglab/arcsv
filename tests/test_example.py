@@ -9,7 +9,7 @@ EXAMPLE = REPO / 'example'
 
 def test_example_matches_expected_output(tmp_path):
     outdir = tmp_path / 'arcsv_out'
-    cmd = [sys.executable, str(REPO / 'bin' / 'arcsv'), 'call',
+    cmd = [sys.executable, '-m', 'arcsv', 'call',
            '-i', str(EXAMPLE / 'input.bam'),
            '-r', '20:0-250000',
            '-R', str(EXAMPLE / 'reference.fa'),

@@ -193,10 +193,20 @@ num_paths | number of paths through this portion of the adjacency graph. The cal
 
 # Development #
 
+Development uses [uv](https://docs.astral.sh/uv/). `uv.lock` pins the exact dependency versions used in CI.
+
 ```
-pip install -e '.[dev]'
-ruff check          # lint (configured in ruff.toml)
-pytest              # unit tests + end-to-end check of example/ against expected_output.tab
+uv sync --extra test             # create .venv with ARC-SV (editable) and test tools
+uv run ruff check .              # lint (configured in pyproject.toml)
+uv run pytest                    # unit tests + end-to-end check of example/ against expected_output.tab
 ```
 
-CI runs both on every push to master and on pull requests (`.github/workflows/ci.yml`).
+Without uv, `pip install -e '.[test]'` works too.
+
+CI (`.github/workflows/ci.yml`) runs on pushes to master and on pull requests:
+- the tests on Python 3.9 and 3.14 (Linux) and 3.14 (macOS)
+- the tests against the lowest supported versions of each dependency
+- lint
+- a check that the package builds with valid metadata
+
+A separate workflow (`latest-dependencies.yml`) runs the tests against the newest dependency releases twice a month, ignoring the lockfile.

@@ -13,6 +13,56 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  test:
+    name: ${{ matrix.os }} / Python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        # oldest and newest supported Python; no Windows (pysam does not support it)
+        include:
+          - os: ubuntu-latest
+            python-version: "3.9"
+          - os: ubuntu-latest
+            python-version: "3.14"
+          - os: macos-latest
+            python-version: "3.14"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: true
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: uv sync --frozen --extra test
+      # unit tests, plus the end-to-end run of example/ checked against
+      # example/expected_output.tab (tests/test_example.py)
+      - name: Run tests
+        run: uv run --frozen python -m pytest
+
+  minimum-versions:
+    name: Minimum dependency versions
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: true
+          python-version: "3.9"
+      # installs the lower bounds declared in pyproject.toml, so they stay honest
+      - name: Install lowest versions of direct dependencies
+        run: uv sync --resolution lowest-direct --extra test
+      - name: Run tests
+        run: uv run --no-sync python -m pytest
+
   lint:
     name: Lint
     runs-on: ubuntu-latest
@@ -21,33 +71,31 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - name: Install uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
-          python-version: "3.13"
-      # ruff is pinned once, in the dev extra in setup.py
+          enable-cache: true
+          python-version: "3.14"
+      # ruff comes from the lockfile, so the enforced version is pinned there
       - name: Install dependencies
-        run: python -m pip install ".[dev]"
+        run: uv sync --frozen --extra test
       - name: Run lint
-        run: ruff check --output-format=github
+        run: uv run --frozen ruff check --output-format=github .
 
-  test:
-    name: Python ${{ matrix.python-version }}
+  package:
+    name: Package
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.9", "3.13"]
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - name: Install uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
-          python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
-        run: python -m pip install ".[dev]"
-      # unit tests, plus the end-to-end run of example/ checked against
-      # example/expected_output.tab (tests/test_example.py)
-      - name: Run tests
-        run: python -m pytest -v
+          enable-cache: true
+          python-version: "3.14"
+      - name: Build wheel and source distribution
+        run: uv build --no-sources
+      - name: Check distribution metadata
+        run: uvx --from twine twine check --strict dist/*
