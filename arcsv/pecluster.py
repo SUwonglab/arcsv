@@ -63,6 +63,9 @@ def process_discordant_pair(aln1, aln2, chrom, discordant_pairs, min_mapq, ilen,
             dtype = 'Ins'
             disc = DiscordantPair(chrom, first.reference_end, second.reference_start,
                                   ilen, first.qname)
+        else:
+            # large insert but overlapping reads (read-through), not a Del
+            return None
     else:
         dtype = 'InvR' if (aln1.is_reverse ^ is_rf) else 'InvL'
         if dtype == 'InvL':
@@ -279,16 +282,17 @@ def cluster_handle_component(component, is_compatible):
 
 # discordant_pairs: list of tuples corresponding to discordant pairs
 # non_gaps: list of intervals where we can place the discordant pairs
-def shuffle_discordant_pairs(discordant_pairs, chrom_len_no_gaps, max_insert_size=np.Inf):
+def shuffle_discordant_pairs(discordant_pairs, chrom_len_no_gaps, max_insert_size=np.inf):
     shuffled = []
     for pair in discordant_pairs:
-        if max_insert_size < np.Inf and pair.insert > max_insert_size:
+        if max_insert_size < np.inf and pair.insert > max_insert_size:
             continue
         pair_len = pair.pos2 - pair.pos1
         # ignoring read length, but doesn't matter for chrom_len >> read_len
         if pair_len < chrom_len_no_gaps and pair_len > -chrom_len_no_gaps:
-            new_pos1 = np.random.random_integers(max(0, -pair_len),
-                                                 chrom_len_no_gaps - max(0, pair_len))
+            # randint's upper bound is exclusive (random_integers' was inclusive)
+            new_pos1 = np.random.randint(max(0, -pair_len),
+                                         chrom_len_no_gaps - max(0, pair_len) + 1)
             new_pair = DiscordantPair(pair.chrom, new_pos1, new_pos1 + pair_len,
                                       pair.insert, pair.qname)
             shuffled.append(new_pair)
@@ -376,7 +380,7 @@ def compute_null_dist(opts, discordant_pairs, dtype,
     if dtype == 'Del':
         max_null_insert = insert_mu * opts['insert_max_mu_multiple']
     else:
-        max_null_insert = np.Inf
+        max_null_insert = np.inf
 
     null_clusters = []
     lr_null_clusters = np.array([], float)

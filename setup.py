@@ -21,13 +21,13 @@ setup(
     license=arcsv_license,
     # url='http://github.com/jgarthur/arcsv/',
     packages=find_packages(exclude=('build', 'dist')),
+    python_requires='>=3.9',
     install_requires=[
-        'pysam',
-        'numpy',
-        'scipy',
-        'scikit-learn',
-        'matplotlib',
-        'igraph',
+        'pysam>=0.16',
+        'numpy>=1.19',
+        'scikit-learn>=0.24',
+        'matplotlib>=3.3',
+        'igraph>=0.10',         # formerly published as python-igraph
         'pyinter'
     ],
     scripts=['bin/arcsv']

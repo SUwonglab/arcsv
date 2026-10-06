@@ -375,8 +375,8 @@ def genome_blocks_gaps(blocks, path):
 # sum_x=a1^b1 sum_y=a2^b2 f(y - x)
 # where cdf_sum is the double cumsum of f
 def double_int(cdf_sum, a1, b1, a2, b2,
-               xmin=-np.Inf, xmax=np.Inf,
-               ymin=-np.Inf, ymax=np.Inf):
+               xmin=-np.inf, xmax=np.inf,
+               ymin=-np.inf, ymax=np.inf):
     if a1 > xmax or a2 > ymax:
         return 0
     if b1 < xmin or b2 < ymin:

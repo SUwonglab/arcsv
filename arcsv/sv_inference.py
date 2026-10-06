@@ -361,8 +361,8 @@ def do_inference(opts, reference_files, g, blocks,
 
         best = None
         next_best = None
-        best_lh = -np.Inf
-        next_lh = -np.Inf
+        best_lh = -np.inf
+        next_lh = -np.inf
         best_af = None
         which_consider = idx_ordered_unique[:50]  # LATER make this a parameter
         # make sure reference is there:

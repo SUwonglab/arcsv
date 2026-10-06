@@ -543,11 +543,11 @@ def path_reversed(path):
 
 def supporting_read_count(r1, r2, expected_type, support_type):
     combined = set(r1).intersection(set(r2))
-    if support_type is 'split':
+    if support_type == 'split':
         # note SupportingSplit.split_type is stranded (e.g. 'Del+' or 'Del-')
         # whereas expected_type is unstranded ('Del')
         return len([r for r in combined if r.split_type[:-1] == expected_type])
-    elif support_type is 'pe':
+    elif support_type == 'pe':
         return len([r for r in combined if r[1] == expected_type])
     else:
         raise Warning('invalid support_type')
@@ -555,11 +555,11 @@ def supporting_read_count(r1, r2, expected_type, support_type):
 
 def supporting_reads(r1, r2, expected_type, support_type):
     combined = set(r1).intersection(set(r2))
-    if support_type is 'split':
+    if support_type == 'split':
         # note SupportingSplit.split_type is stranded (e.g. 'Del+' or 'Del-')
         # whereas expected_type is unstranded ('Del')
         return [r for r in combined if r.split_type[:-1] == expected_type]
-    elif support_type is 'pe':
+    elif support_type == 'pe':
         return [r for r in combined if r[1] == expected_type]
     else:
         raise Warning('invalid support_type')

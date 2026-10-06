@@ -144,8 +144,8 @@ class GenomeGraph:
 
     # return the appropriate edge object, creating the edge if needed
     def get_edge(self, v1, v2):
-        if self.graph.are_connected(v1, v2):
-            eid = self.graph.get_eid(v1, v2)
+        eid = self.graph.get_eid(v1, v2, error=False)  # -1 if not connected
+        if eid >= 0:
             edge = self.graph.es[eid]
         else:
             self.graph.add_edge(v1, v2)
@@ -189,8 +189,8 @@ class GenomeGraph:
     def print_summary(self):
         for i in range(2 * self.size):
             for j in range(i+1, 2 * self.size):
-                if self.graph.are_connected(i, j):
-                    e = self.graph.get_eid(i, j)
+                e = self.graph.get_eid(i, j, error=False)
+                if e >= 0:
                     edge = self.graph.es[e]
                     in_1 = (i % 2) == 0
                     string_1 = 'in' if in_1 else 'out'

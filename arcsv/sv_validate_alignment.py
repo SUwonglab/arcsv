@@ -556,10 +556,10 @@ def best_alignment_chain(segs, query_blocks, del_positions, reverse_only,
     n = len(segs)
     data = {}
     data['best_parent'] = [None] * n
-    data['best_score'] = [-np.Inf] * n
+    data['best_score'] = [-np.inf] * n
     data['segment'] = segs
 
-    best_score = -np.Inf
+    best_score = -np.inf
     best_final_node =  None
 
     for idx_v in range(len(segs)):
