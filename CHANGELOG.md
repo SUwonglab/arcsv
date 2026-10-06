@@ -43,8 +43,7 @@ All notable user-facing changes are recorded here.
 
 ### Documentation
 
-- Cite the ARC-SV publication (Zhou, Arthur, et al., *Cell* 2024) and link
-  the PhD thesis describing the method in detail.
+- Cite the ARC-SV publication (Zhou, Arthur, Guo, et al., *Cell* 2024).
 - Recommend installing with pipx or a virtual environment; add conda
   instructions and development instructions covering tests and CI.
 
