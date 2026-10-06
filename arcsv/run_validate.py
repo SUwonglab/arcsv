@@ -14,7 +14,7 @@ def get_args():
     parser.add_argument('-R', '--reference_name', type=str, default='grch37', help='huref; grch37; longreads')
     parser.add_argument('-v', '--verbosity', type=int, default=1)
     args = parser.parse_args()
-    print('[run_sv] args: \n{0}\n'.format(args))
+    print(f'[run_sv] args: \n{args}\n')
     return args.bam_name, args.chromosome, args.install_dir, args.output_dir, args.reference_name, args.verbosity
 
 
@@ -28,7 +28,7 @@ exec(open(sva_path).read())
 bamfile = os.path.join(output_dir, bam_name)
 pklfile = os.path.join(output_dir, 'altered.pkl')
 
-print('score_alignments({0}, {1}, chrom = {2}, ref = {3}'.format(bamfile, pklfile, chromosome, reference_name))
+print(f'score_alignments({bamfile}, {pklfile}, chrom = {chromosome}, ref = {reference_name}')
 
 score_alignments(bamfile, pklfile,
                  chrom=chromosome,

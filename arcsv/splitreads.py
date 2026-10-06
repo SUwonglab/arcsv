@@ -41,11 +41,11 @@ class SupportingSplit:
 
     def __repr__(self):
         qname_numbered = self.aln.qname + ('_1' if self.aln.is_read1 else '_2')
-        return '({0}, {1})'.format(qname_numbered, self.split_type)
+        return f'({qname_numbered}, {self.split_type})'
 
     def __str__(self):
         qname_numbered = self.aln.qname + ('_1' if self.aln.is_read1 else '_2')
-        return '({0}, {1})'.format(qname_numbered, self.split_type)
+        return f'({qname_numbered}, {self.split_type})'
 
     def __hash__(self):
         return hash((self.aln, self.mate,
@@ -136,13 +136,13 @@ def parse_splits(aln, bam, min_mapq, mate, max_splits=1):
         last_ref.reverse()
 
     if all([b is None for b in first_ref]):
-        print('first_ref: {0}'.format(str(first_ref)))
+        print(f'first_ref: {str(first_ref)}')
         print('first/last')
         print(first)
         print(last)
         return None
     if all([b is None for b in last_ref]):
-        print('last_ref: {0}'.format(str(last_ref)))
+        print(f'last_ref: {str(last_ref)}')
         print('first/last')
         print(first)
         print(last)
@@ -288,25 +288,20 @@ def split_to_bed12(split):
     bp2_start, bp2_end = split[6][0], (split[6][1] + 1)
     if bp1_chrom != bp2_chrom or bp1_end >= bp2_start + 1:
         # ucsc doesn't support overlapping blocks or different chromosomes
-        template = ('{chr}\t{start}\t{end}\t{name}\t{mapq}\t+'
-                    '\t{start}\t{end}\t{col}\t1\t{len}\t0\n')
-        line1 = template.format(chr=bp1_chrom, start=bp1_start, end=bp1_end,
-                                name=split_name, mapq=mapq, col=col, len=bp1_end - bp1_start)
-        line2 = template.format(chr=bp2_chrom, start=bp2_start, end=bp2_end,
-                                name=split_name, mapq=mapq, col=col, len=bp2_end - bp2_start)
-        return line1 + line2
+        def bed_line(chrom, start, end):
+            return (f'{chrom}\t{start}\t{end}\t{split_name}\t{mapq}\t+'
+                    f'\t{start}\t{end}\t{col}\t1\t{end - start}\t0\n')
+        return (bed_line(bp1_chrom, bp1_start, bp1_end)
+                + bed_line(bp2_chrom, bp2_start, bp2_end))
     else:
         # compute blocks
         block1_len = bp1_end - bp1_start
         block2_len = bp2_end - bp2_start
         block1_start = 0
         block2_start = bp2_start - bp1_start
-        template = ('{chr}\t{start}\t{end}\t{name}\t{mapq}\t+\t{start}'
-                    '\t{end}\t{col}\t2\t{b1},{b2},\t{b1start},{b2start}\n')
-        return template.format(chr=bp1_chrom, start=bp1_start, end=bp2_end,
-                               name=split_name, mapq=mapq, col=col,
-                               b1=block1_len, b2=block2_len,
-                               b1start=block1_start, b2start=block2_start)
+        return (f'{bp1_chrom}\t{bp1_start}\t{bp2_end}\t{split_name}\t{mapq}\t+'
+                f'\t{bp1_start}\t{bp2_end}\t{col}\t2\t{block1_len},{block2_len},'
+                f'\t{block1_start},{block2_start}\n')
 
 
 def write_splits_bed(splits, fileprefix, write_track_header=True):
@@ -320,8 +315,8 @@ def write_splits_bed(splits, fileprefix, write_track_header=True):
 
 def write_splits_bigbed(splits, fileprefix):
     write_splits_bed(splits, fileprefix, write_track_header=False)
-    os.system('sort -k1,1 -k2,2n {0}.bed > tmpsorted'.format(fileprefix))
-    os.system('mv tmpsorted {0}.bed'.format(fileprefix))
-    os.system('bedToBigBed -type=bed12 {0}.bed '
-              '/scratch/PI/whwong/svproject/reference/hg19.chrom.sizes {0}.bb'
-              .format(fileprefix))
+    os.system(f'sort -k1,1 -k2,2n {fileprefix}.bed > tmpsorted')
+    os.system(f'mv tmpsorted {fileprefix}.bed')
+    os.system(f'bedToBigBed -type=bed12 {fileprefix}.bed '
+              f'/scratch/PI/whwong/svproject/reference/hg19.chrom.sizes {fileprefix}.bb'
+              )

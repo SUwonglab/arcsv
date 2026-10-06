@@ -12,7 +12,7 @@ from arcsv.sv_parse_reads import create_blocks
 
 def svelter_convert(svelterfile, outdir, reffile, filter_gaps=False, refgapfile=None,
                     flank_size=1000, verbosity=0):
-    os.system('mkdir -p %s' % outdir)
+    os.system(f'mkdir -p {outdir}')
     # collect all bps
     # all_bp = []
     # with open(svelterfile, 'r') as svelter:
@@ -23,7 +23,7 @@ def svelter_convert(svelterfile, outdir, reffile, filter_gaps=False, refgapfile=
     #         all_bp.extend(int(x) for x in bp_str)
     # all_bp.sort()
 
-    log = open(os.path.join(outdir, 'convert_{0}.log'.format(svelterfile)), 'w')
+    log = open(os.path.join(outdir, f'convert_{svelterfile}.log'), 'w')
     data = []
 
     # it seems some sv can be repeated in svelter output with different scores
@@ -60,7 +60,7 @@ def svelter_convert(svelterfile, outdir, reffile, filter_gaps=False, refgapfile=
         num_id_seen = seen_id.get(id, 0)
         seen_id[id] = num_id_seen + 1
         if num_id_seen > 0:
-            print('saw {0} again'.format(id))
+            print(f'saw {id} again')
             id_extra = ';' + str(num_id_seen + 1)
         else:
             id_extra = ''
@@ -98,8 +98,8 @@ def svelter_convert(svelterfile, outdir, reffile, filter_gaps=False, refgapfile=
         this_data = (paths, blocks, left_bp, right_bp, score, 'PASS',
                      id_extra, None, None)  # no extra INFO/FORMAT tags like VCF vase
         data.append(this_data)
-    log.write('skipped_seen\t{0}\n'.format(skipped_seen))
-    log.write('skipped_refgap\t{0}\n'.format(skipped_refgap))
+    log.write(f'skipped_seen\t{skipped_seen}\n')
+    log.write(f'skipped_refgap\t{skipped_refgap}\n')
 
     do_sv_processing(data, outdir, reffile, log, verbosity)
 
@@ -109,10 +109,9 @@ def svelter_convert(svelterfile, outdir, reffile, filter_gaps=False, refgapfile=
 
 def generic_vcf_convert(vcffile, outdir, reffile, filter_gaps=False, refgapfile=None,
                         caller=None, flank_size=1000, verbosity=0):
-    os.system('mkdir -p %s' % outdir)
+    os.system(f'mkdir -p {outdir}')
 
-    vcf = open(vcffile, 'r')
-    log = open(os.path.join(outdir, 'convert_{0}.log'.format(vcffile)), 'w')
+    log = open(os.path.join(outdir, f'convert_{vcffile}.log'), 'w')
     data = []
     svtype_skipped = {}
     seen_coords_count = {}
@@ -155,7 +154,7 @@ def generic_vcf_convert(vcffile, outdir, reffile, filter_gaps=False, refgapfile=
         if caller == 'pindel':
             homlen = int(tagd['HOMLEN'])
             if pos + homlen > end or svtype == 'INS':
-                print('pos + homlen > end: positions {0}'.format((pos, end)))
+                print(f'pos + homlen > end: positions {(pos, end)}')
                 cipos = (0, 0)
                 ciend = (0, 0)
             else:
@@ -299,8 +298,8 @@ def generic_vcf_convert(vcffile, outdir, reffile, filter_gaps=False, refgapfile=
                      id_extra, tagd_extra, tags2_extra)
         data.append(this_data)
     for svtype, count in svtype_skipped.items():
-        log.write('skipped_svtype\t{0}\t{1}\n'.format(svtype, count))
-    log.write('skipped_refgap\t{0}\n'.format(skipped_refgap))
+        log.write(f'skipped_svtype\t{svtype}\t{count}\n')
+    log.write(f'skipped_refgap\t{skipped_refgap}\n')
     do_sv_processing(data, outdir, reffile, log, verbosity, write_extra)
 
     vcf.close()

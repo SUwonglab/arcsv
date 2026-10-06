@@ -33,7 +33,7 @@ def sv_affected_len(path, blocks):
 def align_strings(s1, s2, match=1000, mismatch=-1, gap=-1):
     s1 = s1 + '$'
     s2 = s2 + '$'
-    print('aln_str\t{0}\t{1}'.format(s1, s2))
+    print(f'aln_str\t{s1}\t{s2}')
     l1, l2 = len(s1), len(s2)
     D = np.zeros((l1 + 1, l2 + 1), dtype=int)
     prev = np.array([[None]*(l2+1)]*(l1+1))
@@ -59,7 +59,7 @@ def align_strings(s1, s2, match=1000, mismatch=-1, gap=-1):
             # print('')
 
     def rest_of_path(i, j, aligned_1='', aligned_2='', scores=D,
-                     affected_idx_1 = set(), affected_idx_2 = set()):
+                     affected_idx_1=None, affected_idx_2=None):
         # print('aln\t{0}\t{1}'.format(aligned_1, aligned_2))
         # print('i = {0}\tj = {1}'.format(i, j))
         # print('prev:\t{0}'.format(prev[i,j]))
@@ -89,7 +89,6 @@ def align_strings(s1, s2, match=1000, mismatch=-1, gap=-1):
             yield affected_idx_1, affected_idx_2
             yield from rest_of_path(i + x, j + y, aligned_1_new, aligned_2_new)
 
-    aff = rest_of_path(l1, l2)
     aff_1, aff_2 = set(), set()
     for tmp_1, tmp_2 in rest_of_path(l1, l2):
         aff_1.update(tmp_1)

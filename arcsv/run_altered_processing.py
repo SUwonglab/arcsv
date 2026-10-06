@@ -58,35 +58,38 @@ if do_align:
     altered_fa = os.path.join(outdir, 'altered.fasta')
     altered_bam_chrom = os.path.join(outdir, 'altered_to_chrom.bam')
     altered_bam_unplaced = os.path.join(outdir, 'altered_to_unplaced.bam')
-    aln_cmd_template = 'bwa mem -D 0 -a -w 1000 -x intractg -t {3} {0} {1} | samtools view -b -S - > {2}'
+
+    def aln_cmd(ref, query, out_bam):
+        return (f'bwa mem -D 0 -a -w 1000 -x intractg -t {threads} {ref} {query} '
+                f'| samtools view -b -S - > {out_bam}')
 
     # if huref, align to chromosomes then unplaced, then merge and sort
     if altrefname == 'huref':
-        altref_chrom = '/home/jgarthur/sv/reference/HuRefReallyDiploid/tmp/HuRefDiploid_chr{0}.fa'.format(chrom)
-        aln_cmd = aln_cmd_template.format(altref_chrom, altered_fa, altered_bam_chrom, threads)
-        print('[run_svelter_vcf_processing] Aligning altered reference to {0}'.format(altref_chrom))
-        os.system(aln_cmd)
-        os.system('samtools sort -n -@ {1} -o {0}.sorted {0}'.format(altered_bam_chrom, threads))
+        altref_chrom = f'/home/jgarthur/sv/reference/HuRefReallyDiploid/tmp/HuRefDiploid_chr{chrom}.fa'
+        aln_cmd_str = aln_cmd(altref_chrom, altered_fa, altered_bam_chrom)
+        print(f'[run_svelter_vcf_processing] Aligning altered reference to {altref_chrom}')
+        os.system(aln_cmd_str)
+        os.system(f'samtools sort -n -@ {threads} -o {altered_bam_chrom}.sorted {altered_bam_chrom}')
         altref_unplaced = '/home/jgarthur/sv/reference/HuRefReallyDiploid/HuRef_unplaced.fa'
-        aln_cmd = aln_cmd_template.format(altref_unplaced, altered_fa, altered_bam_unplaced, threads)
-        print('[run_svelter_vcf_processing] Aligning altered reference to {0}'.format(altref_unplaced))
-        os.system(aln_cmd)
-        os.system('samtools sort -n -@ {1} -o {0}.sorted {0}'.format(altered_bam_unplaced, threads))
-        os.system('samtools merge -f -n -@ {2} {3} {0}.sorted {1}.sorted'.format(altered_bam_chrom, altered_bam_unplaced, threads, altered_bam))
+        aln_cmd_str = aln_cmd(altref_unplaced, altered_fa, altered_bam_unplaced)
+        print(f'[run_svelter_vcf_processing] Aligning altered reference to {altref_unplaced}')
+        os.system(aln_cmd_str)
+        os.system(f'samtools sort -n -@ {threads} -o {altered_bam_unplaced}.sorted {altered_bam_unplaced}')
+        os.system(f'samtools merge -f -n -@ {threads} {altered_bam} {altered_bam_chrom}.sorted {altered_bam_unplaced}.sorted')
         ref_opt = altrefname
     elif altrefname == 'na12878pb':
-        altref_chrom = '/scratch/PI/whwong/svproject/na12878-data/mtsinai-pacbio/pseudoref/discordant_chr{0}.fa'.format(chrom)
-        aln_cmd = aln_cmd_template.format(altref_chrom, altered_fa, altered_bam_chrom, threads)
-        print('[run_svelter_vcf_processing] Aligning altered reference to {0}'.format(altref_chrom))
-        os.system(aln_cmd)
-        os.system('samtools sort -n -@ {2} -o {0} {1}'.format(altered_bam, altered_bam_chrom, threads))
+        altref_chrom = f'/scratch/PI/whwong/svproject/na12878-data/mtsinai-pacbio/pseudoref/discordant_chr{chrom}.fa'
+        aln_cmd_str = aln_cmd(altref_chrom, altered_fa, altered_bam_chrom)
+        print(f'[run_svelter_vcf_processing] Aligning altered reference to {altref_chrom}')
+        os.system(aln_cmd_str)
+        os.system(f'samtools sort -n -@ {threads} -o {altered_bam} {altered_bam_chrom}')
         ref_opt = 'longreads'
     elif altrefname == 'grch37':
-        altref_chrom = '/scratch/PI/whwong/svproject/reference/grch37_chroms/{0}.fa'.format(chrom)
-        aln_cmd = aln_cmd_template.format(altref_chrom, altered_fa, altered_bam_chrom, threads)
-        print('[run_svelter_vcf_processing] Aligning altered reference to {0}'.format(altref_chrom))
-        os.system(aln_cmd)
-        os.system('samtools sort -n -@ {2} -o {0} {1}'.format(altered_bam, altered_bam_chrom, threads))
+        altref_chrom = f'/scratch/PI/whwong/svproject/reference/grch37_chroms/{chrom}.fa'
+        aln_cmd_str = aln_cmd(altref_chrom, altered_fa, altered_bam_chrom)
+        print(f'[run_svelter_vcf_processing] Aligning altered reference to {altref_chrom}')
+        os.system(aln_cmd_str)
+        os.system(f'samtools sort -n -@ {threads} -o {altered_bam} {altered_bam_chrom}')
         ref_opt = altrefname
         valdir = os.path.join(outdir, 'validate')
 

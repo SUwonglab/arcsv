@@ -9,13 +9,13 @@ from arcsv.softclip import softclip_cluster_mergefun
 
 class Breakpoint:
     def __init__(self, interval, supp_clip_left=0, supp_clip_right=0,
-                 splits=[], pe=[], libs=[]):
+                 splits=None, pe=None, libs=None):
         self.interval = interval
         self.supp_clip_left = supp_clip_left
         self.supp_clip_right = supp_clip_right
-        self.splits = splits
-        self.pe = pe
-        self.libs = libs
+        self.splits = [] if splits is None else splits
+        self.pe = [] if pe is None else pe
+        self.libs = [] if libs is None else libs
 
     @property
     def supp_pe(self):
@@ -48,12 +48,11 @@ class Breakpoint:
         if other == 0:
             return self
         else:
-            raise TypeError('addition of Breakpoint and {0} not supported'.format(type(other)))
+            raise TypeError(f'addition of Breakpoint and {type(other)} not supported')
 
     def __str__(self):
-        return ('({0}, L={1}, R={2}, PE={3}: {4}, Spl={5}: {6}, {7})'
-                .format(self.interval, self.supp_clip_left, self.supp_clip_right,
-                        self.supp_pe, self.pe, self.supp_split, self.splits, self.libs))
+        return (f'({self.interval}, L={self.supp_clip_left}, R={self.supp_clip_right}, PE={self.supp_pe}: {self.pe}, Spl={self.supp_split}: {self.splits}, {self.libs})'
+                )
 
     def __repr__(self):
         return str(self)
@@ -68,7 +67,7 @@ class Breakpoint:
         elif self.supp_pe > 0:
             return 1
         else:
-            raise Warning('Breakpoint object {0} has no support whatsoever!'.format(str(self)))
+            raise Warning(f'Breakpoint object {str(self)} has no support whatsoever!')
             return 0
 
 
@@ -100,7 +99,7 @@ def merge_breakpoints(opts, softclips, splits, disc_bp):
             for split in splits[l]:
                 if split.bp1_chrom == split.bp2_chrom and \
                    split.bp1_chrom == chrom_name:
-                    print('{0} -> {1}'.format(split.bp1, split.bp2))
+                    print(f'{split.bp1} -> {split.bp2}')
 
     # merge softclips of the same orientation sequences
     # (filtering those with less than min_softclip_support supporting alignments)
@@ -152,8 +151,8 @@ def merge_breakpoints(opts, softclips, splits, disc_bp):
                         libs_list.append(l)
                 if opts['verbosity'] > 1:
                     print('\nmerged b/c MH:')
-                    print('left: {0}\nright: {1}'.format(softclip_left, softclip_right))
-                    print('bp_interval: {0}'.format(bp_interval))
+                    print(f'left: {softclip_left}\nright: {softclip_right}')
+                    print(f'bp_interval: {bp_interval}')
                 bp = Breakpoint(interval=bp_interval, libs=libs_list,
                                 supp_clip_left=supp_left, supp_clip_right=supp_right)
                 all_bp[bp_interval].append(bp)
@@ -206,12 +205,12 @@ def merge_breakpoints(opts, softclips, splits, disc_bp):
     all_bploc.sort()
     if opts['verbosity'] > 1:
         print('\nall_bp')
-        print('\n'.join(['{0}: {1}'.format(bpl, all_bp[bpl]) for bpl in all_bploc]))
+        print('\n'.join([f'{bpl}: {all_bp[bpl]}' for bpl in all_bploc]))
     merged = merge_nearby(all_bp, bp_mergefun_precedence, type='interval', max_distance=0)
     mbploc = sorted(merged.keys())
     if opts['verbosity'] > 1:
-        print('\njust merged bp ({0} total):'.format(len(mbploc)))
-        print('\n'.join(['{0}: {1}'.format(bpl, merged[bpl]) for bpl in mbploc]))
+        print(f'\njust merged bp ({len(mbploc)} total):')
+        print('\n'.join([f'{bpl}: {merged[bpl]}' for bpl in mbploc]))
     # filter based on min_bp_support
     for (interval, bp) in list(merged.items()):
         if (bp.supp_pe == 0) and (bp.supp_split + bp.supp_clip < opts['min_bp_support']):
@@ -219,8 +218,8 @@ def merge_breakpoints(opts, softclips, splits, disc_bp):
     final_bploc = list(merged.keys())
     final_bploc.sort()
     if opts['verbosity'] > 1:
-        print('merged and filtered bp ({0} total):'.format(len(final_bploc)))
-        print('\n'.join(['{0}: {1}'.format(bpl, merged[bpl]) for bpl in final_bploc]))
+        print(f'merged and filtered bp ({len(final_bploc)} total):')
+        print('\n'.join([f'{bpl}: {merged[bpl]}' for bpl in final_bploc]))
 
     return merged
 
@@ -274,9 +273,9 @@ def bp_mergefun_precedence(locs, bps, max_distance=0):
                 p_dict[bp.interval].append(bp)
         p_mrg = merge_nearby(p_dict, bp_mergefun, type='interval', max_distance=max_distance)
         if any([k in merged for k in p_mrg.keys()]):
-            print('key(s) {0} found in merged:'
-                  .format([k for k in p_mrg.keys() if k in merged]))
-            print('locs: {0}\nbps: {1}\n'.format(locs, bps))
+            print(f'key(s) {[k for k in p_mrg.keys() if k in merged]} found in merged:'
+                  )
+            print(f'locs: {locs}\nbps: {bps}\n')
             raise Warning('p_mrg key in merged')
         merged.update(p_mrg)
         # print('p_mrg {0}'.format(p_mrg))

@@ -21,11 +21,9 @@ class SoftclipCluster:
         self.which_libs = which_libs
 
     def __str__(self):
-        return ('(is_right {0} pos {1} nclipped {2} nmapped {3} nreads {4} '
-                'nexact {5} mapq {6} strand - {7} + {8} libs {9})'
-                .format(self.is_right, self.pos, self.bases_clipped, self.bases_mapped,
-                        self.num_reads, self.num_reads_exact, self.sum_mapq,
-                        self.num_minus, self.num_plus, self.which_libs))
+        return (f'(is_right {self.is_right} pos {self.pos} nclipped {self.bases_clipped} nmapped {self.bases_mapped} nreads {self.num_reads} '
+                f'nexact {self.num_reads_exact} mapq {self.sum_mapq} strand - {self.num_minus} + {self.num_plus} libs {self.which_libs})'
+                )
 
     def __repr__(self):
         return str(self)
@@ -133,9 +131,7 @@ def write_softclips_bed(softclips, fileprefix, chrom_name):
         locs = list(softclips[orientation].keys())
         locs.sort()
         for loc in locs:
-            line = ('{chrom}\t{start}\t{end}\t{val}\n'.
-                    format(chrom=chrom_name, start=loc,
-                           end=loc + 1, val=len(softclips[orientation][loc])))
+            line = (f'{chrom_name}\t{loc}\t{loc + 1}\t{len(softclips[orientation][loc])}\n')
             file.write(line)
         file.close()
     return fn
@@ -145,10 +141,10 @@ def write_softclips_bigwig(softclips, fileprefix, chrom_name, delete_bed=False):
     bed_out = write_softclips_bed(softclips, fileprefix, chrom_name)
     for bedfile in bed_out:
         fn = bedfile.rstrip('.bed')
-        os.system('bedGraphToBigWig {file}.bed /scratch/PI/whwong/svproject/'
-                  'reference/hg19.chrom.sizes {file}.bigwig'.format(file=fn))
+        os.system(f'bedGraphToBigWig {fn}.bed /scratch/PI/whwong/svproject/'
+                  f'reference/hg19.chrom.sizes {fn}.bigwig')
         if delete_bed:
-            os.system('rm {bed}'.format(bedfile))
+            os.system(f'rm {bedfile}')
 
 
 # def test_merge_softclips():

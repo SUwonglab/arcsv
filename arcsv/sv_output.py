@@ -10,7 +10,7 @@ from arcsv.sv_affected_len import sv_affected_len
 from arcsv.sv_classify import classify_paths
 from arcsv.sv_filter import get_filter_string
 from arcsv.sv_validate import altered_reference_sequence
-from arcsv.vcf import vcf_line_template
+from arcsv.vcf import vcf_line
 
 
 def sv_extra_lines(sv_ids, info_extra, format_extra):
@@ -79,7 +79,7 @@ def do_sv_processing(opts, data, outdir, reffile,
         sv1 = [sv for sv in svs if sv.genotype == '1/1' or sv.genotype == '1/0']
         sv2 = [sv for sv in svs if sv.genotype == '1/1' or sv.genotype == '0/1']
         compound_het = (path1 != path2) and (len(sv1) > 0) and (len(sv2) > 0)
-        for (k, path, ev, pathstring, svlist) in [(0, path1, event1, s1, sv1),
+        for (k, path, _ev, pathstring, svlist) in [(0, path1, event1, s1, sv1),
                                                   (1, path2, event2, s2, sv2)]:
             if k == 1 and path1 == path2:
                 continue
@@ -91,9 +91,9 @@ def do_sv_processing(opts, data, outdir, reffile,
                 id += ',' + str(k + 1)
             id += id_extra
             qname = id
-            qname += ':{0}'.format(pathstring)
+            qname += f':{pathstring}'
             for sv in svlist:
-                qname += ':{0}'.format(sv.type.split(':')[0])  # just write DUP, not DUP:TANDEM
+                qname += f':{sv.type.split(":")[0]}'  # just write DUP, not DUP:TANDEM
             ars_out = altered_reference_sequence(path, blocks, ref,
                                                  flank_size=opts['altered_flank_size'])
             seqs, block_pos, insertion_size, del_size, svb, svp, hlf, hrf = ars_out
@@ -115,8 +115,8 @@ def do_sv_processing(opts, data, outdir, reffile,
                                              format(qname + ':' + str(seqnum), seq))
                 seqnum += 1
 
-    log.write('altered_skip_size\t{0}\n'.format(skipped_altered_size))
-    log.write('skipped_small_simplesv\t{0}\n'.format(skipped_too_small))
+    log.write(f'altered_skip_size\t{skipped_altered_size}\n')
+    log.write(f'skipped_small_simplesv\t{skipped_too_small}\n')
 
     for x in (qnames, block_positions, insertion_sizes, del_sizes, simplified_blocks,
               simplified_paths, has_left_flank, has_right_flank):
@@ -134,7 +134,7 @@ def get_bp_string(sv):
     else:
         bp1 = int(floor(np.median(sv.bp1)))
         bp2 = int(floor(np.median(sv.bp2)))
-        return '{0},{1}'.format(bp1, bp2)
+        return f'{bp1},{bp2}'
 
 
 def get_bp_uncertainty_string(sv):
@@ -144,7 +144,7 @@ def get_bp_uncertainty_string(sv):
     else:
         bp1u = sv.bp1[1] - sv.bp1[0] - 2
         bp2u = sv.bp2[1] - sv.bp2[0] - 2
-        return '{0},{1}'.format(bp1u, bp2u)
+        return f'{bp1u},{bp2u}'
 
 
 def get_bp_ci(sv):
@@ -166,8 +166,8 @@ def get_sv_ins(sv):
 
 def bnd_alt_string(orient, other_orient, chrom, other_pos, ref_base):
     alt_after = True if orient == '-' else False
-    alt_location_template = ']{0}]' if other_orient == '-' else '[{0}['
-    alt_location = alt_location_template.format(str(chrom) + ':' + str(other_pos))
+    location = f'{chrom}:{other_pos}'
+    alt_location = f']{location}]' if other_orient == '-' else f'[{location}['
     alt_string = (ref_base + alt_location) if alt_after else (alt_location + ref_base)
     return alt_string
 
@@ -191,7 +191,7 @@ def sv_output(path1, path2, blocks, event1, event2,
     compound_het = (path1 != path2) and (len(sv1) > 0) and (len(sv2) > 0)
     is_het = (path1 != path2)
     num_paths = str(num_paths)
-    for (k, path, event, svs, complex_type, frac) in [(0, path1, event1, sv1,
+    for (k, path, _event, svs, complex_type, frac) in [(0, path1, event1, sv1,
                                                        complex_types[0], frac1),
                                                       (1, path2, event2, sv2,
                                                        complex_types[1], frac2)]:
@@ -269,9 +269,9 @@ def sv_output(path1, path2, blocks, event1, event2,
         pe = list(sv.pe_support for sv in svs)
         sr_joined = ','.join(map(str, sr))
         pe_joined = ','.join(map(str, pe))
-        lhr = '%.2f' % (event_lh - ref_lh)
-        lhr_next = '%.2f' % (event_lh - next_best_lh)
-        frac_str = '%.3f' % frac
+        lhr = f'{event_lh - ref_lh:.2f}'
+        lhr_next = f'{event_lh - next_best_lh:.2f}'
+        frac_str = f'{frac:.3f}'
 
         line = '\t'.join(str(x) for x in
                          (chrom, minbp, maxbp, id,
@@ -289,7 +289,6 @@ def sv_output(path1, path2, blocks, event1, event2,
         lines = lines + line
 
         if output_vcf:
-            template = vcf_line_template()
             info_tags_ordered = ['SV_TYPE', 'HAPLOID_CN', 'COMPLEX_TYPE', 'MATE_ID', 'END',
                                  'CI_POS', 'CI_END', 'INS_LEN', 'SR', 'PE', 'SV_SPAN',
                                  'EVENT_SPAN', 'EVENT_START', 'EVENT_END', 'EVENT_AFFECTED_LEN',
@@ -308,7 +307,7 @@ def sv_output(path1, path2, blocks, event1, event2,
                 else:
                     id_vcf = id
                 ref_base = fetch_seq(reference, sv_chrom, pos-1, pos)  # pysam is 0-indexed
-                alt = '<{0}>'.format(sv.type)
+                alt = f'<{sv.type}>'
                 qual = '.'
                 svtype = svtypes[i]
                 info_list.append(('SV_TYPE', svtype))
@@ -349,11 +348,9 @@ def sv_output(path1, path2, blocks, event1, event2,
                 if svtype != 'BND':
                     # write line
                     info_list.sort(key=lambda x: info_tags_ordering[x[0]])
-                    info = ';'.join(['{0}={1}'.format(el[0], el[1]) for el in info_list])
-                    line = template.format(chr=chrom, pos=pos, id=id_vcf,
-                                           ref=ref_base, alt=alt, qual=qual,
-                                           filter=filters, info=info,
-                                           format_str=format_str, gt=gt_vcf)
+                    info = ';'.join([f'{el[0]}={el[1]}' for el in info_list])
+                    line = vcf_line(chrom, pos, id_vcf, ref_base, alt, qual,
+                                    filters, info, format_str, gt_vcf)
                     vcflines.append(line)
                 else:           # breakend type --> 2 lines in vcf
                     id_bnd1, id_bnd2 = id_vcf + 'A', id_vcf + 'B'
@@ -398,18 +395,14 @@ def sv_output(path1, path2, blocks, event1, event2,
 
                     info_list_bnd1.sort(key=lambda x: info_tags_ordering[x[0]])
                     info_list_bnd2.sort(key=lambda x: info_tags_ordering[x[0]])
-                    info_bnd1 = ';'.join(['{0}={1}'.format(el[0], el[1])
+                    info_bnd1 = ';'.join([f'{el[0]}={el[1]}'
                                           for el in info_list_bnd1])
-                    info_bnd2 = ';'.join(['{0}={1}'.format(el[0], el[1])
+                    info_bnd2 = ';'.join([f'{el[0]}={el[1]}'
                                           for el in info_list_bnd2])
-                    line1 = template.format(chr=chrom, pos=pos_bnd1, id=id_bnd1,
-                                            ref=ref_bnd1, alt=alt_bnd1, qual=qual,
-                                            filter=filters, info=info_bnd1,
-                                            format_str=format_str, gt=gt_vcf)
-                    line2 = template.format(chr=chrom, pos=pos_bnd2, id=id_bnd2,
-                                            ref=ref_bnd2, alt=alt_bnd2, qual=qual,
-                                            filter=filters, info=info_bnd2,
-                                            format_str=format_str, gt=gt_vcf)
+                    line1 = vcf_line(chrom, pos_bnd1, id_bnd1, ref_bnd1, alt_bnd1, qual,
+                                     filters, info_bnd1, format_str, gt_vcf)
+                    line2 = vcf_line(chrom, pos_bnd2, id_bnd2, ref_bnd2, alt_bnd2, qual,
+                                     filters, info_bnd2, format_str, gt_vcf)
                     vcflines.append(line1)
                     vcflines.append(line2)
 

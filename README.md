@@ -15,6 +15,7 @@ This software was developed in the [Wong Lab](https://web.stanford.edu/group/won
       * [Running the example](#running-the-example)
       * [Filtering and merging output files](#filtering-and-merging-output-files)
       * [Description of output](#description-of-output)
+   * [Development](#development)
 
 <!-- ## Table of contents ## -->
 
@@ -189,3 +190,13 @@ score_vs_ref | log-likelihood ratio score for the call: `log( p(data | called ge
 score_vs_next | log-likelihood ratio score for the call vs the next best call: `log( p(data | called genotype) / p(data | next best genotype) )`
 rearrangement_next | configuration of genomic blocks for the next best call (may contain more blocks than the "reference" and "rearrangement" columns
 num_paths | number of paths through this portion of the adjacency graph. The called haplotype corresponds to one such path
+
+# Development #
+
+```
+pip install -e '.[dev]'
+ruff check          # lint (configured in ruff.toml)
+pytest              # unit tests + end-to-end check of example/ against expected_output.tab
+```
+
+CI runs both on every push to master and on pull requests (`.github/workflows/ci.yml`).
