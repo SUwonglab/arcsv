@@ -24,9 +24,14 @@ Changes for 1.0.0, which change ARC-SV's calls and output files.
 - VCF `EVENT_START` and `EVENT_END` are the base before and the last base of
   the affected region, matching `POS` and `END`. For insertions, `EVENT_START`
   came after `EVENT_END`.
-- In compound heterozygous calls, an SV on both haplotypes is written to the
-  VCF once, with genotype `1/1`. Previously it was written once per haplotype,
-  and shared breakends were written as `1/0` and again as `0/1`.
+- In the VCF, an SV or breakend that a compound heterozygous call (two
+  different non-reference haplotypes) has on both haplotypes is written as one
+  record with genotype `1/1` and `AF` equal to the sum of the two haplotypes'
+  allele fractions. Previously it was written once per haplotype, so counting
+  VCF records counted it twice: simple SVs as two `1/1` records with the
+  haplotype's `AF`, and breakends as a `1/0` record plus a `0/1` record. The
+  record's `ID` and `ALT_STRUCTURE` are those of the first haplotype.
+  `arcsv_out.tab` is unchanged and still lists the SV on both haplotypes' lines.
 - Multiple failed filters in the VCF `FILTER` column are separated by
   semicolons, as the VCF specification requires (`arcsv_out.tab` still uses
   commas).
