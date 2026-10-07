@@ -205,11 +205,20 @@ def get_sv_ins(sv):
 
 
 def same_bnd(sv, other):
-    return (sv.bp1, sv.bp2, sv.bnd_orientation, sv.bnd_ins) == (
-        other.bp1,
+    if (
+        sv.type != "BND"
+        or other.type != "BND"
+        or sv.ref_chrom != other.ref_chrom
+        or sv.bnd_ins != other.bnd_ins
+    ):
+        return False
+    # An inverted haplotype can traverse the same adjacency in reverse.
+    # The orientation belongs to its endpoint and moves with it when swapped.
+    endpoints = (sv.bp1, sv.bp2, sv.bnd_orientation)
+    return endpoints == (other.bp1, other.bp2, other.bnd_orientation) or endpoints == (
         other.bp2,
-        other.bnd_orientation,
-        other.bnd_ins,
+        other.bp1,
+        other.bnd_orientation[::-1],
     )
 
 

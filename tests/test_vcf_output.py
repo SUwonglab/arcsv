@@ -2,6 +2,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pysam
+import pytest
 
 from arcsv.helper import GenomeInterval
 from arcsv.sv_classify import classify_paths
@@ -86,3 +87,29 @@ def test_compound_het_shared_breakends_written_once():
     assert genotypes == ["0/1", "0/1", "1/0", "1/0", "1/1", "1/1", "1/1", "1/1"]
     for r in records:
         assert info(r)["AF"] == ("1.000" if r[9] == "1/1" else "0.500")
+
+
+@pytest.mark.parametrize("swap_haplotypes", [False, True])
+def test_compound_het_shared_breakends_in_reverse_written_once(swap_haplotypes):
+    # ACBDEF / AD'B'C'EF: C-B and B-D are traversed in opposite directions.
+    path1 = [0, 1, 4, 5, 2, 3, 6, 7, 8, 9, 10, 11]
+    path2 = [0, 1, 7, 6, 3, 2, 5, 4, 8, 9, 10, 11]
+    if swap_haplotypes:
+        path1, path2 = path2, path1
+    records = vcf_records(path1, path2, 0.3, 0.7)
+    breakends = [(r[1], r[4]) for r in records]
+    assert len(records) == len(set(breakends)) == 10
+
+    shared_positions = {"1101", "1200", "1300", "1301"}
+    shared = [r for r in records if r[1] in shared_positions]
+    assert len(shared) == 4
+    assert all(r[9] == "1/1" and info(r)["AF"] == "1.000" for r in shared)
+    genotypes = [r[9] for r in records]
+    assert genotypes.count("1/0") == (4 if swap_haplotypes else 2)
+    assert genotypes.count("0/1") == (2 if swap_haplotypes else 4)
+    by_id = {r[2]: r for r in records}
+    for r in records:
+        assert info(r)["AF"] == {"1/0": "0.300", "0/1": "0.700", "1/1": "1.000"}[r[9]]
+        mate = by_id[info(r)["MATEID"]]
+        assert info(mate)["MATEID"] == r[2]
+        assert mate[9] == r[9]
