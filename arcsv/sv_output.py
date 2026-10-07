@@ -204,6 +204,25 @@ def get_sv_ins(sv):
         return 0
 
 
+def same_bnd(sv, other):
+    return (sv.bp1, sv.bp2, sv.bnd_orientation, sv.bnd_ins) == (
+        other.bp1,
+        other.bp2,
+        other.bnd_orientation,
+        other.bnd_ins,
+    )
+
+
+def contains(svs, sv):
+    # by identity: SV.__eq__ compares only some attributes
+    return any(sv is other for other in svs)
+
+
+def info_string(info_list):
+    # a value of None is a flag
+    return ";".join(k if v is None else f"{k}={v}" for (k, v) in info_list)
+
+
 def bnd_alt_string(orient, other_orient, chrom, other_pos, ref_base):
     alt_after = True if orient == "-" else False
     location = f"{chrom}:{other_pos}"
@@ -243,6 +262,18 @@ def sv_output(
     sv2 = [sv for sv in sv_list if sv.genotype == "1/1" or sv.genotype == "0/1"]
     compound_het = (path1 != path2) and (len(sv1) > 0) and (len(sv2) > 0)
     is_het = path1 != path2
+    # In a compound het, an SV in both haplotypes is written to the VCF once,
+    # with the first haplotype's records. Simple SVs in both haplotypes already
+    # have genotype 1/1, but breakends are classified separately for each
+    # haplotype (1/0 and 0/1), so match those up here.
+    vcf_hom_bnd, vcf_skip = [], []
+    if compound_het:
+        for sv in sv2:
+            if sv.type == "BND":
+                match = [other for other in sv1 if same_bnd(sv, other)]
+                if match:
+                    vcf_hom_bnd.append(match[0])
+                    vcf_skip.append(sv)
     num_paths = str(num_paths)
     for k, path, _event, svs, complex_type, frac in [
         (0, path1, event1, sv1, complex_types[0], frac1),
@@ -271,6 +302,8 @@ def sv_output(
                 filters = ",".join(x for x in fs if x != "PASS")
         else:
             filters = filterstring_manual
+        # the VCF separates failed filters with semicolons
+        filters_vcf = filters.replace(",", ";")
 
         all_sv_bp1 = [int(floor(np.median(sv.bp1))) for sv in svs]
         all_sv_bp2 = [int(floor(np.median(sv.bp2))) for sv in svs]
@@ -368,17 +401,19 @@ def sv_output(
 
         if output_vcf:
             info_tags_ordered = [
-                "SV_TYPE",
+                "SVTYPE",
+                "SVLEN",
                 "HAPLOID_CN",
                 "COMPLEX_TYPE",
-                "MATE_ID",
+                "MATEID",
+                "EVENT",
                 "END",
-                "CI_POS",
-                "CI_END",
+                "IMPRECISE",
+                "CIPOS",
+                "CIEND",
                 "INS_LEN",
                 "SR",
                 "PE",
-                "SV_SPAN",
                 "EVENT_SPAN",
                 "EVENT_START",
                 "EVENT_END",
@@ -396,10 +431,14 @@ def sv_output(
             ]
             info_tags_ordering = {y: x for x, y in enumerate(info_tags_ordered)}
             for i, sv in enumerate(svs):
+                if k == 1 and (sv.genotype == "1/1" or contains(vcf_skip, sv)):
+                    continue  # written with the first haplotype
                 info_list = []
                 sv_chrom = sv.ref_chrom
-                # pos
-                pos = all_sv_bp1[i] + 1
+                # POS is the base before the event (VCF requires this padding base
+                # for symbolic alleles). bp1 is a 0-based boundary, so the base
+                # before it is bp1 - 1 0-based, or bp1 1-based.
+                pos = all_sv_bp1[i]
                 if num_sv > 1:
                     id_vcf = id + "_" + str(i + 1)
                 else:
@@ -410,9 +449,11 @@ def sv_output(
                 alt = f"<{sv.type}>"
                 qual = "."
                 svtype = svtypes[i]
-                info_list.append(("SV_TYPE", svtype))
-                end = all_sv_bp2[i] + 1
+                info_list.append(("SVTYPE", svtype))
+                # END is the last affected base, 1-based (for INS, END = POS)
+                end = all_sv_bp2[i]
                 info_list.append(("END", end))
+                info_list.append(("EVENT", id))
                 block_bp_vcf = ",".join(str(x + 1) for x in block_bp)
                 info_list.append(("SEGMENT_ENDPTS", block_bp_vcf))
                 info_list.append(
@@ -421,9 +462,11 @@ def sv_output(
 
                 if svtype == "INS":
                     svlen = sv.length
-                else:
+                elif svtype == "DEL":
+                    svlen = -(end - pos)
+                else:  # DUP, INV: length of the affected segment
                     svlen = end - pos
-                info_list.append(("SV_SPAN", svlen))
+                info_list.append(("SVLEN", svlen))
                 info_list.append(("EVENT_SPAN", total_span))
                 info_list.append(("EVENT_AFFECTED_LEN", len_affected))
 
@@ -434,21 +477,29 @@ def sv_output(
                 bp1_ci_str = str(bp1_ci[0]) + "," + str(bp1_ci[1])
                 bp2_ci_str = str(bp2_ci[0]) + "," + str(bp2_ci[1])
                 if bp1_ci_str != "0,0":
-                    info_list.append(("CI_POS", bp1_ci_str))
+                    info_list.append(("CIPOS", bp1_ci_str))
                 if bp2_ci_str != "0,0" and svtype != "INS":
-                    info_list.append(("CI_END", bp2_ci_str))
+                    info_list.append(("CIEND", bp2_ci_str))
+                if bp1_ci_str != "0,0" or bp2_ci_str != "0,0":
+                    info_list.append(("IMPRECISE", None))
+                # AF is the fraction of the haplotype, so an SV on both haplotypes
+                # of a compound het has the sum
+                hom_in_compound_het = compound_het and (
+                    sv.genotype == "1/1" or contains(vcf_hom_bnd, sv)
+                )
+                af_str = f"{frac1 + frac2:.3f}" if hom_in_compound_het else frac_str
                 info_list.extend(
                     [
                         ("REF_STRUCTURE", ref_string),
                         ("ALT_STRUCTURE", pathstring),
-                        ("AF", frac_str),
+                        ("AF", af_str),
                         ("SR", sr[i]),
                         ("PE", pe[i]),
                         ("SCORE_VS_REF", lhr),
                         ("SCORE_VS_NEXT", lhr_next),
                         ("NEXT_BEST_STRUCTURE", next_best_pathstring),
                         ("NUM_PATHS", num_paths),
-                        ("EVENT_START", minbp + 1),
+                        ("EVENT_START", minbp),
                         ("EVENT_END", maxbp),
                         ("EVENT_NUM_SV", num_sv),
                     ]
@@ -456,11 +507,11 @@ def sv_output(
 
                 # FORMAT/GT
                 format_str = "GT"
-                gt_vcf = sv.genotype
+                gt_vcf = "1/1" if hom_in_compound_het else sv.genotype
                 if svtype != "BND":
                     # write line
                     info_list.sort(key=lambda x: info_tags_ordering[x[0]])
-                    info = ";".join([f"{el[0]}={el[1]}" for el in info_list])
+                    info = info_string(info_list)
                     line = vcf_line(
                         chrom,
                         pos,
@@ -468,7 +519,7 @@ def sv_output(
                         ref_base,
                         alt,
                         qual,
-                        filters,
+                        filters_vcf,
                         info,
                         format_str,
                         gt_vcf,
@@ -503,20 +554,23 @@ def sv_output(
 
                     ctype_str = complex_type.upper().replace(".", "_")
 
-                    info_list_bnd1 = [("MATE_ID", mateid_bnd1)]
-                    info_list_bnd2 = [("MATE_ID", mateid_bnd2)]
+                    info_list_bnd1 = [("MATEID", mateid_bnd1)]
+                    info_list_bnd2 = [("MATEID", mateid_bnd2)]
                     if bp1_ci_str != "0,0":
-                        info_list_bnd1.append(("CI_POS", bp1_ci_str))
+                        info_list_bnd1.append(("CIPOS", bp1_ci_str))
+                        info_list_bnd1.append(("IMPRECISE", None))
                     if bp2_ci_str != "0,0":
-                        info_list_bnd2.append(("CI_POS", bp2_ci_str))
+                        info_list_bnd2.append(("CIPOS", bp2_ci_str))
+                        info_list_bnd2.append(("IMPRECISE", None))
                     if sv.bnd_ins > 0:
                         info_list_bnd1.append(("INS_LEN", sv.bnd_ins))
                         info_list_bnd2.append(("INS_LEN", sv.bnd_ins))
                     common_tags = [
-                        ("SV_TYPE", svtype),
+                        ("SVTYPE", svtype),
+                        ("EVENT", id),
                         ("COMPLEX_TYPE", ctype_str),
                         ("EVENT_SPAN", total_span),
-                        ("EVENT_START", minbp + 1),
+                        ("EVENT_START", minbp),
                         ("EVENT_END", maxbp),
                         ("EVENT_AFFECTED_LEN", len_affected),
                         ("EVENT_NUM_SV", num_sv),
@@ -524,7 +578,7 @@ def sv_output(
                         ("SEGMENT_ENDPTS_CIWIDTH", block_bp_uncertainty_joined),
                         ("REF_STRUCTURE", ref_string),
                         ("ALT_STRUCTURE", pathstring),
-                        ("AF", frac_str),
+                        ("AF", af_str),
                         ("SR", sr[i]),
                         ("PE", pe[i]),
                         ("SCORE_VS_REF", lhr),
@@ -537,8 +591,8 @@ def sv_output(
 
                     info_list_bnd1.sort(key=lambda x: info_tags_ordering[x[0]])
                     info_list_bnd2.sort(key=lambda x: info_tags_ordering[x[0]])
-                    info_bnd1 = ";".join([f"{el[0]}={el[1]}" for el in info_list_bnd1])
-                    info_bnd2 = ";".join([f"{el[0]}={el[1]}" for el in info_list_bnd2])
+                    info_bnd1 = info_string(info_list_bnd1)
+                    info_bnd2 = info_string(info_list_bnd2)
                     line1 = vcf_line(
                         chrom,
                         pos_bnd1,
@@ -546,7 +600,7 @@ def sv_output(
                         ref_bnd1,
                         alt_bnd1,
                         qual,
-                        filters,
+                        filters_vcf,
                         info_bnd1,
                         format_str,
                         gt_vcf,
@@ -558,7 +612,7 @@ def sv_output(
                         ref_bnd2,
                         alt_bnd2,
                         qual,
-                        filters,
+                        filters_vcf,
                         info_bnd2,
                         format_str,
                         gt_vcf,

@@ -160,6 +160,8 @@ Where multiple values are given, as in svtype, the order is left to right in the
 
 All genomic positions in `arcsv_out.tab` are 0-indexed for compatibility with BED files. (arcsv_out.vcf is still 1-indexed as required.)
 
+`arcsv_out.vcf` follows VCF 4.2 and is 1-indexed. Simple SVs are written as symbolic alleles (`<DEL>`, `<DUP:TANDEM>`, `<INV>`, `<INS>`) with the standard `SVTYPE`, `SVLEN`, `END`, `CIPOS`, and `CIEND` tags, and the other adjacencies of complex SVs as breakend (`BND`) pairs linked by `MATEID`. All records from one call share an `EVENT` ID.
+
 Output field | Description
 ------------ | -----------
 chrom | chromosome name
@@ -176,7 +178,7 @@ rearrangement | predicted configuration of genomic blocks in the sample. Inverte
 len_affected | length of reference sequence affected by this rearrangement  (plus the length of any novel insertions). For complex SVs with no novel insertions, this is often smaller than maxbp - minbp, i.e., the "span" of the rearrangement in the reference
 filter | currently, this is `INSERTION` if there is an insertion present, otherwise `PASS`
 sv_bp | breakpoint positions for each simple SV/complex breakpoint in the event (there are `num_sv` pairs of non-adjacent reference positions, each one describing a novel adjacency)
-sv_bp_uncertainties | breakpoint uncertainties for each simple SV/complex breakpoint in the event
+sv_bp_uncertainty | breakpoint uncertainties for each simple SV/complex breakpoint in the event
 gt | genotype [either `HET` or `HOM`]
 af | allele fraction for the called variant [either 0.5 or 1.0, unless `--allele_fraction_list` was set]
 inslen | length of each insertion in the call

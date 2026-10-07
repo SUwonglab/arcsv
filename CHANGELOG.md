@@ -6,6 +6,31 @@ All notable user-facing changes are recorded here.
 
 Changes for 1.0.0, which change ARC-SV's calls and output files.
 
+### Breaking changes
+
+- VCF output uses the standard INFO tags: `SV_TYPE`, `CI_POS`, `CI_END`, and
+  `MATE_ID` are renamed `SVTYPE`, `CIPOS`, `CIEND`, and `MATEID`, so bcftools,
+  truvari, SURVIVOR, and similar tools recognize them. `SV_SPAN` is replaced by
+  `SVLEN`, which is negative for deletions. New tags: `EVENT` (the call's ID,
+  on every record of the call) and `IMPRECISE` (on records with `CIPOS` or
+  `CIEND`).
+
+### Fixes
+
+- VCF `POS` and `END` of deletions, duplications, inversions, and insertions
+  were 1 bp too far right. `POS` is now the base before the event, as VCF
+  requires for symbolic alleles, and `REF` is that base. Breakend records were
+  already correct.
+- VCF `EVENT_START` and `EVENT_END` are the base before and the last base of
+  the affected region, matching `POS` and `END`. For insertions, `EVENT_START`
+  came after `EVENT_END`.
+- In compound heterozygous calls, an SV on both haplotypes is written to the
+  VCF once, with genotype `1/1`. Previously it was written once per haplotype,
+  and shared breakends were written as `1/0` and again as `0/1`.
+- Multiple failed filters in the VCF `FILTER` column are separated by
+  semicolons, as the VCF specification requires (`arcsv_out.tab` still uses
+  commas).
+
 ## 0.9.7 - 2026-10-06
 
 These changes reached the master branch gradually between 2018 and 2026 while
