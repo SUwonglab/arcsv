@@ -153,31 +153,33 @@ def get_vcf_header(reference_name, sample_name="sample1"):
 ##ALT=<ID=INV,Description="Inversion">
 ##ALT=<ID=DUP:TANDEM,Description="Tandem duplication">
 ##ALT=<ID=INS,Description="Insertion of novel sequence">
-##INFO=<ID=AF,Number=1,Type=Float,Description="Alternate allele fraction, which may be other than 0.5 or 1 for somatic calls">
+##INFO=<ID=AF,Number=A,Type=Float,Description="Alternate allele fraction, which may be other than 0.5 or 1 for somatic calls">
 ##INFO=<ID=ALT_STRUCTURE,Number=1,Type=String,Description="Configuration of genomic segments in the prediction, including the unaffected flanking segments. Single quote indicates an inverted segment, and underscore indicates a novel insertion">
-##INFO=<ID=CI_END,Number=2,Type=Integer,Description="Confidence interval around END for imprecise breakpoints">
-##INFO=<ID=CI_POS,Number=2,Type=Integer,Description="Confidence interval around POS for imprecise breakpoints">
+##INFO=<ID=CIEND,Number=2,Type=Integer,Description="Confidence interval around END for imprecise variants">
+##INFO=<ID=CIPOS,Number=2,Type=Integer,Description="Confidence interval around POS for imprecise variants">
 ##INFO=<ID=COMPLEX_TYPE,Number=1,Type=String,Description="Complex SV classification">
 ##INFO=<ID=END,Number=1,Type=Integer,Description="End position of the variant described in this record">
 ##INFO=<ID=EVENT_AFFECTED_LEN,Number=1,Type=Integer,Description="Number of base pairs in the reference affected by this rearrangement (plus the length of any novel insertions sequence)">
-##INFO=<ID=EVENT_END,Number=1,Type=Integer,Description="Right endpoint of the affected region, i.e., the left-most coordinate of the right flanking segment">
-##INFO=<ID=EVENT_SPAN,Number=1,Type=Integer,Description="Span from left endpoint to right endpoint of the affected region in the reference.">
-##INFO=<ID=EVENT_START,Number=1,Type=Integer,Description="Left endpoint of the affected region, i.e., the right-most coordinate of the left flanking segment">
+##INFO=<ID=EVENT,Number=1,Type=String,Description="ID of the rearrangement this record belongs to">
+##INFO=<ID=EVENT_END,Number=1,Type=Integer,Description="Last reference base of the affected region (like END)">
+##INFO=<ID=EVENT_SPAN,Number=1,Type=Integer,Description="Length of the affected region in the reference (EVENT_END - EVENT_START)">
+##INFO=<ID=EVENT_START,Number=1,Type=Integer,Description="Reference base before the affected region (like POS), i.e., the last base of the left flanking segment">
 ##INFO=<ID=EVENT_NUM_SV,Number=1,Type=String,Description="Number of simple SVs + complex adjacencies within this rearrangement">
 ##INFO=<ID=HAPLOID_CN,Number=1,Type=Integer,Description="Haploid copy number for duplications">
+##INFO=<ID=IMPRECISE,Number=0,Type=Flag,Description="Imprecise structural variation">
 ##INFO=<ID=INS_LEN,Number=1,Type=Integer,Description="Inserted sequence at breakend adjacency">
-##INFO=<ID=MATE_ID,Number=.,Type=String,Description="ID of mate breakend">
+##INFO=<ID=MATEID,Number=.,Type=String,Description="ID of mate breakends">
 ##INFO=<ID=NEXT_BEST_STRUCTURE,Number=1,Type=String,Description="Diploid configuration of genomic segments in the second-best prediction (total number of segments may be different than in ALT and REF structures)">
 ##INFO=<ID=NUM_PATHS,Number=1,Type=Integer,Description="Number of paths observed in the the corresponding region in the ARC-SV adjacency graph, i.e., the number of haplotypes considered in this region">
 ##INFO=<ID=PE,Number=1,Type=Integer,Description="Number of discordant read pairs supporting this variant">
 ##INFO=<ID=REF_STRUCTURE,Number=1,Type=String,Description="Configuration of genomic segments in the reference">
 ##INFO=<ID=SCORE_VS_NEXT,Number=1,Type=Float,Description="Log of the likelihood ratio between the called genotype and the second-best genotype">
 ##INFO=<ID=SCORE_VS_REF,Number=1,Type=Float,Description="Log of the likelihood ratio between the called genotype and the reference genotype">
-##INFO=<ID=SEGMENT_ENDPTS,Number=.,Type=Integer,Description="Endpoints (in reference coordinates) of the genomic segments in REF_STRUCTURE">
+##INFO=<ID=SEGMENT_ENDPTS,Number=.,Type=Integer,Description="Endpoints of the genomic segments in REF_STRUCTURE: the first base of each segment, then one past the last base of the last segment">
 ##INFO=<ID=SEGMENT_ENDPTS_CIWIDTH,Number=.,Type=Integer,Description="Width of confidence interval around each segment endpoint">
 ##INFO=<ID=SR,Number=1,Type=Integer,Description="Number of split reads supporting this variant">
-##INFO=<ID=SV_SPAN,Number=1,Type=Integer,Description="Span of this structural variant">
-##INFO=<ID=SV_TYPE,Number=1,Type=String,Description="Type of structural variant">
+##INFO=<ID=SVLEN,Number=.,Type=Integer,Description="Difference in length between REF and ALT alleles (for DUP and INV, the length of the affected segment)">
+##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">
 ##FILTER=<ID=INSERTION,Description="Event contains an insertion call">
 ##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
 #CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t{sample_name}\n"""
