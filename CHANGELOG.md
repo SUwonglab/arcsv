@@ -6,6 +6,16 @@ All notable user-facing changes are recorded here.
 
 Changes for 1.0.0, which change ARC-SV's calls and output files.
 
+### Fixes
+
+- A single read is counted once toward breakpoint and adjacency support. A
+  split read whose two breakpoints coincide (an insertion-type split) counted
+  twice toward `min_bp_support`, so one read could create a breakpoint on its
+  own; and a fragment whose two reads were split at the same junction counted
+  twice toward the adjacency graph's edge support (`min_edge_support`). Calls
+  may change slightly.
+- `pe_support` for insertions no longer counts each discordant pair twice.
+
 ## 0.9.7 - 2026-10-06
 
 These changes reached the master branch gradually between 2018 and 2026 while

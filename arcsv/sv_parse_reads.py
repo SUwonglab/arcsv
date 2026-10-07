@@ -110,6 +110,9 @@ class GenomeGraph:
             alt_dist += offset
             # print('path {0} alt_path: {1}'.format(combined_full_path, alt_combined_path))
             # print('dist {0}\talt_dist {1}\tdist - block_len {2}'.format(dist, alt_dist, dist - len(blocks[int(floor(ii/2))])))
+        # a fragment supports each adjacency once, even if both reads cross it
+        # (e.g., overlapping reads split at the same junction)
+        supported = set()
         for i in range(0, len(combined), 2):
             if i == len(badj1) - 1 and between_edge:
                 # block_len = len(blocks[int(floor(combined[i] / 2))])
@@ -127,7 +130,7 @@ class GenomeGraph:
                     # print('alt_dist: {0}\n'.format(alt_dist))
                     # print('dist - block_len: {0}\n'.format(dist - block_len))
                 else:
-                    self.add_support(combined[i], combined[i + 1])
+                    supported.add(adjacency_key(combined[i], combined[i + 1]))
                     # print('adding b/t support {0}-{1}'.format(combined[i], combined[i+1]))
                     # if floor(combined[i] / 2) == floor(combined[i+1] / 2):
                     # if abs(combined[i] - combined[i+1]) == 1:
@@ -138,7 +141,9 @@ class GenomeGraph:
                     # print('combined path: {0}'.format(combined_full_path))
                     # print('distance: {0}\n'.format(dist))
             elif i != len(badj1) - 1:
-                self.add_support(combined[i], combined[i + 1])
+                supported.add(adjacency_key(combined[i], combined[i + 1]))
+        for v, w in supported:
+            self.add_support(v, w)
 
     def add_hanging_pair(
         self, r, offset, read_len, pmappable, hanging_type, lib_idx, distant_loc=None
@@ -165,8 +170,11 @@ class GenomeGraph:
         # add adjacency support
         if adj is not None:
             badj = block_seq_to_path(r)
-            for i in range(0, len(badj), 2):
-                self.add_support(badj[i], badj[i + 1])
+            supported = {
+                adjacency_key(badj[i], badj[i + 1]) for i in range(0, len(badj), 2)
+            }
+            for v, w in supported:
+                self.add_support(v, w)
 
     # return the appropriate edge object, creating the edge if needed
     def get_edge(self, v1, v2):
@@ -272,6 +280,10 @@ def get_edge_color(e, blocks, min_edge_support):
         is_insertion_edge(e, blocks),
     )
     return edge_color_dict[tup]
+
+
+def adjacency_key(v, w):
+    return (v, w) if v <= w else (w, v)
 
 
 def block_seq_to_path(seq):
