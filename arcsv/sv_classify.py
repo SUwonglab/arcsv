@@ -130,8 +130,9 @@ def classify_paths(
     chrom = blocks[0].chrom
     start_pos = blocks[floor(path1[0] / 2)].start
     end_pos = blocks[floor(path1[-1] / 2)].end
-    # @ here is the ASCII character before A,B,C,... (see below)
-    # FIXME: this doesn't work with 26+ events in a single complex SV
+    # @ here is the ASCII character before A and B, which label the two haplotypes
+    # of a compound het (see below). The letter is followed by an event number, so
+    # IDs stay ASCII however many events there are
     ev_id = (
         f"{chrom},{start_pos + 1}-{end_pos},@"  # 1-indexed, inclusive interval for VCF
     )
@@ -165,7 +166,7 @@ def classify_paths(
         # get new event id for complex events
         if not compound_het:
             ev_id = ev_id[:-1]
-        else:
+        else:  # A for path1, B for path2
             ev_id = ev_id[:-1] + chr(ord(ev_id[-1]) + 1)
         ev_num = 1  # event number for complex events
 
