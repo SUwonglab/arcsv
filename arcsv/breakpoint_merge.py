@@ -48,8 +48,13 @@ class Breakpoint:
             interval = other.interval
         supp_left = self.supp_clip_left + other.supp_clip_left
         supp_right = self.supp_clip_right + other.supp_clip_right
-        splits = self.splits + other.splits
-        pe = self.pe + other.pe
+        # a read can be on both sides of the merge: a split read whose two
+        # breakpoints coincide, or a discordant pair supporting both the left and
+        # right breakpoints of an insertion cluster. Count it once.
+        splits = self.splits + [
+            s for s in other.splits if not any(s is t for t in self.splits)
+        ]
+        pe = self.pe + [p for p in other.pe if p not in self.pe]
         libs = self.libs + other.libs
         return Breakpoint(interval, supp_left, supp_right, splits, pe, libs)
 
