@@ -17,8 +17,8 @@ def process_aggregate_mapstats(pair, mapstats, min_mapq, max_distance):
     aln1_pass = aln1.mapq >= min_mapq
     aln1_un = aln1.is_unmapped
     label = None
-    # need to double count intrachromosomal 'distant' reads since
-    # they'll contribute to 2 regions
+    # need to double count intrachromosomal 'distant' pairs with both reads
+    # passing since they'll contribute to 2 regions
     add_mirror = False
 
     if aln2 is not None:
@@ -35,7 +35,7 @@ def process_aggregate_mapstats(pair, mapstats, min_mapq, max_distance):
                 label = PAIR_CLASS_DICT[(1, -1)]
             elif aln2_pass:
                 label = PAIR_CLASS_DICT[(-1, 1)]
-            if is_intra:
+            if is_intra and aln1_pass and aln2_pass:
                 add_mirror = True
         elif aln1_pass and not aln1_un and aln2_un:
             label = PAIR_CLASS_DICT[(1, 0)]
