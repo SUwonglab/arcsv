@@ -1,0 +1,41 @@
+##fileformat=VCFv4.2
+##reference=reference.fa
+##contig=<ID=20,length=250020>
+##ALT=<ID=DEL,Description="Deletion">
+##ALT=<ID=DUP,Description="Duplication">
+##ALT=<ID=INV,Description="Inversion">
+##ALT=<ID=DUP:TANDEM,Description="Tandem duplication">
+##ALT=<ID=INS,Description="Insertion of novel sequence">
+##INFO=<ID=AF,Number=1,Type=Float,Description="Alternate allele fraction, which may be other than 0.5 or 1 for somatic calls">
+##INFO=<ID=ALT_STRUCTURE,Number=1,Type=String,Description="Configuration of genomic segments in the prediction, including the unaffected flanking segments. Single quote indicates an inverted segment, and underscore indicates a novel insertion">
+##INFO=<ID=CI_END,Number=2,Type=Integer,Description="Confidence interval around END for imprecise breakpoints">
+##INFO=<ID=CI_POS,Number=2,Type=Integer,Description="Confidence interval around POS for imprecise breakpoints">
+##INFO=<ID=COMPLEX_TYPE,Number=1,Type=String,Description="Complex SV classification">
+##INFO=<ID=END,Number=1,Type=Integer,Description="End position of the variant described in this record">
+##INFO=<ID=EVENT_AFFECTED_LEN,Number=1,Type=Integer,Description="Number of base pairs in the reference affected by this rearrangement (plus the length of any novel insertions sequence)">
+##INFO=<ID=EVENT_END,Number=1,Type=Integer,Description="Right endpoint of the affected region, i.e., the left-most coordinate of the right flanking segment">
+##INFO=<ID=EVENT_SPAN,Number=1,Type=Integer,Description="Span from left endpoint to right endpoint of the affected region in the reference.">
+##INFO=<ID=EVENT_START,Number=1,Type=Integer,Description="Left endpoint of the affected region, i.e., the right-most coordinate of the left flanking segment">
+##INFO=<ID=EVENT_NUM_SV,Number=1,Type=String,Description="Number of simple SVs + complex adjacencies within this rearrangement">
+##INFO=<ID=HAPLOID_CN,Number=1,Type=Integer,Description="Haploid copy number for duplications">
+##INFO=<ID=INS_LEN,Number=1,Type=Integer,Description="Inserted sequence at breakend adjacency">
+##INFO=<ID=MATE_ID,Number=.,Type=String,Description="ID of mate breakend">
+##INFO=<ID=NEXT_BEST_STRUCTURE,Number=1,Type=String,Description="Diploid configuration of genomic segments in the second-best prediction (total number of segments may be different than in ALT and REF structures)">
+##INFO=<ID=NUM_PATHS,Number=1,Type=Integer,Description="Number of paths observed in the the corresponding region in the ARC-SV adjacency graph, i.e., the number of haplotypes considered in this region">
+##INFO=<ID=PE,Number=1,Type=Integer,Description="Number of discordant read pairs supporting this variant">
+##INFO=<ID=REF_STRUCTURE,Number=1,Type=String,Description="Configuration of genomic segments in the reference">
+##INFO=<ID=SCORE_VS_NEXT,Number=1,Type=Float,Description="Log of the likelihood ratio between the called genotype and the second-best genotype">
+##INFO=<ID=SCORE_VS_REF,Number=1,Type=Float,Description="Log of the likelihood ratio between the called genotype and the reference genotype">
+##INFO=<ID=SEGMENT_ENDPTS,Number=.,Type=Integer,Description="Endpoints (in reference coordinates) of the genomic segments in REF_STRUCTURE">
+##INFO=<ID=SEGMENT_ENDPTS_CIWIDTH,Number=.,Type=Integer,Description="Width of confidence interval around each segment endpoint">
+##INFO=<ID=SR,Number=1,Type=Integer,Description="Number of split reads supporting this variant">
+##INFO=<ID=SV_SPAN,Number=1,Type=Integer,Description="Span of this structural variant">
+##INFO=<ID=SV_TYPE,Number=1,Type=String,Description="Type of structural variant">
+##FILTER=<ID=INSERTION,Description="Event contains an insertion call">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	sample1
+20	135114	20_134442-138578_1A	A	A[20:136538[	.	PASS	SV_TYPE=BND;COMPLEX_TYPE=DDUP_DEL;MATE_ID=20_134442-138578_1B;CI_POS=-2,2;SR=17;PE=0;EVENT_SPAN=1452;EVENT_START=135115;EVENT_END=136566;EVENT_AFFECTED_LEN=35;EVENT_NUM_SV=2;REF_STRUCTURE=ABCDE;ALT_STRUCTURE=ADCDE;SEGMENT_ENDPTS=134442,135115,135121,136538,136567,138579;SEGMENT_ENDPTS_CIWIDTH=0,4,0,4,0,0;AF=1.000;SCORE_VS_REF=244.29;SCORE_VS_NEXT=15.23;NEXT_BEST_STRUCTURE=ABCDE/ADCDE;NUM_PATHS=17	GT	1/1
+20	135121	20_134442-138578_2B	T	]20:136566]T	.	PASS	SV_TYPE=BND;COMPLEX_TYPE=DDUP_DEL;MATE_ID=20_134442-138578_2A;SR=14;PE=0;EVENT_SPAN=1452;EVENT_START=135115;EVENT_END=136566;EVENT_AFFECTED_LEN=35;EVENT_NUM_SV=2;REF_STRUCTURE=ABCDE;ALT_STRUCTURE=ADCDE;SEGMENT_ENDPTS=134442,135115,135121,136538,136567,138579;SEGMENT_ENDPTS_CIWIDTH=0,4,0,4,0,0;AF=1.000;SCORE_VS_REF=244.29;SCORE_VS_NEXT=15.23;NEXT_BEST_STRUCTURE=ABCDE/ADCDE;NUM_PATHS=17	GT	1/1
+20	136538	20_134442-138578_1B	G	]20:135114]G	.	PASS	SV_TYPE=BND;COMPLEX_TYPE=DDUP_DEL;MATE_ID=20_134442-138578_1A;CI_POS=-2,2;SR=17;PE=0;EVENT_SPAN=1452;EVENT_START=135115;EVENT_END=136566;EVENT_AFFECTED_LEN=35;EVENT_NUM_SV=2;REF_STRUCTURE=ABCDE;ALT_STRUCTURE=ADCDE;SEGMENT_ENDPTS=134442,135115,135121,136538,136567,138579;SEGMENT_ENDPTS_CIWIDTH=0,4,0,4,0,0;AF=1.000;SCORE_VS_REF=244.29;SCORE_VS_NEXT=15.23;NEXT_BEST_STRUCTURE=ABCDE/ADCDE;NUM_PATHS=17	GT	1/1
+20	136566	20_134442-138578_2A	A	A[20:135121[	.	PASS	SV_TYPE=BND;COMPLEX_TYPE=DDUP_DEL;MATE_ID=20_134442-138578_2B;SR=14;PE=0;EVENT_SPAN=1452;EVENT_START=135115;EVENT_END=136566;EVENT_AFFECTED_LEN=35;EVENT_NUM_SV=2;REF_STRUCTURE=ABCDE;ALT_STRUCTURE=ADCDE;SEGMENT_ENDPTS=134442,135115,135121,136538,136567,138579;SEGMENT_ENDPTS_CIWIDTH=0,4,0,4,0,0;AF=1.000;SCORE_VS_REF=244.29;SCORE_VS_NEXT=15.23;NEXT_BEST_STRUCTURE=ABCDE/ADCDE;NUM_PATHS=17	GT	1/1
+20	239412	20_227628-246034	T	<DUP:TANDEM>	.	PASS	SV_TYPE=DUP;HAPLOID_CN=2;END=239446;CI_POS=0,1;CI_END=0,1;SR=4;PE=0;SV_SPAN=34;EVENT_SPAN=34;EVENT_START=239412;EVENT_END=239445;EVENT_AFFECTED_LEN=34;EVENT_NUM_SV=1;REF_STRUCTURE=ABC;ALT_STRUCTURE=ABBC;SEGMENT_ENDPTS=227628,239412,239446,246035;SEGMENT_ENDPTS_CIWIDTH=0,1,1,0;AF=0.500;SCORE_VS_REF=24.15;SCORE_VS_NEXT=24.15;NEXT_BEST_STRUCTURE=ABC/ABC;NUM_PATHS=4	GT	1/0

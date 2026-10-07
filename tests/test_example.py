@@ -31,3 +31,13 @@ def test_example_matches_expected_output(tmp_path):
 
     expected = (EXAMPLE / "expected_output.tab").read_text()
     assert (outdir / "arcsv_out.tab").read_text() == expected
+
+    # the VCF header records the run date and the arcsv version, so skip those
+    def vcf_without_date_and_version(text):
+        skip = ("##fileDate=", "##source=")
+        return [line for line in text.splitlines() if not line.startswith(skip)]
+
+    expected_vcf = (EXAMPLE / "expected_output.vcf").read_text()
+    assert vcf_without_date_and_version(
+        (outdir / "arcsv_out.vcf").read_text()
+    ) == vcf_without_date_and_version(expected_vcf)

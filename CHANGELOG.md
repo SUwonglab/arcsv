@@ -2,6 +2,10 @@
 
 All notable user-facing changes are recorded here.
 
+## Unreleased
+
+Changes for 1.0.0, which change ARC-SV's calls and output files.
+
 ## 0.9.7 - 2026-10-06
 
 These changes reached the master branch gradually between 2018 and 2026 while
