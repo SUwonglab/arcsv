@@ -3,7 +3,7 @@ import numpy as np
 import pyinter
 from math import floor
 
-from arcsv.helper import block_gap, GenomeInterval
+from arcsv.helper import block_gap, GenomeInterval, is_adj_satisfied
 
 
 # returns 0-indexed positions relative to (left end of first block - first block gap)
@@ -218,7 +218,7 @@ def get_overlap_insertion_probabilities(
     return probs_both, probs_d, probs_t, intervals
 
 
-def compute_hanging_edge_likelihood(edge, path, blocks, insert_cdfs, adj_satisfied):
+def compute_hanging_edge_likelihood(edge, path, blocks, insert_cdfs):
     prob_hanging_type = (0.5, 0.5)  # probability of unmapped vs distant/translocation
 
     offsets = edge["offset"]
@@ -240,86 +240,56 @@ def compute_hanging_edge_likelihood(edge, path, blocks, insert_cdfs, adj_satisfi
     for rlen in unique_rlen:
         ov, ov_d, ov_t = get_insertion_overlap_positions(path, blocks, rlen)
 
-        which_out_rlen = [i for i in range(n) if is_out[i] and hanging_rlen[i] == rlen]
-        which_in_rlen = [
-            i for i in range(n) if not is_out[i] and hanging_rlen[i] == rlen
-        ]
-        offset_out = [offsets[which_hanging[i]] for i in which_out_rlen]
-        offset_in = [offsets[which_hanging[i]] for i in which_in_rlen]
-        lib_out = [lib[which_hanging[i]] for i in which_out_rlen]
-        lib_in = [lib[which_hanging[i]] for i in which_in_rlen]
-        pmappable_out = [pmappable[i] for i in which_out_rlen]
-        pmappable_in = [pmappable[i] for i in which_in_rlen]
-        # note: anchored read is always read 1 --> following two expressions are the same
-        panchored_out = [(pm[0] + pm[1] + pm[3]) for pm in pmappable_out]
-        panchored_in = [(pm[0] + pm[1] + pm[3]) for pm in pmappable_in]
-        is_distant_out = [is_distant[i] for i in which_out_rlen]
-        is_distant_in = [is_distant[i] for i in which_in_rlen]
-        adj_satisfied_out = [
-            adj_satisfied[adj[which_hanging[i]]] for i in which_out_rlen
-        ]
-        adj_satisfied_in = [adj_satisfied[adj[which_hanging[i]]] for i in which_in_rlen]
-
-        tmp = get_overlap_insertion_probabilities(
-            path,
-            blocks,
-            ov,
-            ov_d,
-            ov_t,
-            out_block,
-            offset_out,
-            rlen,
-            lib_out,
-            insert_cdfs,
-        )
-        pr_out_both, pr_out_d, pr_out_t, intervals = tmp
-        pr_out_overlap_insert = pr_out_both + pr_out_d + pr_out_t
-        pr_out_no_overlap_insert = 1 - pr_out_overlap_insert
-        pr_out_overlap = [
-            pr[0] * pa * prob_hanging_type[int(id)]
-            for (pr, pa, id) in zip(
-                pr_out_overlap_insert, panchored_out, is_distant_out
-            )
-        ]
-        pr_out_no_overlap = [
-            pr[0] * pm[1 + 2 * id]
-            for (pr, pm, id) in zip(
-                pr_out_no_overlap_insert, pmappable_out, is_distant_out
-            )
-        ]
-        pr_out = [a + b for (a, b) in zip(pr_out_overlap, pr_out_no_overlap)]
-        if not all(adj_satisfied_out):
-            failed = [
-                i for i in range(len(adj_satisfied_out)) if not adj_satisfied_out[i]
+        # reads anchored at the block's out node (forward strand), then in node
+        for anchored_block, use_read in ((out_block, True), (in_block, False)):
+            which_rlen = [
+                i for i in range(n) if is_out[i] == use_read and hanging_rlen[i] == rlen
             ]
-            for i in failed:
-                pr_out[i] = 0
-
-        tmp = get_overlap_insertion_probabilities(
-            path, blocks, ov, ov_d, ov_t, in_block, offset_in, rlen, lib_in, insert_cdfs
-        )
-        pr_in_both, pr_in_d, pr_in_t, intervals = tmp
-        pr_in_overlap_insert = pr_in_both + pr_in_d + pr_in_t
-        pr_in_no_overlap_insert = 1 - pr_in_overlap_insert
-        pr_in_overlap = [
-            pr[0] * pa * prob_hanging_type[int(id)]
-            for (pr, pa, id) in zip(pr_in_overlap_insert, panchored_in, is_distant_in)
-        ]
-        pr_in_no_overlap = [
-            pr[0] * pm[1 + 2 * id]
-            for (pr, pm, id) in zip(
-                pr_in_no_overlap_insert, pmappable_in, is_distant_in
+            reads = [which_hanging[i] for i in which_rlen]
+            if not reads:
+                continue
+            pr_both, pr_d, pr_t, _ = get_overlap_insertion_probabilities(
+                path,
+                blocks,
+                ov,
+                ov_d,
+                ov_t,
+                anchored_block,
+                [offsets[r] for r in reads],
+                rlen,
+                [lib[r] for r in reads],
+                insert_cdfs,
             )
-        ]
-        pr_in = [a + b for (a, b) in zip(pr_in_overlap, pr_in_no_overlap)]
-        if not all(adj_satisfied_in):
-            failed = [
-                i for i in range(len(adj_satisfied_in)) if not adj_satisfied_in[i]
-            ]
-            for i in failed:
-                pr_in[i] = 0
-
-        likelihood.extend(pr_out + pr_in)
+            # one column per copy of the anchored block in the path
+            pr_overlap_insert = pr_both + pr_d + pr_t
+            # P(m1, m2) for each of PAIR_CLASSES (conditional_mappable_model.py)
+            pm = np.array([pmappable[i] for i in which_rlen]).reshape(
+                len(which_rlen), -1
+            )
+            distant = np.array([is_distant[i] for i in which_rlen], dtype=int)
+            # note: anchored read is always read 1
+            panchored = pm[:, 0] + pm[:, 1] + pm[:, 3]
+            prob_type = np.array(prob_hanging_type)[distant]
+            pm_hanging = pm[np.arange(len(which_rlen)), 1 + 2 * distant]
+            pr_copy = (
+                pr_overlap_insert * (panchored * prob_type)[:, None]
+                + (1 - pr_overlap_insert) * pm_hanging[:, None]
+            )
+            # Sum over the compatible fragments, i.e., over the copies of the
+            # anchored block where the read's block sequence (if it crosses a
+            # block boundary) matches the path, starting at the anchored node
+            which_copy = [i for i in range(len(path)) if path[i] == anchored_block]
+            adj_ok = np.array(
+                [
+                    [
+                        adj[r] is None or is_adj_satisfied(adj[r], path, i)
+                        for i in which_copy
+                    ]
+                    for r in reads
+                ],
+                dtype=bool,
+            ).reshape(len(reads), len(which_copy))
+            likelihood.extend((pr_copy * adj_ok).sum(axis=1).tolist())
 
     return likelihood
 

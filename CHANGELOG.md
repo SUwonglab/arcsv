@@ -6,6 +6,20 @@ All notable user-facing changes are recorded here.
 
 Changes for 1.0.0, which change ARC-SV's calls and output files.
 
+### Fixes
+
+- Likelihood of hanging reads (reads whose mate is unmapped or maps far
+  away): a read is compatible with every copy of its block in a candidate
+  haplotype, not just the first, so duplications are no longer penalized
+  relative to the reference. Also, forward-strand hanging reads that cross a
+  block boundary were incompatible with every haplotype; they are now scored.
+- Split reads whose segments run up to `split_read_leeway` (2) bases past a
+  breakpoint are used, as are those that stop up to 2 bases short of one.
+  Previously only the latter were.
+- The mapping model no longer overestimates how often a read's mate maps far
+  away: distant same-chromosome pairs are counted in both reads' regions only
+  when both reads pass the MAPQ cutoff.
+
 ## 0.9.7 - 2026-10-06
 
 These changes reached the master branch gradually between 2018 and 2026 while

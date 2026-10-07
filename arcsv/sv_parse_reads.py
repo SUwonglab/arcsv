@@ -765,7 +765,6 @@ def get_blocked_alignment(
             true_read_length=true_rlen,
             aln_read_length=second.query_length,
         )
-        overlapping_blocks = first_overlapping_blocks + second_overlapping_blocks
         if opts["verbosity"] > 1:
             print(
                 f"qname {second.qname}, second {second_overlapping_blocks} is_rev={second.is_reverse}"
@@ -781,7 +780,20 @@ def get_blocked_alignment(
                 continue
             ov_idx = floor(ov[b] / 2)
             block = blocks[ov_idx]
-            if (a is first) ^ (a.is_reverse):
+            # the leeway applies both ways: if the segment runs at most
+            # split_read_leeway bases past the breakpoint into the next block,
+            # it ends at the breakpoint
+            at_end = (a is first) ^ (a.is_reverse)
+            overrun = (
+                a.reference_end - block.start
+                if at_end
+                else block.end - a.reference_start
+            )
+            if len(ov) > 1 and overrun <= opts["split_read_leeway"]:
+                del ov[b]
+                ov_idx = floor(ov[b] / 2)
+                block = blocks[ov_idx]
+            if at_end:
                 split_pos = a.reference_end
                 block_pos = block.end
                 # print('checking agreement at end of block {0}'.format(block))
@@ -812,6 +824,7 @@ def get_blocked_alignment(
                     # print(blocks)
                     # print('')
                     return (None, None)
+        overlapping_blocks = first_overlapping_blocks + second_overlapping_blocks
         #
         # can happen if first_overlapping_blocks is None (should be very rare)
         offset = first_offset if first_offset is not None else second_offset

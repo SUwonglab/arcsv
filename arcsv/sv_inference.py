@@ -1351,18 +1351,10 @@ def compute_edge_likelihood(
         lh *= pmapped
         likelihood.append(lh)
 
-    if len(edge["which_hanging"]) > 0 and len(dists) > 0:  # has hanging reads
-        which_dist_zero = [i for i in range(len(dists)) if dists[i] == 0][0]
-        self_adj_satisfied = {
-            adj: adj1_satisfied[adj][which_dist_zero] for adj in adj1_satisfied
-        }
+    if len(edge["which_hanging"]) > 0:
         likelihood.extend(
-            compute_hanging_edge_likelihood(
-                edge, path, blocks, insert_cdfs, self_adj_satisfied
-            )
+            compute_hanging_edge_likelihood(edge, path, blocks, insert_cdfs)
         )
-    elif len(edge["which_hanging"]) > 0:
-        likelihood.extend([0] * len(edge["which_hanging"]))
 
     return likelihood
 
