@@ -38,12 +38,35 @@ def filter_arcsv_output(args):
         )
         sys.exit(1)
 
-    header = None
-    arcsv_records = []
+    basedirs = []
+    seen_dirs = set()
     for d in opts["basedir"]:
+        real_d = os.path.realpath(d)
+        if real_d in seen_dirs:
+            sys.stderr.write(f"\nWarning: skipping duplicate input directory {d}\n")
+            continue
+        seen_dirs.add(real_d)
+        basedirs.append(d)
+
+    header = None
+    header_file = None
+    arcsv_records = []
+    for d in basedirs:
         out = read_arcsv_output(d, opts["inputname"], arcsv_records)
-        if out is not None and header is None:
-            header = out
+        if out is None:
+            continue
+        infile = os.path.join(d, opts["inputname"])
+        if out.strip() == "":
+            sys.stderr.write(f"\nError: Input file {infile} has no header line\n")
+            sys.exit(1)
+        if header is None:
+            header, header_file = out, infile
+        elif out.strip() != header.strip():
+            sys.stderr.write(
+                f"\nError: The header of {infile} does not match the header of "
+                f"{header_file}\n"
+            )
+            sys.exit(1)
 
     if header is None:
         sys.stderr.write(
@@ -53,16 +76,13 @@ def filter_arcsv_output(args):
         sys.exit(1)
 
     if len(arcsv_records) == 0:
-        sys.stderr.write("\nNo SV calls found in the input files\n")
-        sys.exit(1)
+        sys.stderr.write("\nWarning: No SV calls found in the input files\n")
 
     filtered_records = apply_filters(opts, arcsv_records, header)
 
-    chrom_names = {x[0]: convert_chrom_name(x[0]) for x in filtered_records}
-    if not all(isinstance(x, int) for x in chrom_names.values()):
-        chrom_names = {x: str(y) for x, y in chrom_names.items()}
-    filtered_records.sort(key=lambda x: (chrom_names[x[0]], int(x[1]), int(x[2]), x[3]))
-    print("sorted")
+    filtered_records.sort(
+        key=lambda x: (chrom_sort_key(x[0]), int(x[1]), int(x[2]), x[3])
+    )
 
     write_arcsv_output(opts, filtered_records, header)
     # if opts.get('reference_name') is not None:  # NOT IMPLEMENTED
@@ -78,15 +98,20 @@ def filter_arcsv_output(args):
     #     print('[run] ref files {0}'.format(reference_files))
 
 
-def convert_chrom_name(chrom_name):
-    chrom_name = chrom_name.lstrip("chr")
-    if re.match("[0-9]+", chrom_name) is not None:
-        return int(chrom_name)
-    elif re.match("[a-zA-Z]", chrom_name) is not None:
-        # put chrX, chrY, etc after numbered chromosomes
-        return int(1e9 + ord(chrom_name))
+def chrom_sort_key(chrom_name):
+    """Sort key putting contigs in natural order: 1-22 (numerically), X, Y,
+    M/MT, then all other names lexically. A leading "chr" is ignored."""
+    name = chrom_name[3:] if chrom_name.startswith("chr") else chrom_name
+    if re.fullmatch("[0-9]+", name) is not None:
+        key = (0, int(name), "")
+    elif name in ("X", "Y"):
+        key = (1, "XY".index(name), "")
+    elif name in ("M", "MT"):
+        key = (2, 0, "")
     else:
-        return chrom_name
+        key = (3, 0, name)
+    # break ties (e.g. "chr1" vs. "1") so each contig's records stay together
+    return key + (chrom_name,)
 
 
 def read_arcsv_output(directory, filename, records):
@@ -110,6 +135,7 @@ def write_arcsv_output(opts, records, header):
     outname = opts["outname"]
     outfile = os.path.join(outdir, outname)
 
+    os.makedirs(outdir, exist_ok=True)
     with open(outfile, "w") as f:
         f.write(header)
         for record in records:

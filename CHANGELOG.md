@@ -6,6 +6,20 @@ All notable user-facing changes are recorded here.
 
 Changes for 1.0.0, which change ARC-SV's calls and output files.
 
+### Fixes
+
+- `arcsv filter-merge` sorts any contig names, such as `MT`, `hs37d5`, and
+  `chr1_KI270706v1_random`, instead of crashing. Numbered chromosomes come
+  first, then X, Y, and M/MT, then other contigs in alphabetical order; a
+  leading `chr` is ignored. Previously `chrM` sorted before `chrX`.
+- `arcsv filter-merge` writes a header-only output file, instead of exiting
+  with an error, when the input files contain no SV calls.
+- `arcsv filter-merge` reads each input directory once when it is given more
+  than once, instead of duplicating its SV calls.
+- `arcsv filter-merge` exits with an error when the input files' headers do not
+  match.
+- `arcsv filter-merge` creates the `--outdir` directory if it does not exist.
+
 ## 0.9.7 - 2026-10-06
 
 These changes reached the master branch gradually between 2018 and 2026 while
