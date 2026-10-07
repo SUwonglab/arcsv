@@ -6,6 +6,14 @@ All notable user-facing changes are recorded here.
 
 Changes for 1.0.0, which change ARC-SV's calls and output files.
 
+### Fixes
+
+- Deletion sizes in `altered.pkl`, which the validation scripts in
+  `sv_validate` use, no longer report a deletion at a junction between two
+  inverted blocks when the skipped blocks appear elsewhere in the rearrangement.
+  For example, `AD'B'CE` was recorded as deleting `C`. Calls in `arcsv_out.tab`
+  and the VCF are unaffected.
+
 ## 0.9.7 - 2026-10-06
 
 These changes reached the master branch gradually between 2018 and 2026 while

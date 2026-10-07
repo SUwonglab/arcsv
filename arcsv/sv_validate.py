@@ -180,7 +180,7 @@ def altered_reference_sequence(path_orig, blocks_orig, reference, flank_size):
             path[i + 1] % 2 == 1
             and path[i] % 2 == 0
             and path[i + 1] < path[i] - 1
-            and all(block_counts[j] == 0 for j in range(left_block + 1, right_block))
+            and all(block_counts[j] == 0 for j in range(right_block + 1, left_block))
         ):
             del_idx.append(i)
             del_len.append(
