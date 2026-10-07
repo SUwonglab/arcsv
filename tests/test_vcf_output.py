@@ -62,7 +62,7 @@ def test_deletion_pos_end_svlen():
     assert record[9] == "1/1"
 
 
-def test_compound_het_shared_deletion_written_once():
+def test_compound_het_deletion_on_both_haplotypes_written_once():
     # ACDEF / ACD'EF: the deletion of B is on both haplotypes
     path1 = [0, 1, 4, 5, 6, 7, 8, 9, 10, 11]
     path2 = [0, 1, 4, 5, 7, 6, 8, 9, 10, 11]
@@ -75,7 +75,7 @@ def test_compound_het_shared_deletion_written_once():
     assert inversion[9] == "0/1"
 
 
-def test_compound_het_shared_breakends_written_once():
+def test_compound_het_breakends_on_both_haplotypes_written_once():
     # ACBDEF / ACBEF: the A-C and C-B adjacencies are on both haplotypes
     path1 = [0, 1, 4, 5, 2, 3, 6, 7, 8, 9, 10, 11]
     path2 = [0, 1, 4, 5, 2, 3, 8, 9, 10, 11]
@@ -83,14 +83,16 @@ def test_compound_het_shared_breakends_written_once():
     breakends = [(r[1], r[4]) for r in records]
     assert len(breakends) == len(set(breakends))
     genotypes = sorted(r[9] for r in records)
-    # 2 shared adjacencies (B-D on haplotype 1 and B-E on haplotype 2 are not)
+    # 2 adjacencies on both haplotypes (B-D on haplotype 1 and B-E on haplotype 2 are not)
     assert genotypes == ["0/1", "0/1", "1/0", "1/0", "1/1", "1/1", "1/1", "1/1"]
     for r in records:
         assert info(r)["AF"] == ("1.000" if r[9] == "1/1" else "0.500")
 
 
 @pytest.mark.parametrize("swap_haplotypes", [False, True])
-def test_compound_het_shared_breakends_in_reverse_written_once(swap_haplotypes):
+def test_compound_het_breakends_on_both_haplotypes_in_reverse_written_once(
+    swap_haplotypes,
+):
     # ACBDEF / AD'B'C'EF: C-B and B-D are traversed in opposite directions.
     path1 = [0, 1, 4, 5, 2, 3, 6, 7, 8, 9, 10, 11]
     path2 = [0, 1, 7, 6, 3, 2, 5, 4, 8, 9, 10, 11]
@@ -100,10 +102,10 @@ def test_compound_het_shared_breakends_in_reverse_written_once(swap_haplotypes):
     breakends = [(r[1], r[4]) for r in records]
     assert len(records) == len(set(breakends)) == 10
 
-    shared_positions = {"1101", "1200", "1300", "1301"}
-    shared = [r for r in records if r[1] in shared_positions]
-    assert len(shared) == 4
-    assert all(r[9] == "1/1" and info(r)["AF"] == "1.000" for r in shared)
+    both_positions = {"1101", "1200", "1300", "1301"}
+    on_both = [r for r in records if r[1] in both_positions]
+    assert len(on_both) == 4
+    assert all(r[9] == "1/1" and info(r)["AF"] == "1.000" for r in on_both)
     genotypes = [r[9] for r in records]
     assert genotypes.count("1/0") == (4 if swap_haplotypes else 2)
     assert genotypes.count("0/1") == (2 if swap_haplotypes else 4)
