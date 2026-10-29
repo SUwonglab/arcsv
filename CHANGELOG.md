@@ -2,6 +2,16 @@
 
 All notable user-facing changes are recorded here.
 
+## Unreleased
+
+### Fixes
+
+- Locked development and CI environments use Pillow 13 on Python 3.11+ and
+  pytest 9.2 on Python 3.10+, addressing their dependency security advisories.
+  Python 3.9 and 3.10 remain supported; their older Pillow versions, and pytest
+  on Python 3.9, retain unresolved advisories because patched releases require
+  newer Python versions.
+
 ## 0.9.7 - 2026-10-06
 
 These changes reached the master branch gradually between 2018 and 2026 while
